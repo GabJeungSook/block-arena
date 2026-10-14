@@ -10,10 +10,13 @@
 //   /api/leaderboard          → top players and your position
 //   /api/account        DELETE→ delete your account
 //   /room/<name>              → WebSocket for an online room (Durable Object)
+//   /api/coins/earn     POST  → add coins after a match (capped)
+//   /api/shop/buy|equip POST  → buy or equip a cosmetic
 //   /api/friends*             → in-game friends: friend codes, requests, list with who's online
 //   /hub                      → WebSocket to the Hub (online status, room invites, friend requests in real time)
 // Everything else is the game itself, served from /public.
 import { rankOf, rpDelta, applyDelta } from './rank.js';
+import { PRICES, SLOTS, DEFAULTS, MAX_PER_MATCH, MIN_GAP_MS, DAILY_CAP, ACH_COINS } from './shop.js';
 export { Room } from './room.js';
 export { Hub } from './hub.js';
 
@@ -223,6 +226,10 @@ async function api(req, env, url, p) {
   }
   if (!u) return json({ error: 'not_signed_in' }, 401);
   if (p === '/api/profile' && m === 'PUT') return saveProfile(req, env, u);
+  if (p === '/api/coins/earn' && m === 'POST') return coinsEarn(req, env, u);
+  if (p === '/api/coins/import' && m === 'POST') return coinsImport(req, env, u);
+  if (p === '/api/shop/buy' && m === 'POST') return shopBuy(req, env, u);
+  if (p === '/api/shop/equip' && m === 'POST') return shopEquip(req, env, u);
   if (p === '/api/share' && m === 'POST') return createShare(req, env, url, u);
   if (p === '/api/friends' && m === 'GET') return friendsList(env, u);
   if (p === '/api/friends/request' && m === 'POST') return friendRequest(req, env, u);
@@ -242,6 +249,7 @@ async function saveProfile(req, env, u) {
   const b = await body(req), cur = JSON.parse(u.profile || '{}');
   const n = (v, max) => Math.max(0, Math.min(max, Math.floor(+v || 0)));
   // progress only moves forward, and XP can't jump more than one big match at a time
+  const newAch = (Array.isArray(b.ach) ? b.ach : []).filter(a => ACHIEVEMENTS.includes(a) && !(cur.ach || []).includes(a));
   const next = {
     xp: Math.max(cur.xp || 0, Math.min(n(b.xp, 1e7), (cur.xp || 0) + 800)),
     wins: Math.max(cur.wins || 0, Math.min(n(b.wins, 1e6), (cur.wins || 0) + 1)),
@@ -251,8 +259,61 @@ async function saveProfile(req, env, u) {
     ach: [...new Set([...(Array.isArray(cur.ach) ? cur.ach : []), ...(Array.isArray(b.ach) ? b.ach : [])].filter(a => ACHIEVEMENTS.includes(a)))],
     sprint: cur.sprint && b.sprint ? Math.min(cur.sprint, Math.max(15000, n(b.sprint, 36e5))) : (cur.sprint || (b.sprint ? Math.max(15000, n(b.sprint, 36e5)) : 0)),
   };
-  await env.DB.prepare('UPDATE users SET profile = ?, updated_at = ? WHERE id = ?').bind(JSON.stringify(next), now(), u.id).run();
-  return json({ profile: next });
+  // only the fields this call manages are written, and coins are added in the same statement, so a
+  // coin payout or purchase landing at the same moment is never overwritten
+  const bonus = [...new Set(newAch)].length * ACH_COINS;
+  await env.DB.prepare(`UPDATE users SET profile = json_set(COALESCE(profile, '{}'), '$.xp', ?, '$.wins', ?, '$.games', ?, '$.bestCombo', ?, '$.classic', ?, '$.sprint', ?, '$.ach', json(?),
+      '$.coins', COALESCE(json_extract(profile, '$.coins'), 0) + ?), updated_at = ? WHERE id = ?`)
+    .bind(next.xp, next.wins, next.games, next.bestCombo, next.classic, next.sprint, JSON.stringify(next.ach), bonus, now(), u.id).run();
+  return json({ profile: next, coinsAdded: bonus });
+}
+
+// ---------- coins and the shop ----------
+// Coins live in the profile: { coins, owned: [ids], eq: { block, ghost, fx, bg }, earn: { day, n, t } }.
+// Match payouts are worked out by the game and capped here: per match, by time between matches, and per day.
+const wallet = pr => ({ coins: pr.coins || 0, owned: pr.owned || [], eq: { ...DEFAULTS, ...(pr.eq || {}) } });
+const freshProfile = async (env, u) => JSON.parse((await env.DB.prepare('SELECT profile FROM users WHERE id = ?').bind(u.id).first())?.profile || '{}');
+async function coinsEarn(req, env, u) {
+  const b = await body(req), pr = await freshProfile(env, u), t = now(), day = Math.floor(t / 864e5);
+  const e = pr.earn && pr.earn.day === day ? pr.earn : { day, n: 0, t: 0 };
+  let amt = Math.max(0, Math.min(MAX_PER_MATCH, Math.floor(+b.amount || 0)));
+  if (t - (e.t || 0) < MIN_GAP_MS) amt = 0;
+  amt = Math.min(amt, Math.max(0, DAILY_CAP - e.n));
+  const earn = { day, n: e.n + amt, t: amt ? t : e.t };
+  await env.DB.prepare(`UPDATE users SET profile = json_set(COALESCE(profile, '{}'), '$.coins', COALESCE(json_extract(profile, '$.coins'), 0) + ?, '$.earn', json(?)), updated_at = ? WHERE id = ?`)
+    .bind(amt, JSON.stringify(earn), t, u.id).run();
+  return json({ added: amt, capped: amt < Math.floor(+b.amount || 0), ...wallet(await freshProfile(env, u)) });
+}
+// a guest's coins and items move to their account the first time they sign in (once, capped)
+async function coinsImport(req, env, u) {
+  const b = await body(req), pr = await freshProfile(env, u);
+  if (pr.imported) return json({ ...wallet(pr), imported: false });
+  const add = Math.max(0, Math.min(3000, Math.floor(+b.coins || 0)));
+  const owned = [...new Set([...(pr.owned || []), ...(Array.isArray(b.owned) ? b.owned : []).filter(id => id in PRICES && PRICES[id] > 0)])];
+  const r = await env.DB.prepare(`UPDATE users SET profile = json_set(COALESCE(profile, '{}'), '$.imported', json('true'), '$.coins', COALESCE(json_extract(profile, '$.coins'), 0) + ?, '$.owned', json(?)), updated_at = ?
+      WHERE id = ? AND json_extract(profile, '$.imported') IS NULL`).bind(add, JSON.stringify(owned), now(), u.id).run();
+  return json({ ...wallet(await freshProfile(env, u)), imported: r.meta.changes > 0 });
+}
+async function shopBuy(req, env, u) {
+  const id = String((await body(req)).id || ''), pr = await freshProfile(env, u);
+  if (!(id in PRICES)) return json({ error: 'unknown_item' }, 400);
+  const w = wallet(pr);
+  if (PRICES[id] === 0 || w.owned.includes(id)) return json({ ...w, already: true });
+  if (w.coins < PRICES[id]) return json({ error: 'not_enough', ...w }, 400);
+  // the balance check happens inside the update, so two quick taps can't spend the same coins twice
+  const r = await env.DB.prepare(`UPDATE users SET profile = json_set(COALESCE(profile, '{}'), '$.coins', COALESCE(json_extract(profile, '$.coins'), 0) - ?, '$.owned', json(?), '$.eq', json(?)), updated_at = ?
+      WHERE id = ? AND COALESCE(json_extract(profile, '$.coins'), 0) >= ?`)
+    .bind(PRICES[id], JSON.stringify([...w.owned, id]), JSON.stringify({ ...w.eq, [id.split(':')[0]]: id }), now(), u.id, PRICES[id]).run();   // buying equips it
+  const w2 = wallet(await freshProfile(env, u));
+  return r.meta.changes ? json(w2) : json({ error: 'not_enough', ...w2 }, 400);
+}
+async function shopEquip(req, env, u) {
+  const id = String((await body(req)).id || ''), pr = await freshProfile(env, u), slot = id.split(':')[0];
+  if (!(id in PRICES) || !SLOTS.includes(slot)) return json({ error: 'unknown_item' }, 400);
+  const w = wallet(pr);
+  if (PRICES[id] > 0 && !w.owned.includes(id)) return json({ error: 'not_owned' }, 400);
+  await env.DB.prepare(`UPDATE users SET profile = json_set(COALESCE(profile, '{}'), '$.eq', json(?)), updated_at = ? WHERE id = ?`).bind(JSON.stringify({ ...w.eq, [slot]: id }), now(), u.id).run();
+  return json(wallet(await freshProfile(env, u)));
 }
 
 const KINDS = ['cpu', 'arena', 'online'], LEVELS = ['easy', 'normal', 'hard', 'expert'];

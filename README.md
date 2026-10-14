@@ -93,6 +93,21 @@ Buy a domain (about $10/year), add it to Cloudflare, then **Workers & Pages → 
 - **Sharing**: rank, match results and achievements become 1200×630 cards at `/s/<id>`; Facebook shows the card and the link opens the game.
 - **Achievements**: 15 medals, saved to the account and synced across devices.
 
+## Coins and the shop
+
+Every match pays coins (local 2P and matches under 20 seconds don't), and coins buy cosmetics in the shop: block styles, ghost styles, line-clear effects and backgrounds.
+
+| Mode | Coins |
+|---|---|
+| 1 vs 1 CPU | Win 15 / 25 / 35 / 50 (Easy → Expert), loss 5 |
+| Arena vs CPUs | By place: 40, 25, 15, 10, 5. ×0.6 Easy, ×1.3 Hard, ×1.6 Expert, +25% in 6P |
+| Online | 1 vs 1: win 40, loss 10. 4P/6P: 50 / 30 / 20 / 12 / 8 / 5 by place |
+| Classic | 3 + 1 per 4,000 points, up to 40 (needs 10 lines) |
+| Sprint 40 | 15 for finishing, +10 for a new best |
+| Bonuses | First win of the day +25, each achievement +50 |
+
+Signed-in players' coins and items live on the server (`src/shop.js` has the prices; the game keeps a copy that `npm test` checks). The server caps a match at 150 coins, ignores payouts less than 15 seconds apart, stops match coins at 2,500 a day, and checks the balance inside the same database update that spends it. A guest's coins and items move to their account once, the first time they sign in (up to 3,000 coins).
+
 ## Run it on your computer
 
 ```bash

@@ -461,6 +461,47 @@ input:not([type]),input[type=text],select{background:var(--navy);border-color:va
   .frchip b{display:none}
   .frchip .on{white-space:nowrap}
 }
+/* coins + shop */
+.coin{width:18px;height:18px;flex:none;vertical-align:-4px}
+#bgcv{position:fixed;inset:0;width:100vw;height:100vh;z-index:-1;pointer-events:none}
+body{background:var(--bg)}
+.hleft{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.coinchip{gap:8px;padding:6px 12px}
+.coinchip b{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--gold)}
+.coinchip .lab{font-size:10px;margin-left:4px}
+.coinchip.pop{animation:coinPop .6s cubic-bezier(.2,1.6,.4,1)}
+@keyframes coinPop{30%{transform:scale(1.14)}}
+.shopbtn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-color:var(--gold)}
+.coinres{display:flex;align-items:center;gap:8px;font-family:var(--mono);color:var(--muted)}
+.coinres b{color:var(--gold);font-size:17px}
+.coinres .coin{width:22px;height:22px}
+.card.shoppage{width:min(960px,100%);max-height:100%;overflow:auto;gap:14px}
+.shoppage .menuhead .coinbal{margin-left:auto;display:inline-flex;align-items:center;gap:8px;border:3px solid var(--line);padding:6px 12px;background:var(--navy)}
+.coinbal b{font-family:var(--mono);font-size:18px;color:var(--gold)}
+.coinbal .coin{width:22px;height:22px}
+.shoptabs{display:flex;border:2px solid var(--line);align-self:flex-start;flex-wrap:wrap}
+.shoptabs button{border:0;background:transparent;padding:7px 16px;font-family:var(--display);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.shoptabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.shopgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.sitem{display:flex;flex-direction:column;background:var(--navy);border:3px solid var(--line)}
+.sitem.on{border-color:var(--accent);box-shadow:4px 4px 0 var(--accent)}
+.sitem canvas{width:100%;aspect-ratio:12/7;display:block;background:#04050b;border-bottom:2px solid var(--line)}
+.sinfo{padding:10px 12px 4px;display:flex;flex-direction:column;gap:2px}
+.sinfo b{font-family:var(--display);font-size:13px;letter-spacing:.03em}
+.sinfo small{color:var(--muted);font-size:12px;line-height:1.35}
+.sact{display:flex;align-items:center;gap:10px;padding:8px 12px 12px;margin-top:auto}
+.sbtn{padding:6px 14px;font-size:13px}
+.sbtn.buy{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-weight:600;border-color:var(--gold)}
+.sbtn.buy:disabled{opacity:.55;cursor:not-allowed;border-color:var(--line)}
+.sbtn:disabled:not(.buy){opacity:.7}
+.sact small{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.sact .eqtag{color:var(--accent)}
+.sact .eqtag.owned{color:var(--good)}
+#shopMsg{min-height:1.2em;margin:0}
+#shopMsg.bad{color:var(--red)}
+#shopNote{margin:0}
+.coinrules{grid-template-columns:160px 1fr}
+@media (max-width:560px){.shopgrid{grid-template-columns:1fr 1fr;gap:8px}.sinfo small{display:none}.coinrules{grid-template-columns:1fr}.coinchip .lab{display:none}}
 /* online screen + ranked note */
 .onlinepage{display:flex;flex-direction:column;gap:12px}
 .onlinepage .menuhead .chip{margin-left:auto}
@@ -565,10 +606,13 @@ input:not([type]),input[type=text],select{background:var(--navy);border-color:va
 
     <div class="overlay home" id="ovHome">
       <div class="htop">
+        <div class="hleft">
         <button type="button" class="hchip lvlchip" id="hLevelChip" aria-label="Your level and stats">
           <span class="lvwrap"><span class="hava" id="hAva" hidden></span><span class="lvl" id="hLvl">1</span></span>
           <span class="cinfo"><b class="hname" id="hName" hidden></b><b id="hTitle">Level 1 · Rookie</b><small id="hXp">0 / 100 XP</small><span class="bar"><i id="hBar" style="width:0%"></i></span></span>
         </button>
+        <button type="button" class="hchip coinchip" id="hCoins" aria-label="Coins and shop"><svg class="coin" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="#ffd21a" stroke="#0a0f24" stroke-width="2"/><circle cx="12" cy="12" r="6.6" fill="none" stroke="#b07a00" stroke-width="1.6"/><rect x="9.6" y="9.6" width="4.8" height="4.8" fill="#b07a00"/></svg><b id="hCoinN">0</b><span class="lab">Shop</span></button>
+        </div>
         <div class="hright">
           <button type="button" class="hchip rankchip" id="hRankRow" aria-label="Your rank and the rankings">
             <span class="cinfo r"><b id="hRankName">Bronze III</b><small id="hRankRp">0 / 100 RP</small><span class="bar"><i id="hRankBar" style="width:0%"></i></span></span>
@@ -608,7 +652,7 @@ input:not([type]),input[type=text],select{background:var(--navy);border-color:va
             <button type="button" class="hbtn quick" id="hClassic"><span>Quick play</span>Classic</button>
             <button type="button" class="hbtn" id="hOnline">Play online</button>
             <button type="button" class="hbtn" data-go="ovHow">How to play</button>
-            <button type="button" class="hbtn" id="hSettings">Settings</button>
+            <button type="button" class="hbtn shopbtn" id="hShop"><svg class="coin" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="#ffd21a" stroke="#0a0f24" stroke-width="2"/><circle cx="12" cy="12" r="6.6" fill="none" stroke="#b07a00" stroke-width="1.6"/><rect x="9.6" y="9.6" width="4.8" height="4.8" fill="#b07a00"/></svg>Shop</button>
           </div>
           <button type="button" class="again" id="hAgain" hidden><span class="lab">Play again</span><b id="hAgainName">1 vs 1</b><i aria-hidden="true">→</i></button>
           <p class="hint"><kbd>Enter</kbd> play &nbsp; <kbd>C</kbd> classic &nbsp; <kbd>H</kbd> how to play</p>
@@ -747,6 +791,17 @@ input:not([type]),input[type=text],select{background:var(--navy);border-color:va
       </div>
     </div>
 
+    <div class="overlay" id="ovShop" hidden>
+      <div class="card shoppage">
+        <div class="menuhead"><button type="button" class="ghostbtn sm" data-back>← Back</button><h2>Shop</h2><span class="coinbal" id="shopCoins"><svg class="coin" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="#ffd21a" stroke="#0a0f24" stroke-width="2"/><circle cx="12" cy="12" r="6.6" fill="none" stroke="#b07a00" stroke-width="1.6"/><rect x="9.6" y="9.6" width="4.8" height="4.8" fill="#b07a00"/></svg><b>0</b></span></div>
+        <div class="shoptabs" id="shopTabs" role="tablist"><button type="button" role="tab" data-tab="block">Blocks</button><button type="button" role="tab" data-tab="ghost">Ghost</button><button type="button" role="tab" data-tab="fx">Effects</button><button type="button" role="tab" data-tab="bg">Backgrounds</button></div>
+        <p class="muted" id="shopNote" hidden></p>
+        <div class="shopgrid" id="shopGrid"></div>
+        <p class="sub" id="shopMsg" role="status"></p>
+        <details class="rphow"><summary>How to earn coins</summary><div class="rptable coinrules" id="coinRules"></div></details>
+      </div>
+    </div>
+
     <div class="overlay" id="ovLobby" hidden>
       <div class="card result">
         <div><h2>Room <span id="lobbyCode" class="code">—</span></h2><p class="sub"><span id="lobbyConn">Connecting…</span> · <span id="lobbyCount">0 players here</span></p></div>
@@ -869,6 +924,7 @@ input:not([type]),input[type=text],select{background:var(--navy);border-color:va
         <div class="stats" id="resStats"></div>
         <div class="rpres" id="resRank" hidden></div>
         <div class="xp" id="resXp" hidden></div>
+        <div class="coinres" id="resCoins" hidden></div>
         <div class="row"><button class="play" type="button" id="btnAgain">Play again</button><button class="play" type="button" id="btnLobby" hidden>Back to lobby</button><button type="button" class="fbbtn" id="btnShareRes" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9h3l.5-4h-3.5V9c0-.6.4-1 1-1z"/></svg>Share result</button><button class="ghostbtn" type="button" id="btnBack">Menu</button></div>
       </div>
     </div>
@@ -2024,6 +2080,7 @@ function unlock(id) {
   if (have.has(id) || !achById(id)) return;
   have.add(id); pr.ach = [...have]; store.set('profile', pr);
   if (LIVE && account.user) api.call('/api/profile', 'PUT', { ach: pr.ach }).catch(() => {});
+  achCoins();
   achToast(achById(id));
 }
 let toastQ = [], toastOn = false;
@@ -2033,7 +2090,7 @@ function achToast(a) {
     const a2 = toastQ.shift(); if (!a2) { toastOn = false; return; }
     toastOn = true; sfx.lvl();
     const el = $('achToast');
-    el.innerHTML = `<span class="ai">${achIcon(a2, 46)}</span><span class="at"><small>Achievement unlocked</small><b>${a2.name}</b><span>${a2.desc}</span></span>` +
+    el.innerHTML = `<span class="ai">${achIcon(a2, 46)}</span><span class="at"><small>Achievement unlocked · +50 coins</small><b>${a2.name}</b><span>${a2.desc}</span></span>` +
       (canShare() ? `<button type="button" class="fbbtn sm" data-ach="${a2.id}">Share</button>` : '');
     el.hidden = false; el.classList.remove('out'); void el.offsetWidth; el.classList.add('in');
     el.querySelector('[data-ach]')?.addEventListener('click', () => shareCard('achievement', { ach: a2 }));
@@ -2383,6 +2440,357 @@ function showInvite(inv) {
   el.t = setTimeout(done, 30000);
 }
 
+// ================= coins & shop =================
+// <shop-prices>
+const PRICES = {
+  'block:classic': 0, 'block:flat': 150, 'block:candy': 300, 'block:pixel': 400, 'block:neon': 600, 'block:gem': 800, 'block:glass': 1000,
+  'ghost:outline': 0, 'ghost:dashed': 100, 'ghost:filled': 150, 'ghost:corners': 200, 'ghost:dots': 250, 'ghost:glow': 350,
+  'fx:sparks': 0, 'fx:confetti': 200, 'fx:pixels': 300, 'fx:stars': 350, 'fx:bubbles': 400, 'fx:embers': 500,
+  'bg:midnight': 0, 'bg:grid': 150, 'bg:blueprint': 250, 'bg:arcade': 400, 'bg:starfield': 450, 'bg:skyline': 600, 'bg:sakura': 750,
+};
+// </shop-prices>
+const ITEM_INFO = {
+  'block:classic': ['Classic', 'Beveled blocks, straight from the logo.'], 'block:flat': ['Flat', 'Clean solid tiles with a crisp edge.'],
+  'block:candy': ['Candy', 'Rounded and shiny, like hard candy.'], 'block:pixel': ['8-Bit', 'Chunky pixel highlights, old-console style.'],
+  'block:neon': ['Neon', 'Dark glass with glowing tube outlines.'], 'block:gem': ['Gem', 'Cut like jewels, four faceted faces.'],
+  'block:glass': ['Glass', 'See-through panes with a bright rim.'],
+  'ghost:outline': ['Outline', 'A thin outline where the piece will land.'], 'ghost:dashed': ['Dashed', 'A dashed outline, lighter on the eyes.'],
+  'ghost:filled': ['Filled', 'A soft tinted shadow of the piece.'], 'ghost:corners': ['Corners', 'Just the corner brackets.'],
+  'ghost:dots': ['Dots', 'A dot in each cell. Minimal.'], 'ghost:glow': ['Glow', 'A glowing double outline.'],
+  'fx:sparks': ['Sparks', 'Block-colored sparks on every clear.'], 'fx:confetti': ['Confetti', 'Every clear is a party.'],
+  'fx:pixels': ['Pixels', 'Lines shatter into chunky pixels.'], 'fx:stars': ['Stars', 'Gold and white stars burst out.'],
+  'fx:bubbles': ['Bubbles', 'Cleared lines float away as bubbles.'], 'fx:embers': ['Embers', 'Rows burn up into rising embers.'],
+  'bg:midnight': ['Midnight', 'The original dark arena.'], 'bg:grid': ['Grid', 'A quiet navy grid.'],
+  'bg:blueprint': ['Blueprint', 'Drafting-table blue with fine lines.'], 'bg:arcade': ['Arcade', 'Arcade carpet, block pattern.'],
+  'bg:starfield': ['Starfield', 'Slowly drifting, twinkling stars.'], 'bg:skyline': ['Skyline', 'A night city under the moon.'],
+  'bg:sakura': ['Sakura', 'Cherry blossom petals drifting down.'],
+};
+const SLOTS = { block: 'Blocks', ghost: 'Ghost', fx: 'Effects', bg: 'Backgrounds' };
+const EQ_DEFAULT = { block: 'block:classic', ghost: 'ghost:outline', fx: 'fx:sparks', bg: 'bg:midnight' };
+const COIN_SVG = '<svg class="coin" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="#ffd21a" stroke="#0a0f24" stroke-width="2"/><circle cx="12" cy="12" r="6.6" fill="none" stroke="#b07a00" stroke-width="1.6"/><rect x="9.6" y="9.6" width="4.8" height="4.8" fill="#b07a00"/></svg>';
+const fmtCoins = n => Math.max(0, n | 0).toLocaleString('en-US');
+
+// wallet: coins, owned items, equipped items. Guests keep it in this browser; signed-in players' copy
+// comes from the server, which also does every purchase.
+function wallet() {
+  const w = store.get('wallet', null) || {};
+  return { coins: w.coins | 0, owned: Array.isArray(w.owned) ? w.owned : [], eq: { ...EQ_DEFAULT, ...(w.eq || {}) } };
+}
+function setWallet(w) { store.set('wallet', { coins: w.coins | 0, owned: w.owned || [], eq: { ...EQ_DEFAULT, ...(w.eq || {}) } }); applyCosmetics(); renderCoins(); }
+const owns = id => PRICES[id] === 0 || wallet().owned.includes(id);
+const signedWallet = () => LIVE && !!account.user;
+
+// ---- how many coins a match pays ----
+// Local 2P and the demo pay nothing, and nothing under 20 seconds pays. First win of the day: +25.
+// Every achievement: +50. A day's match coins stop at 2,500.
+const COIN_CPU = { easy: 15, normal: 25, hard: 35, expert: 50 }, COIN_DIFF = { easy: .6, normal: 1, hard: 1.3, expert: 1.6 };
+function coinsFor(r) {
+  if (r.mode === 'local' || r.mode === 'demo' || r.ms < 20000) return 0;
+  if (r.mode === 'cpu') return r.won ? COIN_CPU[r.level] || 25 : 5;
+  if (r.mode === 'arena') return Math.round(([40, 25, 15, 10, 5, 5][r.place - 1] || 5) * (COIN_DIFF[r.level] || 1) * (r.size >= 6 ? 1.25 : 1));
+  if (r.mode === 'online') return r.size <= 2 ? (r.won ? 40 : 10) : [50, 30, 20, 12, 8, 5][r.place - 1] || 5;
+  if (r.mode === 'classic') return r.lines < 10 ? 0 : Math.min(40, 3 + Math.floor(r.score / 4000));
+  if (r.mode === 'sprint') return r.done ? 15 + (r.best ? 10 : 0) : 0;
+  return 0;
+}
+const COIN_RULES = [
+  ['1 vs 1 CPU', 'Win 15 / 25 / 35 / 50 (Easy → Expert), loss 5'],
+  ['Arena vs CPUs', '1st 40, 2nd 25, 3rd 15, then 10 / 5. Harder CPUs and 6P pay more'],
+  ['Online', '1 vs 1: win 40, loss 10. 4P/6P: 50 / 30 / 20 / 12 / 8 / 5 by place'],
+  ['Classic', '1 coin per 4,000 points (+3), up to 40. Needs 10 lines'],
+  ['Sprint 40', '15 for finishing, +10 for a new best'],
+  ['Bonuses', 'First win of the day +25 · every achievement +50'],
+];
+async function payMatch(r) {
+  const box = $('resCoins');
+  let base = coinsFor(r), bonus = 0;
+  const day = Math.floor(Date.now() / 864e5), d = store.get('coinDay', {});
+  if (base && r.won && ['cpu', 'arena', 'online'].includes(r.mode) && d.win !== day) { bonus = 25; store.set('coinDay', { ...d, win: day }); }
+  const amt = Math.min(150, base + bonus);
+  if (!amt) { box.hidden = r.mode === 'local' ? true : false; if (!box.hidden) box.innerHTML = `${COIN_SVG}<span>No coins${r.ms < 20000 ? ' (match under 20 seconds)' : ''}</span>`; return; }
+  const show = (n, note) => { box.hidden = false; box.innerHTML = `${COIN_SVG}<b>+${fmtCoins(n)}</b><span>coins${note ? ' · ' + note : ''}</span>`; renderCoins(true); };
+  if (signedWallet()) {
+    show(amt, bonus ? 'first win today +25' : '');
+    try { const w = await api.call('/api/coins/earn', 'POST', { amount: amt, mode: r.mode }); setWallet(w); if (w.added < amt) show(w.added, w.added ? 'daily limit reached' : 'daily coin limit reached'); }
+    catch (e) { show(0, 'couldn\'t reach the server'); }
+  } else {
+    const t = Date.now(), lim = store.get('coinLim', {}), today = lim.day === day ? lim : { day, n: 0 };
+    const add = Math.min(amt, Math.max(0, 2500 - today.n)); store.set('coinLim', { day, n: today.n + add });
+    const w = wallet(); w.coins += add; setWallet(w);
+    show(add, add < amt ? 'daily limit reached' : bonus ? 'first win today +25' : '');
+  }
+}
+function achCoins() {           // +50 per achievement; the server adds it for signed-in players when the achievement saves
+  const w = wallet(); w.coins += 50; setWallet(w);
+}
+
+// ---- equipped cosmetics, cached for the renderer ----
+const cos = { block: 'classic', ghost: 'outline', fx: 'sparks', bg: 'midnight' };
+function applyCosmetics() {
+  const eq = wallet().eq;
+  for (const s in SLOTS) { const id = owns(eq[s]) ? eq[s] : EQ_DEFAULT[s]; cos[s] = id.split(':')[1]; }
+  bgDirty = true;
+}
+function renderCoins(pop) {
+  const n = fmtCoins(wallet().coins);
+  $('hCoinN').textContent = n; if ($('shopCoins')) $('shopCoins').querySelector('b').textContent = n;
+  if (pop) { const c = $('hCoins'); c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); }
+}
+
+// ---- block skins (all flat fills, no gradients) ----
+function rrPath(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function skinDraw(skin, x, y, s, col, sh, alpha) {
+  ctx.globalAlpha = alpha;
+  if (skin === 'flat') {
+    ctx.fillStyle = sh.dark; ctx.fillRect(x, y, s, s);
+    const b = Math.max(1, Math.round(s * .07)); ctx.fillStyle = col; ctx.fillRect(x + b, y + b, s - 2 * b, s - 2 * b);
+  } else if (skin === 'candy') {
+    const r = s * .26; rrPath(x + .5, y + .5, s - 1, s - 1, r); ctx.fillStyle = sh.dark; ctx.fill();
+    const b = Math.max(1, s * .08); rrPath(x + b, y + b, s - 2 * b, s - 2 * b, r * .8); ctx.fillStyle = col; ctx.fill();
+    ctx.fillStyle = sh.mid; ctx.fillRect(x + s * .25, y + s - b - s * .14, s * .5, s * .1);
+    ctx.globalAlpha = alpha * .8; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(x + s * .34, y + s * .3, s * .14, s * .09, -.6, 0, TAU); ctx.fill();
+  } else if (skin === 'pixel') {
+    const u = Math.max(1, Math.round(s / 8));
+    ctx.fillStyle = C.ink; ctx.fillRect(x, y, s, s);
+    ctx.fillStyle = col; ctx.fillRect(x + u, y + u, s - 2 * u, s - 2 * u);
+    ctx.fillStyle = sh.mid; ctx.fillRect(x + s - 2 * u, y + 2 * u, u, s - 3 * u); ctx.fillRect(x + 2 * u, y + s - 2 * u, s - 3 * u, u);
+    ctx.fillStyle = '#fff'; ctx.fillRect(x + u, y + u, u, u); ctx.fillRect(x + 2 * u, y + u, u * 2, u); ctx.fillRect(x + u, y + 2 * u, u, u * 2);
+  } else if (skin === 'neon') {
+    ctx.fillStyle = '#050816'; ctx.fillRect(x, y, s, s);
+    ctx.strokeStyle = col; ctx.lineWidth = Math.max(1.5, s * .09); const i = ctx.lineWidth / 2 + 1; ctx.strokeRect(x + i, y + i, s - 2 * i, s - 2 * i);
+    ctx.globalAlpha = alpha * .35; ctx.lineWidth = Math.max(1, s * .05); ctx.strokeRect(x + s * .3, y + s * .3, s * .4, s * .4);
+    ctx.globalAlpha = alpha * .18; ctx.fillStyle = col; ctx.fillRect(x + 2, y + 2, s - 4, s - 4);
+  } else if (skin === 'gem') {
+    const m = s * .28, cx0 = x + m, cy0 = y + m, cx1 = x + s - m, cy1 = y + s - m;
+    const tri = (pts, c) => { ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(pts[0], pts[1]); for (let k = 2; k < pts.length; k += 2) ctx.lineTo(pts[k], pts[k + 1]); ctx.closePath(); ctx.fill(); };
+    tri([x, y, x + s, y, cx1, cy0, cx0, cy0], sh.light); tri([x, y, cx0, cy0, cx0, cy1, x, y + s], shade(col, .2));
+    tri([x + s, y, x + s, y + s, cx1, cy1, cx1, cy0], sh.mid); tri([x, y + s, cx0, cy1, cx1, cy1, x + s, y + s], sh.dark);
+    ctx.fillStyle = col; ctx.fillRect(cx0, cy0, cx1 - cx0, cy1 - cy0);
+    ctx.strokeStyle = sh.dark; ctx.lineWidth = 1; ctx.strokeRect(x + .5, y + .5, s - 1, s - 1);
+  } else if (skin === 'glass') {
+    ctx.globalAlpha = alpha * .42; ctx.fillStyle = col; ctx.fillRect(x + 1, y + 1, s - 2, s - 2);
+    ctx.globalAlpha = alpha; ctx.strokeStyle = sh.light; ctx.lineWidth = Math.max(1, s * .07); ctx.strokeRect(x + 1.5, y + 1.5, s - 3, s - 3);
+    ctx.globalAlpha = alpha * .4; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(x + s * .18, y + s * .82); ctx.lineTo(x + s * .82, y + s * .18); ctx.lineTo(x + s * .82, y + s * .36); ctx.lineTo(x + s * .36, y + s * .82); ctx.closePath(); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ---- ghost styles ----
+function ghostDraw(x, y, s, col, style = cos.ghost) {
+  ctx.strokeStyle = col; ctx.fillStyle = col;
+  if (style === 'dashed') { ctx.globalAlpha = .7; ctx.lineWidth = 2; ctx.setLineDash([s * .22, s * .14]); ctx.strokeRect(x + 2, y + 2, s - 4, s - 4); ctx.setLineDash([]); }
+  else if (style === 'filled') { ctx.globalAlpha = .22; ctx.fillRect(x + 1, y + 1, s - 2, s - 2); ctx.globalAlpha = .45; ctx.lineWidth = 1; ctx.strokeRect(x + 1.5, y + 1.5, s - 3, s - 3); }
+  else if (style === 'corners') {
+    ctx.globalAlpha = .8; ctx.lineWidth = 2; const l = s * .3, a = x + 2, b = y + 2, c = x + s - 2, d = y + s - 2;
+    ctx.beginPath(); ctx.moveTo(a, b + l); ctx.lineTo(a, b); ctx.lineTo(a + l, b); ctx.moveTo(c - l, b); ctx.lineTo(c, b); ctx.lineTo(c, b + l);
+    ctx.moveTo(c, d - l); ctx.lineTo(c, d); ctx.lineTo(c - l, d); ctx.moveTo(a + l, d); ctx.lineTo(a, d); ctx.lineTo(a, d - l); ctx.stroke();
+  } else if (style === 'dots') { ctx.globalAlpha = .75; const r = s * .14; ctx.fillRect(x + s / 2 - r, y + s / 2 - r, r * 2, r * 2); }
+  else if (style === 'glow') { ctx.globalAlpha = .22; ctx.lineWidth = 5; ctx.strokeRect(x + 3, y + 3, s - 6, s - 6); ctx.globalAlpha = .85; ctx.lineWidth = 1.5; ctx.strokeRect(x + 3, y + 3, s - 6, s - 6); }
+  else { ctx.globalAlpha = .55; ctx.lineWidth = 2; ctx.strokeRect(x + 2, y + 2, s - 4, s - 4); }
+  ctx.globalAlpha = 1;
+}
+
+// ---- clear effects: particle kinds ----
+const FX_GRAV = { sparks: 520, confetti: 170, pixels: 430, stars: 360, bubbles: -110, embers: -170 };
+const EMBER = ['#ff8f1a', '#ff2b3b', '#ffd21a'], CONF = ['#22b8ff', '#ff8f1a', '#ffd21a', '#3fd62a', '#ff2b3b', '#a338ff', '#ffffff'];
+function makePart(x, y, color, speed, size, kind) {
+  const a = Math.random() * TAU, v = (40 + Math.random() * 180) * speed;
+  const q = { x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60 * speed, life: 1, decay: .9 + Math.random() * .8, size: size * (.6 + Math.random() * .8), color, kind };
+  if (kind === 'confetti') { q.color = CONF[Math.random() * CONF.length | 0]; q.rot = Math.random() * TAU; q.vr = (Math.random() - .5) * 14; q.vy *= .8; q.decay *= .7; }
+  else if (kind === 'pixels') { q.size *= 1.8; q.vy -= 40 * speed; }
+  else if (kind === 'stars') { q.color = Math.random() < .6 ? '#ffd21a' : '#ffffff'; q.size *= 1.9; q.rot = Math.random() * TAU; q.vr = (Math.random() - .5) * 6; }
+  else if (kind === 'bubbles') { q.vy = -(20 + Math.random() * 90) * speed; q.vx *= .35; q.size *= 1.7; q.decay *= .8; q.ph = Math.random() * TAU; }
+  else if (kind === 'embers') { q.color = EMBER[Math.random() * 3 | 0]; q.vy = -(30 + Math.random() * 120) * speed; q.vx *= .45; q.decay *= .9; q.ph = Math.random() * TAU; }
+  return q;
+}
+function stepParts(list, k) {
+  for (const q of list) {
+    const g = FX_GRAV[q.kind || 'sparks'] ?? 520;
+    q.vy += g * k; q.x += q.vx * k; q.y += q.vy * k; q.life -= q.decay * k;
+    if (q.vr) q.rot += q.vr * k;
+    if (q.kind === 'confetti') q.vx *= Math.pow(.3, k);
+    if (q.kind === 'bubbles' || q.kind === 'embers') { q.ph += k * 6; q.x += Math.sin(q.ph) * 18 * k; }
+  }
+}
+function starPath(x, y, r) { ctx.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .45 : r; ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } ctx.closePath(); }
+function drawParts(list) {
+  for (const q of list) {
+    const a = Math.max(0, Math.min(1, q.life)); ctx.globalAlpha = a; ctx.fillStyle = q.color; const s = q.size;
+    switch (q.kind) {
+      case 'confetti': ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.rot); ctx.fillRect(-s * .8, -s * .3, s * 1.6, s * .6); ctx.restore(); break;
+      case 'pixels': ctx.fillStyle = C.ink; ctx.fillRect(q.x - s / 2 + 1, q.y - s / 2 + 1, s, s); ctx.fillStyle = q.color; ctx.fillRect(q.x - s / 2, q.y - s / 2, s, s); break;
+      case 'stars': ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.rot); starPath(0, 0, s / 2); ctx.fill(); ctx.restore(); break;
+      case 'bubbles': ctx.strokeStyle = q.color; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(q.x, q.y, s / 2, 0, TAU); ctx.stroke(); ctx.globalAlpha = a * .6; ctx.fillStyle = '#fff'; ctx.fillRect(q.x - s * .22, q.y - s * .25, Math.max(1, s * .14), Math.max(1, s * .14)); break;
+      case 'embers': ctx.globalAlpha = a * (.6 + .4 * Math.sin(q.ph * 3)); ctx.beginPath(); ctx.arc(q.x, q.y, s / 2.4, 0, TAU); ctx.fill(); break;
+      default: ctx.fillRect(q.x - s / 2, q.y - s / 2, s, s);
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ---- backgrounds: drawn on a canvas behind the whole page ----
+let bgDirty = true, bgT = 0, bgLast = 0;
+const bgcv = document.createElement('canvas'); bgcv.id = 'bgcv'; bgcv.setAttribute('aria-hidden', 'true'); document.body.prepend(bgcv);
+const BG_ANIM = { starfield: 1, sakura: 1 };
+const seeded = seed => () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+const bgState = new Map();
+function bgParticles(id, w, h) {
+  const key = id + w + 'x' + h; if (bgState.has(key)) return bgState.get(key);
+  if (bgState.size > 12) bgState.clear();
+  const rnd = seeded(id === 'sakura' ? 11 : 7), n = id === 'sakura' ? Math.round(w * h / 22000) + 12 : Math.round(w * h / 5000) + 30;
+  const list = Array.from({ length: n }, () => ({ x: rnd() * w, y: rnd() * h, z: .3 + rnd() * .7, ph: rnd() * TAU, r: rnd() }));
+  bgState.set(key, list); return list;
+}
+function drawBg(id, w, h, t, small) {
+  ctx.clearRect(0, 0, w, h);
+  if (id === 'midnight') { if (small) { ctx.fillStyle = '#04050b'; ctx.fillRect(0, 0, w, h); } return; }
+  const lines = (step, col) => { ctx.fillStyle = col; for (let x = 0; x < w; x += step) ctx.fillRect(x, 0, 1, h); for (let y = 0; y < h; y += step) ctx.fillRect(0, y, w, 1); };
+  const sc = small ? .5 : 1;
+  if (id === 'grid') { ctx.fillStyle = '#05081a'; ctx.fillRect(0, 0, w, h); lines(32 * sc, '#0d1534'); lines(128 * sc, '#16214e'); }
+  else if (id === 'blueprint') { ctx.fillStyle = '#06183a'; ctx.fillRect(0, 0, w, h); lines(16 * sc, '#0b2350'); lines(80 * sc, '#14336e'); }
+  else if (id === 'arcade') {
+    ctx.fillStyle = '#0a0616'; ctx.fillRect(0, 0, w, h);
+    const tile = 120 * sc, pcs = [['T', 10, 14, 0], ['S', 70, 20, 1], ['L', 24, 74, 2], ['I', 64, 84, 0], ['O', 96, 54, 0]];
+    ctx.lineWidth = 2;
+    for (let ty = 0; ty < h; ty += tile) for (let tx = 0; tx < w; tx += tile) for (const [t, px, py, r] of pcs) {
+      ctx.strokeStyle = COLORS[t]; ctx.globalAlpha = .2;
+      for (const [cx, cy] of CELLS[t][r]) ctx.strokeRect(tx + (px + cx * 9) * sc, ty + (py + cy * 9) * sc, 9 * sc, 9 * sc);
+    }
+    ctx.globalAlpha = 1;
+  } else if (id === 'starfield') {
+    ctx.fillStyle = '#020309'; ctx.fillRect(0, 0, w, h);
+    for (const s of bgParticles('starfield', w, h)) {
+      const y = (s.y + t * 12 * s.z) % h, tw = .45 + .55 * Math.abs(Math.sin(s.ph + t * (1 + s.r * 2)));
+      ctx.globalAlpha = tw * s.z; ctx.fillStyle = s.r > .9 ? '#ffd21a' : s.r > .8 ? '#9fd4ff' : '#ffffff';
+      const z = s.z > .85 ? 2 : 1; ctx.fillRect(s.x, y, z * sc + .5, z * sc + .5);
+    }
+    ctx.globalAlpha = 1;
+  } else if (id === 'skyline') {
+    ctx.fillStyle = '#0b0820'; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#f2e7c4'; ctx.beginPath(); ctx.arc(w * .8, h * .18, 34 * sc + 6, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#0b0820'; ctx.beginPath(); ctx.arc(w * .8 + 14 * sc, h * .18 - 8 * sc, 30 * sc + 5, 0, TAU); ctx.fill();
+    const rnd = seeded(5); let x = 0;
+    for (const [layer, col, hmax] of [[0, '#140f33', .5], [1, '#1b1442', .34]]) {
+      x = -10 * sc; const r2 = seeded(9 + layer);
+      while (x < w) {
+        const bw = (40 + r2() * 70) * sc, bh = h * (.12 + r2() * hmax);
+        ctx.fillStyle = col; ctx.fillRect(x, h - bh, bw, bh);
+        if (layer === 1) for (let wy = h - bh + 8 * sc; wy < h - 6 * sc; wy += 12 * sc) for (let wx = x + 6 * sc; wx < x + bw - 6 * sc; wx += 10 * sc)
+          if (rnd() < .28) { ctx.fillStyle = rnd() < .8 ? 'rgba(255,210,26,.55)' : 'rgba(34,184,255,.5)'; ctx.fillRect(wx, wy, 4 * sc, 5 * sc); }
+        x += bw + (layer ? 6 : 2) * sc;
+      }
+    }
+  } else if (id === 'sakura') {
+    ctx.fillStyle = '#16081a'; ctx.fillRect(0, 0, w, h);
+    for (const p of bgParticles('sakura', w, h)) {
+      const y = (p.y + t * (18 + 22 * p.z)) % (h + 20) - 10, x = (p.x + Math.sin(t * .8 + p.ph) * 30 * p.z + t * 8) % (w + 20) - 10;
+      ctx.save(); ctx.translate(x, y); ctx.rotate(p.ph + t * (p.r - .5)); ctx.globalAlpha = .35 + .5 * p.z;
+      ctx.fillStyle = p.r > .5 ? '#ff9cc2' : '#ffc4da'; ctx.beginPath(); ctx.ellipse(0, 0, (5 + 4 * p.z) * sc, (3 + 2 * p.z) * sc, 0, 0, TAU); ctx.fill(); ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+function withCtx(c, fn) { const keep = ctx; ctx = c; try { fn(); } finally { ctx = keep; } }
+function bgFrame(now) {
+  const anim = BG_ANIM[cos.bg] && !reduceMotion;
+  if (!bgDirty && !(anim && now - bgLast > 33)) return;
+  const dpr = Math.min(devicePixelRatio || 1, 2), w = innerWidth, h = innerHeight;
+  if (bgcv.width !== Math.round(w * dpr) || bgcv.height !== Math.round(h * dpr)) { bgcv.width = Math.round(w * dpr); bgcv.height = Math.round(h * dpr); }
+  const c = bgcv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  bgT += anim ? Math.min(.1, (now - (bgLast || now)) / 1000) : 0; bgLast = now; bgDirty = false;
+  withCtx(c, () => drawBg(cos.bg, w, h, bgT));
+}
+addEventListener('resize', () => { bgDirty = true; });
+
+// ---- shop screen ----
+let shopTab = 'block', shopRaf = 0;
+const shopPreviews = [];
+function openShop(tab) { if (tab) shopTab = tab; show('ovShop'); renderShop(); }
+function renderShop() {
+  const w = wallet();
+  $('shopCoins').querySelector('b').textContent = fmtCoins(w.coins);
+  document.querySelectorAll('#shopTabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === shopTab)));
+  $('shopNote').textContent = !LIVE ? 'Preview: coins and items are saved in this browser.' : account.user ? '' : 'Playing as a guest: coins and items are saved in this browser. Sign in with Facebook to keep them on your account.';
+  $('shopNote').hidden = !$('shopNote').textContent;
+  const ids = Object.keys(PRICES).filter(id => id.startsWith(shopTab + ':'));
+  $('shopGrid').innerHTML = ids.map(id => {
+    const [name, desc] = ITEM_INFO[id], own = owns(id), on = w.eq[shopTab] === id, price = PRICES[id], short = price - w.coins;
+    const btn = on ? '<button type="button" class="sbtn" disabled>Equipped</button>'
+      : own ? `<button type="button" class="sbtn play" data-equip="${id}">Equip</button>`
+      : `<button type="button" class="sbtn buy" data-buy="${id}" ${short > 0 ? 'disabled' : ''}>${COIN_SVG}${fmtCoins(price)}</button>`;
+    return `<div class="sitem${on ? ' on' : ''}${own ? ' own' : ''}"><canvas data-prev="${id}" width="240" height="140"></canvas>
+      <div class="sinfo"><b>${name}</b><small>${desc}</small></div>
+      <div class="sact">${btn}${!own && short > 0 ? `<small class="need">${fmtCoins(short)} more</small>` : on ? '<small class="eqtag">In use</small>' : own ? '<small class="eqtag owned">Owned</small>' : ''}</div></div>`;
+  }).join('');
+  shopPreviews.length = 0;
+  $('shopGrid').querySelectorAll('canvas[data-prev]').forEach(c => shopPreviews.push({ c, id: c.dataset.prev, parts: [], t: 0, next: 0 }));
+  drawShopPreviews(performance.now(), true);
+  cancelAnimationFrame(shopRaf); shopRaf = requestAnimationFrame(shopLoop);
+}
+function previewBoard(id, c) {
+  const W = c.width, H = c.height, s = 20, cols = 8, rows = 5, ox = (W - cols * s) / 2, oy = H - rows * s - 8;
+  const g = c.getContext('2d'); g.clearRect(0, 0, W, H); g.fillStyle = C.well; g.fillRect(ox - 4, 10, cols * s + 8, H - 14);
+  const rowsDef = ['        ', '      T ', 'J    TTT', 'JJJ ZZOO', 'GGBGGGGG'];
+  const skin = id.startsWith('block:') ? id.split(':')[1] : cos.block;
+  const keep = cos.block; cos.block = skin;
+  withCtx(g, () => {
+    rowsDef.forEach((r, y) => [...r].forEach((ch, x) => { if (ch === ' ') return; const v = ch; cellDraw(ox + x * s, oy + y * s, s, COLORS[v]); if (v === 'B') bombDraw(ox + x * s, oy + y * s, s, false); }));
+    // a falling S and its ghost
+    const px = 2, gy = 1;
+    if (id.startsWith('ghost:')) for (const [cx, cy] of CELLS.S[0]) ghostDraw(ox + (px + cx) * s, oy + (gy + cy) * s, s, COLORS.S, id.split(':')[1]);
+    for (const [cx, cy] of CELLS.S[0]) cellDraw(ox + (px + cx) * s, 16 + cy * s, s, COLORS.S);
+  });
+  cos.block = keep;
+}
+function drawShopPreviews(now, first) {
+  for (const p of shopPreviews) {
+    const [slot, kind] = p.id.split(':'), g = p.c.getContext('2d');
+    if (slot === 'block' || slot === 'ghost') { if (first) previewBoard(p.id, p.c); continue; }
+    if (slot === 'bg') {
+      if (first || (BG_ANIM[kind] && !reduceMotion)) withCtx(g, () => {
+        drawBg(kind, p.c.width, p.c.height, now / 1000, true);
+        // a board in front, so you can see how the background sits behind play
+        const bw = 64, bh = 112, x = (p.c.width - bw) / 2, y = p.c.height - bh;
+        ctx.fillStyle = C.fg; ctx.fillRect(x - 3, y - 3, bw + 6, bh + 3); ctx.fillStyle = C.well; ctx.fillRect(x, y, bw, bh);
+        const st = ['  T     ', ' TTJ  OO', 'ZZ J  OO', ' ZZJJLLL'];
+        st.forEach((row, ry) => [...row].forEach((ch, rx) => { if (ch !== ' ') cellDraw(x + rx * 8, y + bh - (st.length - ry) * 8, 8, COLORS[ch]); }));
+      });
+      continue;
+    }
+    // effects: a short burst every 1.3 s over a row being cleared
+    const dt = Math.min(50, now - (p.t || now)) / 1000; p.t = now;
+    // a row clears every 1.1 s and bursts in this effect's style; the stack under it stays put
+    const cols = ['I', 'O', 'T', 'S', 'Z', 'J', 'L', 'I'], s = 20, ox = 40, ry = 80;
+    if (now > p.next) { p.next = now + 1100; for (let i = 0; i < 8; i++) for (let k = 0; k < 4; k++) p.parts.push(makePart(ox + i * s + s / 2, ry + s / 2, COLORS[cols[i]], .55, 4.5, kind)); p.flash = 1; }
+    stepParts(p.parts, dt); p.parts = p.parts.filter(q => q.life > 0); p.flash = Math.max(0, (p.flash || 0) - dt * 2.5);
+    g.clearRect(0, 0, p.c.width, p.c.height); g.fillStyle = C.well; g.fillRect(ox - 6, 8, 8 * s + 12, p.c.height - 8);
+    withCtx(g, () => {
+      ['JJJ ZZOO', 'GGBGGGGG'].forEach((row, y) => [...row].forEach((ch, x) => { if (ch === ' ') return; cellDraw(ox + x * s, ry + s + y * s, s, COLORS[ch]); if (ch === 'B') bombDraw(ox + x * s, ry + s + y * s, s, false); }));
+      if (p.flash > .5) cols.forEach((ch, x) => cellDraw(ox + x * s, ry, s, COLORS[ch], (p.flash - .5) * 2));
+      ctx.globalAlpha = p.flash * .7; ctx.fillStyle = '#fff'; ctx.fillRect(ox, ry, 8 * s, s); ctx.globalAlpha = 1;
+      drawParts(p.parts);
+    });
+  }
+}
+function shopLoop(now) { if ($('ovShop').hidden) return; drawShopPreviews(now, false); shopRaf = requestAnimationFrame(shopLoop); }
+function shopMsg(t, bad) { const el = $('shopMsg'); el.textContent = t || ''; el.classList.toggle('bad', !!bad); }
+async function buyItem(id) {
+  const price = PRICES[id], [name] = ITEM_INFO[id];
+  if (signedWallet()) {
+    shopMsg('Buying…');
+    try { setWallet(await api.call('/api/shop/buy', 'POST', { id })); shopMsg(`${name} unlocked and equipped.`); sfx.lvl?.(); }
+    catch (e) { shopMsg(e.message === 'not_enough' ? 'Not enough coins yet.' : 'Couldn\'t reach the server. Try again.', true); }
+  } else {
+    const w = wallet(); if (w.coins < price) { shopMsg('Not enough coins yet.', true); return; }
+    w.coins -= price; w.owned = [...new Set([...w.owned, id])]; w.eq[id.split(':')[0]] = id; setWallet(w); shopMsg(`${name} unlocked and equipped.`); sfx.lvl?.();
+  }
+  renderShop();
+}
+async function equipItem(id) {
+  const w = wallet(); w.eq[id.split(':')[0]] = id; setWallet(w); renderShop();     // instant locally
+  if (signedWallet()) api.call('/api/shop/equip', 'POST', { id }).then(setWallet).catch(() => {});
+}
+
 function start(mode) {
   initAudio();
   if (RANKED_MODES.includes(mode) && canRank()) rankedBegin(mode, mode === 'arena' ? game.size : 2, game.level); else game.ranked = null;
@@ -2486,6 +2894,7 @@ function end() {
     if (game.mode === 'arena' || (game.mode === 'online' && game.players.length > 2)) place = rankPlayers().indexOf(a) + 1;
     else if (b) draw = a.ko === b.ko && a.sent === b.sent && !won && a.stackHeight() === b.stackHeight();
     trackEnd(a, won, place);
+    payMatch({ mode: game.mode, won, place, size: game.players.length, level: game.level, score: a.score || 0, lines: a.lines, done: a.lines >= 40, best: game.mode === 'sprint' && a.lines >= 40 && store.get('sprint', 0) === game.elapsed, ms: game.elapsed });
     if (game.ranked) rankedFinish(place, draw);
     else if (LIVE && !account.user && (RANKED_MODES.includes(game.mode) || game.mode === 'online')) { const bx = $('resRank'); bx.hidden = false; bx.innerHTML = `<b>Unranked</b><span class="delta">—</span><p class="muted" style="grid-column:1/-1">Sign in with Facebook to play ranked and earn rank points.</p>`; }
     else $('resRank').hidden = true;
@@ -2520,9 +2929,9 @@ const row = (k, v) => `<span class="k">${k}</span><span></span><span class="v">$
 const row2 = (k, a, b) => `<span class="k">${k}</span><span class="v">${a}</span><span class="v">${b}</span>`;
 
 function show(id) {
-  ['ovHome', 'ovHow', 'ovMenu', 'ovOnline', 'ovPause', 'ovResult', 'ovSettings', 'ovLobby', 'ovRank', 'ovStats', 'ovFriends'].forEach(o => $(o).hidden = o !== id);
-  if (id && id !== 'ovHow' && id !== 'ovRank' && id !== 'ovStats' && id !== 'ovFriends') lastScreen = id;
-  if ((id === 'ovHome' || id === 'ovMenu' || id === 'ovOnline' || id === 'ovLobby' || id === 'ovHow' || (id === 'ovSettings' && !inMatch())) && audio.ctx) musicStart('menu');
+  ['ovHome', 'ovHow', 'ovMenu', 'ovOnline', 'ovShop', 'ovPause', 'ovResult', 'ovSettings', 'ovLobby', 'ovRank', 'ovStats', 'ovFriends'].forEach(o => $(o).hidden = o !== id);
+  if (id && id !== 'ovHow' && id !== 'ovRank' && id !== 'ovStats' && id !== 'ovFriends' && id !== 'ovShop') lastScreen = id;
+  if ((id === 'ovHome' || id === 'ovMenu' || id === 'ovOnline' || id === 'ovShop' || id === 'ovLobby' || id === 'ovHow' || (id === 'ovSettings' && !inMatch())) && audio.ctx) musicStart('menu');
   if ((id === 'ovHome' || id === 'ovMenu' || id === 'ovOnline') && !inMatch() && game.mode !== 'demo' && !demoBusy) startDemo();
   if (id === 'ovHome') renderProfile();
   $('btnPause').hidden = !inMatch();
@@ -2588,7 +2997,7 @@ function homeKeys(e) {
     else if (e.code === 'KeyH') show('ovHow');
     else if (e.code === 'KeyC') start('classic');
   } else if (e.code === 'Escape') {
-    if (!$('ovHow').hidden || !$('ovRank').hidden || !$('ovStats').hidden) { show(lastScreen); }
+    if (!$('ovHow').hidden || !$('ovRank').hidden || !$('ovStats').hidden || !$('ovShop').hidden) { show(lastScreen); }
     else if (!$('ovMenu').hidden || !$('ovOnline').hidden) show('ovHome');
     else if (!$('ovSettings').hidden) $('btnSetDone').click();
   }
@@ -2620,7 +3029,7 @@ document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', 
 document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => show(lastScreen)));
 $('hPlay').onclick = () => show('ovMenu');
 $('hClassic').onclick = () => start('classic');
-$('hSettings').onclick = () => $('btnSettings').click();
+$('hShop').onclick = $('hCoins').onclick = () => openShop();
 $('hOnline').onclick = () => openOnline();
 function logoHop() {
   const w = document.querySelector('.hlogo .wordmark'); if (!w || reduceMotion) return;
@@ -2754,7 +3163,7 @@ async function openRankings() {
 $('btnSetReset').onclick = () => { const m = settings.muted; Object.assign(settings, DEFAULTS, { muted: m }); saveSettings(); syncSettingsUI(); };
 
 // ================= rendering =================
-const cv = $('cv'), ctx = cv.getContext('2d');
+const cv = $('cv'); let ctx = cv.getContext('2d');   // `let`: the shop borrows the drawing helpers for its previews
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let L = { W: 600, H: 540, s: 1, dpr: 1 };
 const FULLW = 460, TOP = 56;
@@ -2775,6 +3184,7 @@ function cellDraw(x, y, s, col, alpha = 1) {
   // flat tile: solid fill, 2px dark outline, 1px light top/left edge. No gradients.
   // beveled like the logo's blocks: dark outline, light top/left, darker bottom/right, all flat fills
   const key = Object.keys(COLORS).find(k => COLORS[k] === col), sh = key ? SHADE[key] : { dark: shade(col, -.55), mid: shade(col, -.22), light: shade(col, .4) };
+  if (cos.block !== 'classic') { skinDraw(cos.block, x, y, s, col, sh, alpha); return; }
   const b = Math.max(1, Math.round(s * .08)), e = Math.max(1, Math.round(s * .12)), w = s - 2 * b;
   ctx.globalAlpha = alpha;
   ctx.fillStyle = sh.dark; ctx.fillRect(x, y, s, s);
@@ -2816,10 +3226,7 @@ const num = (v, x, y, o = {}) => text(String(v), x, y, { font: MONO, weight: 600
 const fx = { parts: [], sweeps: [], trails: [], glows: [], orbs: [], rings: [] };
 function burst(x, y, color, n, speed = 1, size = 3) {
   if (reduceMotion) n = Math.ceil(n / 3);
-  for (let i = 0; i < n; i++) {
-    const a = Math.random() * TAU, v = (40 + Math.random() * 180) * speed;
-    fx.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60 * speed, life: 1, decay: .9 + Math.random() * .8, size: size * (.6 + Math.random() * .8), color });
-  }
+  for (let i = 0; i < n; i++) fx.parts.push(makePart(x, y, color, speed, size, cos.fx));
 }
 function confetti() {
   const cols = Object.values(COLORS).slice(0, 7);
@@ -2867,7 +3274,7 @@ function consume(p, bx, by, cell, small) {
 }
 function stepFx(dt) {
   const k = dt / 1000;
-  for (const q of fx.parts) { q.vy += 520 * k; q.x += q.vx * k; q.y += q.vy * k; q.life -= q.decay * k; }
+  stepParts(fx.parts, k);
   fx.parts = fx.parts.filter(q => q.life > 0);
   for (const s of fx.sweeps) s.life -= k / .35;  fx.sweeps = fx.sweeps.filter(s => s.life > 0);
   for (const s of fx.trails) s.life -= k / .22;  fx.trails = fx.trails.filter(s => s.life > 0);
@@ -2902,7 +3309,7 @@ function drawFx() {
     ctx.fillStyle = C.ink; ctx.fillRect(x - sz / 2 + 1.5, y - sz / 2 + 1.5, sz, sz);
     ctx.fillStyle = o.color; ctx.fillRect(x - sz / 2, y - sz / 2, sz, sz);
   }
-  for (const q of fx.parts) { ctx.globalAlpha = Math.max(0, q.life); ctx.fillStyle = q.color; ctx.fillRect(q.x - q.size / 2, q.y - q.size / 2, q.size, q.size); }
+  drawParts(fx.parts);
   ctx.globalAlpha = 1;
 }
 
@@ -2978,8 +3385,7 @@ function drawBoard(p, bx, by, cell, small) {
       p.clear = { x0: bx + x0 * cell, x1: bx + x1 * cell, y0: by + y0 * cell, y1: by + y1 * cell };
     }
     if (!small && settings.ghost) for (const [cx, cy] of CELLS[pc.t][pc.r]) {
-      const x = bx + (pc.x + cx) * cell, y = by + (gy + cy - HIDDEN) * cell;
-      ctx.globalAlpha = .55; ctx.strokeStyle = COLORS[pc.t]; ctx.lineWidth = 2; ctx.strokeRect(x + 2, y + 2, cell - 4, cell - 4); ctx.globalAlpha = 1;
+      ghostDraw(bx + (pc.x + cx) * cell, by + (gy + cy - HIDDEN) * cell, cell, COLORS[pc.t]);
     }
     const lockFade = p.grounded() ? 1 - .3 * Math.min(1, p.lockT / LOCK_DELAY) : 1;
     for (const [cx, cy] of CELLS[pc.t][pc.r]) cellDraw(bx + (p.vis.x + cx) * cell, by + (p.vis.y + cy - HIDDEN) * cell, cell, COLORS[pc.t], lockFade);
@@ -3348,6 +3754,7 @@ function drawIntro() {
 let last = performance.now(), frameDt = 16;
 function frame(now) {
   const dt = Math.min(50, now - last); last = now; frameDt = dt;
+  bgFrame(now);
   if (game.running && !game.paused && game.intro > 0) {
     game.intro -= dt; if (game.intro <= 0) { game.intro = 0; sfx.riser(); }
   } else if (game.running && !game.paused) {
@@ -3397,6 +3804,10 @@ game.level = LEVELS[store.get('level', 'normal')] ? store.get('level', 'normal')
 document.querySelectorAll('#diff button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.d === game.level)));
 $('diffTxt').textContent = DIFF_TXT[game.level];
 if (IN_CLAUDE) document.querySelector('.onsub').textContent = 'Play with friends on their own devices. Empty seats are filled with bots. Share this page with them as Contributors or higher, then share a room code.';
+applyCosmetics(); renderCoins();
+$('coinRules').innerHTML = '<span class="h">Mode</span><span class="h">Coins</span>' + COIN_RULES.map(([k, v]) => `<span>${k}</span><span>${v}</span>`).join('');
+$('shopTabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) { shopTab = b.dataset.tab; shopMsg(''); renderShop(); } });
+$('shopGrid').addEventListener('click', e => { const b = e.target.closest('[data-buy],[data-equip]'); if (!b) return; if (b.dataset.buy) buyItem(b.dataset.buy); else equipItem(b.dataset.equip); });
 renderProfile(); preview(); layout(); show('ovHome'); syncSocialUI();
 if (LIVE) {
   api.call('/api/me').then(d => {
@@ -3412,6 +3823,10 @@ if (LIVE) {
       const local = store.get('profile', {}), merged = [...new Set([...(local.ach || []), ...(sp.ach || [])])];
       store.set('profile', { ...local, ach: merged });
       if (merged.length > (sp.ach || []).length) api.call('/api/profile', 'PUT', { ach: merged }).catch(() => {});
+      // coins: the account's wallet wins; a guest's coins and items move to the account the first time
+      const lw = wallet();
+      if (!sp.imported && (lw.coins > 0 || lw.owned.length)) api.call('/api/coins/import', 'POST', { coins: lw.coins, owned: lw.owned }).then(w => setWallet({ ...w, eq: { ...lw.eq, ...w.eq } })).catch(() => {});
+      else setWallet({ coins: sp.coins || 0, owned: sp.owned || [], eq: sp.eq || {} });
     }
     renderProfile();
     if (/login=failed/.test(location.search)) { const n = document.querySelector('#hAcct .loginnote'); if (n) n.textContent = 'Facebook sign-in didn\'t finish. Try again.'; show('ovStats'); }

@@ -7,7 +7,7 @@
     "deploy": "wrangler deploy",
     "db:init": "wrangler d1 migrations apply block-arena --remote",
     "db:init:local": "wrangler d1 migrations apply block-arena --local",
-    "test": "node test/rank-parity.mjs"
+    "test": "node test/rank-parity.mjs && node test/shop-parity.mjs"
   },
   "devDependencies": {
     "wrangler": "4.148.0"
