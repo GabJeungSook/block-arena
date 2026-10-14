@@ -42,7 +42,7 @@ export class Room {
       if (JSON.stringify(cur).length > MAX_PRESENCE) return;
       this.presence.set(a.peer, cur);
       // a small copy survives hibernation, so late joiners still see names in the lobby
-      a.lite = { nick: cur.nick, st: cur.st, mid: cur.mid };
+      a.lite = { nick: cur.nick, st: cur.st, mid: cur.mid, jt: cur.jt, rules: cur.rules, rbots: cur.rbots, size: cur.size };
       ws.serializeAttachment(a);
       this.broadcast({ t: 'p', peer: a.peer, d: cur }, ws);
     } else if (m && m.t === 'e' && typeof m.topic === 'string' && /^[a-z][a-z0-9_.-]{0,47}$/.test(m.topic)) {

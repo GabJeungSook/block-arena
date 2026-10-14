@@ -510,6 +510,18 @@ body{background:var(--bg)}
 #shopNote{margin:0}
 .coinrules{grid-template-columns:160px 1fr}
 @media (max-width:560px){.shopgrid{grid-template-columns:1fr 1fr;gap:8px}.sinfo small{display:none}.coinrules{grid-template-columns:1fr}.coinchip .lab{display:none}}
+/* lobby room rules */
+.rules{border:2px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--navy)}
+.ruleshead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.ruleshead .lab{color:var(--accent)}
+.rulestag{font-family:var(--display);font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:3px 7px;border:2px solid var(--good);color:var(--good)}
+.rulestag.custom{border-color:var(--orange);color:var(--orange)}
+.rulegrid,.rulefields{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.rulegrid .rulefields{grid-column:1/-1}
+.rulegrid label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.rulegrid select{width:100%}
+.rulegrid select:disabled{opacity:.75}
+.rulesfoot{justify-content:space-between;align-items:center}
 /* online screen + ranked note */
 .onlinepage{display:flex;flex-direction:column;gap:12px}
 .onlinepage .menuhead .chip{margin-left:auto}
@@ -815,11 +827,15 @@ body{background:var(--bg)}
       <div class="card result">
         <div><h2>Room <span id="lobbyCode" class="code">—</span></h2><p class="sub"><span id="lobbyConn">Connecting…</span> · <span id="lobbyCount">0 players here</span></p></div>
         <ul class="lobby" id="lobbyList"></ul>
-        <div class="diffrow">
-          <span class="lab">Match size</span>
-          <select id="lobbySize"><option value="2">2 players</option><option value="4" selected>4 players</option><option value="6">6 players</option></select>
-          <small>Seats without a person are filled with bots at the host's CPU difficulty (set on the menu). The host is whoever joined first.</small>
-        </div>
+        <section class="rules">
+          <div class="ruleshead"><span class="lab">Room rules</span><span class="rulestag" id="rulesTag">Standard · Ranked</span></div>
+          <div class="rulegrid">
+            <label><span>Match size</span><select id="lobbySize"><option value="2">2 players</option><option value="4" selected>4 players</option><option value="6">6 players</option></select></label>
+            <label><span>Bots</span><select id="ruleBots"><option value="easy">Easy</option><option value="normal">Normal</option><option value="hard">Hard</option><option value="expert">Expert</option></select></label>
+            <div id="ruleFields" class="rulefields"></div>
+          </div>
+          <div class="row rulesfoot"><small class="muted" id="rulesNote">The host sets the rules. Empty seats are filled with bots.</small><button type="button" class="ghostbtn sm" id="rulesReset">Standard rules</button></div>
+        </section>
         <div class="invite" id="lobbyInvite"><span class="lab">Bring friends</span><button type="button" class="fbbtn sm" data-invite="facebook" data-room><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9h3l.5-4h-3.5V9c0-.6.4-1 1-1z"/></svg>Invite on Facebook</button><button type="button" class="msgrbtn" data-invite="messenger" data-room><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.4 2 2 6.1 2 11.4c0 2.9 1.4 5.5 3.7 7.2V22l3.4-1.9c.9.3 1.9.4 2.9.4 5.6 0 10-4.1 10-9.4S17.6 2 12 2zm1 12.6-2.5-2.7-5 2.7 5.5-5.8 2.6 2.7 4.9-2.7-5.5 5.8z"/></svg>Send on Messenger</button><button type="button" class="ghostbtn sm" data-invite="copy" data-room>Copy link</button><button type="button" class="ghostbtn sm" id="lobbyFriends" hidden>Invite friends online</button></div>
         <p class="sub" id="lobbyWait">Waiting for the host to start…</p>
         <p class="sub" id="lobbyMsg"></p>
@@ -846,7 +862,6 @@ body{background:var(--bg)}
             <p class="muted" id="delConfirm" hidden>This permanently deletes your rank and saved progress. <button type="button" class="danger sm" id="btnDelYes">Yes, delete everything</button></p>
           </div>
           <h3>Rules</h3>
-          <label class="tog" for="sChain"><input type="checkbox" id="sChain"> Chain stacked bombs (the original rule: hitting the top bomb sets off every bomb under it)</label>
           <label class="tog" for="sShake"><input type="checkbox" id="sShake"> Screen shake</label>
         </div>
         <div class="row"><button class="play" type="button" id="btnSetDone">Done</button><button class="ghostbtn" type="button" id="btnSetReset">Reset to defaults</button></div>
@@ -1077,6 +1092,26 @@ const account = { user: null, ready: !LIVE, fb: false };
 const COLS = 10, ROWS = 24, HIDDEN = 4, CELL = 24, TAU = Math.PI * 2;
 const LOCK_DELAY = 500, MAX_RESETS = 15;
 const BATTLE_MS = 120000;
+// Match rules. Every mode plays the standard rules; an online host can change them for their room.
+const STD_RULES = { time: 120000, ko: 0, garbage: 1, speed: 'normal', chain: false, hold: true };   // ko 0 = 5 in 2P, 10 in 4P/6P
+const RULE_OPTS = {
+  time: [[60000, '1:00'], [120000, '2:00'], [180000, '3:00'], [300000, '5:00'], [0, 'No limit']],
+  ko: [[0, 'Standard (5 / 10)'], [3, '3'], [5, '5'], [7, '7'], [10, '10'], [15, '15']],
+  garbage: [[.5, '× 0.5 (gentle)'], [1, '× 1'], [1.5, '× 1.5'], [2, '× 2 (brutal)']],
+  speed: [['normal', 'Standard'], ['fast', 'Fast'], ['insane', 'Insane']],
+  chain: [[false, 'One row per hit'], [true, 'Chain stacked bombs']],
+  hold: [[true, 'On'], [false, 'Off']],
+};
+const RULE_LABEL = { time: 'Match time', ko: 'K.O.s to win', garbage: 'Garbage sent', speed: 'Fall speed', chain: 'Bombs', hold: 'Hold' };
+function cleanRules(x) {
+  const out = { ...STD_RULES };
+  if (x && typeof x === 'object') for (const k in RULE_OPTS) { const v = RULE_OPTS[k].find(o => o[0] === x[k]); if (v) out[k] = v[0]; }
+  if (!out.time && !out.ko) out.ko = 0;          // "no limit" still ends at the K.O. cap
+  return out;
+}
+const isStdRules = x => Object.keys(STD_RULES).every(k => x[k] === STD_RULES[k]);
+const rules = () => game.rules || STD_RULES;
+const matchMs = () => rules().time;
 const DISPLAY = 'Unbounded, "Arial Black", Impact, sans-serif';
 const BODY = '"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif';
 const MONO = '"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace';
@@ -1428,7 +1463,7 @@ class Player {
     return false;
   }
   holdPiece() {
-    const p = this.piece; if (!p || !this.canHold || this.stun > 0) return;
+    const p = this.piece; if (!p || !this.canHold || this.stun > 0 || !rules().hold) return;
     const prev = this.hold; this.hold = p.t; this.canHold = false;
     this.spawn(prev || undefined); this.canHold = false;
     if (this.human) sfx.hold();
@@ -1461,7 +1496,7 @@ class Player {
     if (above) { this.topOut(); return; }
     this.ev.push({ type: 'lock', t: p.t, cells });
     const pre = this.board;
-    const res = resolveClears(pre, cells, settings.bombChain);
+    const res = resolveClears(pre, cells, rules().chain);
     this.board = res.board;
     const nl = res.n, nb = res.nb, n = nl + nb;
     if (res.cleared.length) {
@@ -1547,7 +1582,9 @@ class Player {
     if (this.mode === 'sprint') return 1000;
     // guideline curve: seconds per row = (0.8 - (level - 1) × 0.007) ^ (level - 1), floored at one frame
     if (this.mode === 'classic') { const l = Math.min(this.level, 20) - 1; return Math.max(16, 1000 * Math.pow(.8 - l * .007, l)); }
-    const left = game.timeLeft; return left > 60000 ? 900 : left > 30000 ? 600 : 350;
+    const ms = matchMs(), left = ms ? game.timeLeft : Math.max(0, 120000 - game.elapsed);
+    const base = left > 60000 ? 900 : left > 30000 ? 600 : 350;
+    return Math.max(30, base * ({ fast: .55, insane: .28 }[rules().speed] || 1));
   }
   update(dt) {
     curPan = this.pan || 0;
@@ -1633,7 +1670,7 @@ function bestPlacements(board, t) {
       while (!collideB(board, t, r, x, y + 1)) y++;
       const b = board.map(row => row.slice()); let bad = false;
       for (const [cx, cy] of CELLS[t][r]) { if (y + cy < HIDDEN) bad = true; if (y + cy >= 0) b[y + cy][x + cx] = t; }
-      const res = resolveClears(b, CELLS[t][r].map(([cx, cy]) => [x + cx, y + cy]), settings.bombChain);
+      const res = resolveClears(b, CELLS[t][r].map(([cx, cy]) => [x + cx, y + cy]), rules().chain);
       out.push({ r, x, lines: res.n + res.nb, board: res.board, score: evalBoard(res.board, res.n + res.nb) + res.nb * 0.8 - (bad ? 100 : 0) });
     }
   }
@@ -1874,13 +1911,13 @@ async function netJoin(code) {
   settings.nick = cleanNick($('nick').value); saveSettings();
   $('onlineMsg').textContent = 'Joining…';
   try { net.nr = await net.room.join('sd-' + code); } catch (e) { $('onlineMsg').textContent = LIVE ? 'Couldn\'t join that room. Check your connection, or sign in again with Facebook.' : 'Could not join: ' + (e?.code || 'error') + '. Rooms need Contributor access or higher on this page.'; return; }
-  net.code = code; net.recv = {}; net.mid = null;
+  net.code = code; net.recv = {}; net.mid = null; net.rulesShared = false; net.wasHost = null;
   $('lobbyCode').textContent = code.toUpperCase();
   net.unsub.forEach(u => { try { u(); } catch (e) {} }); net.unsub = [];
   net.unsub.push(net.nr.onPeers(() => renderLobby(), e => lobbyErr(e)));
   net.unsub.push(net.nr.on('start', m => onNetStart(m), e => lobbyErr(e)));
   net.unsub.push(net.nr.onConnection(c => { $('lobbyConn').textContent = c ? 'Connected' : 'Reconnecting…'; }));
-  await net.nr.presence({ nick: settings.nick, st: 'lobby', v: 1 });
+  await net.nr.presence({ nick: settings.nick, st: 'lobby', v: 1, jt: Date.now() });
   show('ovLobby'); renderLobby(); hubState();
 }
 function lobbyErr(e) { $('lobbyMsg').textContent = 'Room ended: ' + (e?.code || 'error') + '. Leave and join again.'; }
@@ -1891,18 +1928,23 @@ async function netLeave() {
   if (game.mode === 'online') { game.running = false; musicStop(); }
   openOnline();
 }
+// the host is whoever joined the room first (join time in presence), ties broken by peer id
+const byJoin = (a, b) => ((+a.presence?.jt || 9e15) - (+b.presence?.jt || 9e15)) || (a.peer < b.peer ? -1 : 1);
 function lobbyPeers() { return net.nr ? net.nr.peers().filter(p => p.kind === 'viewer') : []; }
 function renderLobby() {
   if (!net.nr) return;
   const ps = lobbyPeers();
   const me = ps.find(p => p.isMe && p.sameTab); net.myPeer = me ? me.peer : net.myPeer;
-  const sorted = ps.slice().sort((a, b) => a.peer < b.peer ? -1 : 1);
+  const sorted = ps.slice().sort(byJoin);
   net.hostPeer = sorted[0]?.peer || null; net.host = net.hostPeer === net.myPeer;
   const inProgress = ps.some(p => p.presence?.st === 'play');
   $('lobbyList').innerHTML = sorted.map((p, i) => `<li><i class="dot" style="background:${(p.presence?.st === 'play') ? C.good : C.edge}"></i><span>${escapeHtml(cleanNick(p.presence?.nick))}${p.isMe && p.sameTab ? ' (you)' : ''}</span><small>${p.peer === net.hostPeer ? 'HOST' : ''}${p.guest ? ' · guest' : ''}</small>${LIVE && account.user && p.by && !(p.isMe && p.sameTab) && +p.by !== account.user.id ? (friends.ids.has(+p.by) ? '<small class="addf">Friend</small>' : `<button type="button" class="ghostbtn addf" data-fr="addpeer" data-uid="${+p.by}">Add friend</button>`) : ''}</li>`).join('') || '<li><small>Connecting…</small></li>';
   const n = sorted.length, want = Math.max(+($('lobbySize').value || 2), 2);
   $('lobbyCount').textContent = `${n} player${n === 1 ? '' : 's'} here`;
   $('lobbySize').disabled = !net.host;
+  showRules();
+  if (net.host !== net.wasHost) { net.wasHost = net.host; net.rulesShared = false; }     // the host left and you took over
+  if (net.host && !net.rulesShared) { net.rulesShared = true; pushRules(); }
   $('btnLobbyStart').hidden = !net.host; $('lobbyWait').hidden = net.host;
   const bots = Math.max(0, Math.max(want, n) - n);
   $('btnLobbyStart').textContent = n > want ? `Start ${n}-player match` : `Start ${want}P match (${bots} bot${bots === 1 ? '' : 's'})`;
@@ -1911,14 +1953,14 @@ function renderLobby() {
 const escapeHtml = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 async function netHostStart() {
   if (!net.nr || !net.host) return;
-  const ps = lobbyPeers().slice().sort((a, b) => a.peer < b.peer ? -1 : 1);
+  const ps = lobbyPeers().slice().sort(byJoin);
   const want = Math.max(+($('lobbySize').value || 2), 2);
   const size = Math.max(want, ps.length);
   const tints = [C.accent2, '#3fd62a', '#ffd21a', '#a338ff', '#ff8f1a', '#22b8ff'];
   const humans = ps.map((p, i) => ({ peer: p.peer, nick: cleanNick(p.presence?.nick), tint: tints[i % tints.length] }));
   const used = new Set(humans.map(h => h.tint)), free = tints.concat(RIVALS.map(r => r.tint)).filter((t, i, a) => a.indexOf(t) === i && !used.has(t));
   const bots = RIVALS.slice(0, size - ps.length).map((r, i) => ({ id: 'b' + (i + 1), name: r.name, tint: free[i % free.length] || r.tint }));
-  const data = { mid: randomCode() + Date.now().toString(36), size, level: game.level, humans, bots, host: net.myPeer };
+  const data = { mid: randomCode() + Date.now().toString(36), size, level: net.botLevel || game.level, humans, bots, host: net.myPeer, rules: cleanRules(net.rules) };
   await net.nr.emit('start', data);
 }
 function onNetStart(m) {
@@ -1942,7 +1984,9 @@ function startOnline(d) {
     else ps.push(new RemotePlayer(b.id, cleanNick(b.name), /^#[0-9a-f]{6}$/i.test(b.tint) ? b.tint : C.accent2));
   });
   game.size = size; game.level = LEVELS[d.level] ? d.level : game.level;
-  if (canRank()) rankedBegin('online', ps.length, null); else game.ranked = null;
+  game.rules = cleanRules(d.rules);
+  // custom room rules are for fun: only standard-rules matches count for rank
+  if (canRank() && isStdRules(game.rules)) rankedBegin('online', ps.length, null); else game.ranked = null;
   launch('online', ps, size);
   net.nr?.presence({ st: 'play', mid: net.mid, ...snapOf(me) });
 }
@@ -1998,7 +2042,7 @@ function netTick(now) {
 }
 
 const isArena = () => game.mode === 'arena' || (game.mode === 'online' && game.players.length > 2);
-const koCap = () => game.players.length <= 2 ? 5 : 10;
+const koCap = () => rules().ko || (game.players.length <= 2 ? 5 : 10);
 const RANKED_MODES = ['cpu', 'arena'];
 const canRank = () => LIVE && !!account.user;     // ranked play only for players signed in with Facebook
 function rankedBegin(kind, size, level) {
@@ -3145,7 +3189,8 @@ function start(mode) {
   launch(mode, ps, ps.length);
 }
 function launch(mode, ps, size) {
-  game.mode = mode; game.over = false; game.paused = false; game.elapsed = 0; game.timeLeft = BATTLE_MS; game.countdown = 3000; game.goT = 0;
+  if (mode !== 'online') game.rules = STD_RULES;
+  game.mode = mode; game.over = false; game.paused = false; game.elapsed = 0; game.timeLeft = matchMs() || 1e9; game.countdown = 3000; game.goT = 0;
   fx.parts = []; fx.sweeps = []; fx.trails = []; fx.glows = []; fx.orbs = []; fx.rings = []; fx.blasts = [];
   game.players = ps; game.size = size;
   ps[0].autoTarget = true;
@@ -3153,6 +3198,7 @@ function launch(mode, ps, size) {
     if (p.remote) return;
     p.onAttack = n => {
       const o = p.target && ps.includes(p.target) ? p.target : pickTarget(p); if (!o) return null;
+      if (rules().garbage !== 1) n = Math.max(1, Math.round(n * rules().garbage));
       deliver(p, o, n);
       p.target = pickTarget(p);
       return o;
@@ -3212,7 +3258,7 @@ function end() {
     const ranked = rankPlayers(), place = ranked.indexOf(a) + 1;
     won = place === 1;
     $('resTitle').textContent = won ? '1st place!' : `${ord(place)} place`;
-    sub = game.mode === 'online' ? `${game.players.length}-player online match` : `${game.players.length}-player arena · ${game.level[0].toUpperCase() + game.level.slice(1)} CPUs`;
+    sub = game.mode === 'online' ? `${game.players.length}-player online match${isStdRules(rules()) ? '' : ' · custom rules'}` : `${game.players.length}-player arena · ${game.level[0].toUpperCase() + game.level.slice(1)} CPUs`;
     html = `<span class="h">Player</span><span class="h" style="text-align:right">K.O.</span><span class="h" style="text-align:right">Sent</span>` +
       ranked.map((p, i) => `<span class="k${p === a ? ' me' : ''}"><i class="medal m${i + 1}">${i + 1}</i><i class="dot" style="background:${p.tint}"></i>${p.name}</span><span class="v">${p.ko}</span><span class="v">${p.sent}</span>`).join('');
     xp = Math.round((a.sent + a.ko * 8 + a.lines * .5 + [45, 25, 14, 9, 6, 4][place - 1]) * (game.mode === 'online' ? 1.2 : LEVELS[game.level].xp));
@@ -3400,7 +3446,32 @@ $('btnJoin').onclick = () => netJoin($('roomCode').value);
 $('roomCode').addEventListener('keydown', e => { if (e.key === 'Enter') netJoin($('roomCode').value); });
 $('btnLobbyStart').onclick = () => netHostStart();
 $('btnLobbyLeave').onclick = () => netLeave();
-$('lobbySize').onchange = () => renderLobby();
+$('lobbySize').onchange = () => { pushRules(); renderLobby(); };
+// room rules: the host edits them and shares them in their presence, so everyone sees the same rules before the start
+$('ruleFields').innerHTML = Object.keys(RULE_OPTS).map(k => `<label><span>${RULE_LABEL[k]}</span><select data-rule="${k}">${RULE_OPTS[k].map(([v, t], i) => `<option value="${i}">${t}</option>`).join('')}</select></label>`).join('');
+net.rules = cleanRules(store.get('roomRules', null)); net.botLevel = store.get('roomBots', game.level);
+function pushRules() {
+  if (!net.host || !net.nr) return;
+  net.nr.presence({ rules: net.rules, rbots: net.botLevel, size: +$('lobbySize').value }).catch(() => {});
+}
+function showRules() {
+  const host = lobbyPeers().find(p => p.peer === net.hostPeer), hp = host?.presence || {};
+  const ru = net.host ? net.rules : cleanRules(hp.rules), bl = net.host ? net.botLevel : (LEVELS[hp.rbots] ? hp.rbots : 'normal');
+  document.querySelectorAll('[data-rule]').forEach(sel => { const k = sel.dataset.rule; sel.value = String(RULE_OPTS[k].findIndex(o => o[0] === ru[k])); sel.disabled = !net.host; });
+  $('ruleBots').value = bl; $('ruleBots').disabled = !net.host;
+  if (!net.host && [2, 4, 6].includes(+hp.size)) $('lobbySize').value = String(hp.size);
+  const std = isStdRules(ru);
+  $('rulesTag').textContent = std ? 'Standard · Ranked' : 'Custom · Unranked'; $('rulesTag').classList.toggle('custom', !std);
+  $('rulesReset').hidden = !net.host || std;
+  $('rulesNote').textContent = net.host ? (std ? 'You\'re the host: change any rule. Custom rules make the match unranked.' : 'Custom rules: this match won\'t count toward rank.') : 'Only the host can change the rules.';
+}
+document.querySelectorAll('[data-rule]').forEach(sel => sel.addEventListener('change', () => {
+  const k = sel.dataset.rule; net.rules = cleanRules({ ...net.rules, [k]: RULE_OPTS[k][+sel.value][0] });
+  if (k === 'time' && !net.rules.time && !net.rules.ko) net.rules.ko = 0;
+  store.set('roomRules', net.rules); pushRules(); showRules();
+}));
+$('ruleBots').onchange = () => { net.botLevel = $('ruleBots').value; store.set('roomBots', net.botLevel); pushRules(); showRules(); };
+$('rulesReset').onclick = () => { net.rules = { ...STD_RULES }; store.set('roomRules', net.rules); pushRules(); showRules(); };
 $('nick').value = settings.nick || '';
 netInit();
 const saveSettings = () => { store.set('settings', settings); applyVolumes(); };
@@ -3424,13 +3495,12 @@ const SLIDERS = [
 ];
 function syncSettingsUI() {
   for (const [id, key, , toUI, label] of SLIDERS) { $(id).value = toUI(settings[key]); $(id + 'Out').textContent = label(settings[key]); }
-  $('sGhost').checked = settings.ghost; $('sShake').checked = settings.shake; $('sChain').checked = settings.bombChain;
+  $('sGhost').checked = settings.ghost; $('sShake').checked = settings.shake;
 }
 for (const [id, key, fromUI, , label] of SLIDERS) $(id).addEventListener('input', () => { settings[key] = fromUI($(id).value); $(id + 'Out').textContent = label(settings[key]); saveSettings(); });
 $('sMusic').addEventListener('change', () => { if (!music.on && audio.ctx && !inMatch()) musicStart('menu'); });
 $('sSfx').addEventListener('change', () => sfx.clear(2, 1));
 $('sGhost').onchange = () => { settings.ghost = $('sGhost').checked; saveSettings(); };
-$('sChain').onchange = () => { settings.bombChain = $('sChain').checked; saveSettings(); };
 $('sShake').onchange = () => { settings.shake = $('sShake').checked; saveSettings(); };
 $('btnSettings').onclick = () => {
   if (inMatch() && !game.paused) pause(true);
@@ -3856,7 +3926,7 @@ function drawCallouts(p, bx, by, W, H, cell, small) {
 }
 function drawFull(p, ox, oy) {
   const bx = ox + 114;
-  panel(ox, oy, 96, 96, 'HOLD');
+  panel(ox, oy, 96, 96, rules().hold ? 'HOLD' : 'HOLD · OFF');
   if (p.hold) miniPiece(p.hold, ox + 48, oy + 58, 17, p.canHold ? 1 : .3);
   const stats = game.mode === 'classic'
     ? [['SCORE', p.score.toLocaleString('en-US'), C.accent], ['LEVEL', p.level, C.fg], ['LINES', p.lines, C.fg]]
@@ -3994,13 +4064,13 @@ function drawHUD() {
     text(Math.max(0, 40 - (a?.lines || 0)) + ' LINES TO GO', L.W / 2, 44, { size: 9, color: C.muted, align: 'center', base: 'middle', spacing: true });
     return;
   }
-  const left = game.timeLeft, urgent = left <= 30000 && game.running;
+  const left = matchMs() ? game.timeLeft : game.elapsed, urgent = matchMs() && left <= 30000 && game.running;
   const pw = 116, px = L.W / 2 - pw / 2;
   ctx.fillStyle = C.ink; ctx.fillRect(px + 3, 7, pw, 40);
   ctx.fillStyle = urgent && Math.sin(performance.now() / 200) > 0 ? C.warn : C.panel; ctx.fillRect(px, 4, pw, 40);
   ctx.strokeStyle = urgent ? C.warn : C.edge; ctx.lineWidth = 2; ctx.strokeRect(px + 1, 5, pw - 2, 38);
   num(fmt(left), L.W / 2, 21, { size: 22, align: 'center', base: 'middle', color: urgent ? C.fg : C.fg });
-  const frac = left / BATTLE_MS;
+  const frac = matchMs() ? left / matchMs() : 0;
   ctx.fillStyle = C.ink; ctx.fillRect(px + 10, 36, pw - 20, 4);
   if (frac > 0) { ctx.fillStyle = urgent ? C.fg : C.accent; ctx.fillRect(px + 10, 36, (pw - 20) * frac, 4); }
   if (!a || !b) return;
@@ -4114,7 +4184,7 @@ function frame(now) {
     } else {
       game.goT = Math.max(0, game.goT - dt);
       game.elapsed += dt;
-      if (game.mode !== 'sprint' && game.mode !== 'classic') game.timeLeft = Math.max(0, BATTLE_MS - game.elapsed);
+      if (game.mode !== 'sprint' && game.mode !== 'classic') game.timeLeft = matchMs() ? Math.max(0, matchMs() - game.elapsed) : 1e9;
       game.inputs.forEach(i => i.update(dt));
       game.cpus.forEach(c => c.update(dt));
       const me0 = game.players[0]; if (me0 && me0.autoTarget && isArena()) me0.target = leader(me0);
@@ -4129,7 +4199,7 @@ function frame(now) {
       const inDanger = me && me.human && me.stackHeight() > 15;
       if (inDanger) { game.heartT -= dt; if (game.heartT <= 0) { game.heartT = 850; sfx.heart(); } } else game.heartT = 0;
       if (inDanger !== game.wasDanger) { game.wasDanger = inDanger; setMusicDanger(inDanger); }
-      if (game.mode !== 'sprint' && game.mode !== 'classic' && game.timeLeft <= 0) end();
+      if (game.mode !== 'sprint' && game.mode !== 'classic' && matchMs() && game.timeLeft <= 0) end();
     }
   }
   if (!game.paused) stepFx(dt);

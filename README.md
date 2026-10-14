@@ -93,6 +93,10 @@ Buy a domain (about $10/year), add it to Cloudflare, then **Workers & Pages → 
 - **Sharing**: rank, match results and achievements become 1200×630 cards at `/s/<id>`; Facebook shows the card and the link opens the game.
 - **Achievements**: 15 medals, saved to the account and synced across devices.
 
+## Online room rules
+
+The host of an online room can change the rules in the lobby: match time (1, 2, 3, 5 minutes or no limit), K.O.s to win, garbage strength (×0.5 to ×2), fall speed, chained bombs, hold on/off, bot difficulty and match size. Everyone in the room sees the rules live, and they apply to every player. Only matches on the standard rules count toward rank. The host is whoever joined the room first.
+
 ## Coins and the shop
 
 Every match pays coins (local 2P and matches under 20 seconds don't), and coins buy cosmetics in the shop: block styles, ghost styles, effects (line clears, bomb blasts and callout text) and backgrounds. Items from 1,500 coins up are Premium: mostly animated, with gold cards in the shop.
