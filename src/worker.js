@@ -1,5 +1,6 @@
 // Block Arena server (Cloudflare Worker).
-//   /auth/facebook            → Facebook login dialog
+//   /auth/google              → Google sign-in (the sign-in the game uses); /auth/google/callback finishes it
+//   /auth/facebook            → Facebook login dialog (kept for later; Meta requires business verification to go public)
 //   /auth/facebook/callback   → finish login, create the session cookie
 //   /auth/facebook/delete     → Meta's data deletion callback
 //   /auth/logout              → end the session
@@ -46,6 +47,8 @@ export default {
     try {
       if (p.startsWith('/api/') || p.startsWith('/auth/') || p.startsWith('/s/') || p.startsWith('/room/') || p === '/hub') await ensureSchema(env);
       if (p.startsWith('/s/')) return await sharePage(req, env, url, p);
+      if (p === '/auth/google') return googleStart(req, env, url);
+      if (p === '/auth/google/callback') return await googleCallback(req, env, url);
       if (p === '/auth/facebook') return fbStart(req, env, url);
       if (p === '/auth/facebook/callback') return await fbCallback(req, env, url);
       if (p === '/auth/facebook/delete' && req.method === 'POST') return await fbDelete(req, env, url);
@@ -133,6 +136,37 @@ async function fbCallback(req, env, url) {
   if (!me.id) return redirect('/?login=failed', { 'Set-Cookie': clear });
   const user = await upsertUser(env, me.id, String(me.name || 'Player').slice(0, 40), me.picture?.data?.url || null);
   await syncFriends(env, user.id, tok.access_token, proof).catch(() => {});
+  const back = safeBack(url, cookies(req).ba_back);
+  const res = await startSession(env, url, user.id, back + (back.includes('?') ? '&' : '?') + 'login=ok');
+  res.headers.append('Set-Cookie', clear);
+  res.headers.append('Set-Cookie', setCookie(url, 'ba_back', '', 0));
+  return res;
+}
+// ---------- Google sign-in (OpenID Connect, server-side code flow) ----------
+// Only the basic "openid profile" scopes: name and picture. These need no Google app verification.
+// Accounts are stored with a "g:" prefix on the provider id, so they never collide with Facebook ids.
+function googleStart(req, env, url) {
+  if (!env.GOOGLE_CLIENT_ID) return new Response('Google sign-in is not configured yet (GOOGLE_CLIENT_ID missing).', { status: 503 });
+  const state = rand(16), back = safeBack(url, url.searchParams.get('back'));
+  const q = new URLSearchParams({ client_id: env.GOOGLE_CLIENT_ID, redirect_uri: `${url.origin}/auth/google/callback`, response_type: 'code', scope: 'openid profile', state, prompt: 'select_account' });
+  const res = redirect(`https://accounts.google.com/o/oauth2/v2/auth?${q}`, { 'Set-Cookie': setCookie(url, 'ba_state', state, 600) });
+  res.headers.append('Set-Cookie', setCookie(url, 'ba_back', back, 600));
+  return res;
+}
+async function googleCallback(req, env, url) {
+  const state = url.searchParams.get('state'), code = url.searchParams.get('code');
+  const clear = setCookie(url, 'ba_state', '', 0);
+  if (!code || !state || state !== cookies(req).ba_state) return redirect('/?login=failed', { 'Set-Cookie': clear });
+  const tr = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ code, client_id: env.GOOGLE_CLIENT_ID, client_secret: env.GOOGLE_CLIENT_SECRET || '', redirect_uri: `${url.origin}/auth/google/callback`, grant_type: 'authorization_code' }),
+  });
+  const tok = await tr.json().catch(() => ({}));
+  if (!tok.access_token) return redirect('/?login=failed', { 'Set-Cookie': clear });
+  const mr = await fetch('https://openidconnect.googleapis.com/v1/userinfo', { headers: { Authorization: `Bearer ${tok.access_token}` } });
+  const me = await mr.json().catch(() => ({}));
+  if (!me.sub) return redirect('/?login=failed', { 'Set-Cookie': clear });
+  const user = await upsertUser(env, 'g:' + me.sub, String(me.name || me.given_name || 'Player').slice(0, 40), me.picture ? String(me.picture).replace(/=s\d+-c$/, '=s128-c') : null);
   const back = safeBack(url, cookies(req).ba_back);
   const res = await startSession(env, url, user.id, back + (back.includes('?') ? '&' : '?') + 'login=ok');
   res.headers.append('Set-Cookie', clear);
@@ -227,9 +261,10 @@ async function api(req, env, url, p) {
   if (p === '/api/leaderboard' && m === 'GET') return leaderboard(req, env, url);
   const u = await currentUser(req, env);
   if (p === '/api/me' && m === 'GET') {
-    if (!u) return json({ user: null, fbConfigured: !!env.FB_APP_ID, appId: env.FB_APP_ID || null, friendsEnabled: env.FB_FRIENDS === '1' });
+    const login = env.GOOGLE_CLIENT_ID ? 'google' : env.FB_APP_ID ? 'facebook' : null;
+    if (!u) return json({ user: null, fbConfigured: !!login, login, appId: env.FB_APP_ID || null, friendsEnabled: env.FB_FRIENDS === '1' });
     const fc = await env.DB.prepare('SELECT COUNT(*) AS c FROM friendships WHERE user_id = ?').bind(u.id).first();
-    return json({ user: { ...publicUser(u), friends: fc?.c || 0 }, profile: JSON.parse(u.profile || '{}'), fbConfigured: true, appId: env.FB_APP_ID, friendsEnabled: env.FB_FRIENDS === '1' });
+    return json({ user: { ...publicUser(u), via: String(u.fb_id).startsWith('g:') ? 'Google' : String(u.fb_id).startsWith('dev-') ? 'test login' : 'Facebook', friends: fc?.c || 0 }, profile: JSON.parse(u.profile || '{}'), fbConfigured: true, login, appId: env.FB_APP_ID, friendsEnabled: env.FB_FRIENDS === '1' });
   }
   if (!u) return json({ error: 'not_signed_in' }, 401);
   if (p === '/api/profile' && m === 'PUT') return saveProfile(req, env, u);

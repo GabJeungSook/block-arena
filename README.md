@@ -84,6 +84,12 @@ Cloudflare dashboard → **Workers & Pages → block-arena → Settings → Buil
 
 Buy a domain (about $10/year), add it to Cloudflare, then **Workers & Pages → block-arena → Settings → Domains & Routes → Add custom domain**. Update the three URLs in your Facebook app to match.
 
+## Google sign-in
+
+Players sign in with Google (name and picture only, scopes `openid profile`, which need no Google verification). Facebook sign-in is still in the code; it is used only when Google isn't configured, because Meta requires business verification before Facebook Login can go public. Facebook sharing and Messenger invites work either way.
+
+Setup: in Google Cloud Console create an OAuth client of type **Web application** with the redirect URI `https://<your-site>/auth/google/callback`, publish the consent screen (Audience → Publish app), then add `GOOGLE_CLIENT_ID` (text) and `GOOGLE_CLIENT_SECRET` (secret) in the Cloudflare dashboard under the Worker's Variables and Secrets.
+
 ## Friends, sharing and achievements
 
 - **Sign-in rules**: ranked play and online rooms need Facebook sign-in. Guests can still play CPU, Classic, Sprint and local 2P unranked.

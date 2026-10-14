@@ -34,4 +34,6 @@ tag = "v2"
 new_sqlite_classes = ["Hub"]
 
 [vars]
-FB_APP_ID = "2129199354388278"   # your Meta app ID (public). The app secret goes in a secret: npx wrangler secret put FB_APP_SECRET
+FB_APP_ID = "2129199354388278"   # Meta app ID (public): Facebook sharing. Facebook sign-in stays off while Google sign-in is configured
+# Google sign-in: GOOGLE_CLIENT_ID goes here or in the dashboard (it's public); the secret goes in a Secret:
+# npx wrangler secret put GOOGLE_CLIENT_SECRET   (or Cloudflare dashboard → Settings → Variables and Secrets → type Secret)

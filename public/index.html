@@ -548,6 +548,12 @@ body{background:var(--bg)}
   .brand .wm2{display:none}
   .brand{flex:0 1 auto;min-width:0}
 }
+/* Google sign-in button */
+.gbtn,.gbtn:hover{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#1f1f1f;border:3px solid var(--navy);box-shadow:0 0 0 2px var(--fg),4px 5px 0 2px var(--ink);font-weight:700;padding:8px 16px}
+.gbtn:hover{background:#f1f3f4}
+.gbtn .gico{width:18px;height:18px;flex:none}
+.gbtn.sm{padding:5px 10px;font-size:12px;gap:8px;box-shadow:0 0 0 2px var(--fg),3px 3px 0 2px var(--ink)}
+.gbtn.sm .gico{width:15px;height:15px}
 /* quick match */
 .qmsec .lab .chip{margin-left:8px;vertical-align:1px}
 .qmbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -815,7 +821,7 @@ body{background:var(--bg)}
             <span class="pips" aria-hidden="true"><i class="me"></i><i></i><i></i><i></i><i></i><i></i></span>
           </button>
         </div>
-        <div class="ranknote" id="rankNote" hidden><span id="rankNoteTxt">Ranked play needs Facebook sign-in. You can still play every mode unranked.</span><button type="button" class="fbbtn sm" id="btnRankLogin"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9h3l.5-4h-3.5V9c0-.6.4-1 1-1z"/></svg>Sign in to play ranked</button></div>
+        <div class="ranknote" id="rankNote" hidden><span id="rankNoteTxt">Ranked play needs you to sign in. You can still play every mode unranked.</span><button type="button" class="gbtn sm" id="btnRankLogin"><svg class="gico" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.1C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.2 0-11.5-4.1-13.4-9.8l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>Sign in to play ranked</button></div>
         <div class="modes two">
           <button class="mode pick slim" type="button" data-mode="classic">
             <span class="mhead"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M6 20V9h4v11M10 20V4h4v16M14 20v-7h4v7"/></svg><b>Classic</b></span><small id="classicTxt">Endless solo. Speeds up every 10 lines.</small>
@@ -837,8 +843,8 @@ body{background:var(--bg)}
         <p class="muted onsub">2, 4 or 6 players, each on their own device. Empty seats are filled with bots.</p>
         <p id="onlineUnavailable" class="muted">Online play isn't available here right now.</p>
         <div id="onlineSignin" class="signgate" hidden>
-          <p class="muted">Online matches are played with your Facebook account, so your friends know it's you and every win counts toward your rank.</p>
-          <button type="button" class="fbbtn" id="btnOnlineLogin"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9h3l.5-4h-3.5V9c0-.6.4-1 1-1z"/></svg>Continue with Facebook</button>
+          <p class="muted">Sign in to play online, so your friends know it's you and every win counts toward your rank. It takes a few seconds with your Google account.</p>
+          <button type="button" class="gbtn" id="btnOnlineLogin"><svg class="gico" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.1C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.2 0-11.5-4.1-13.4-9.8l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>Continue with Google</button>
         </div>
         <div id="onlineForm" hidden>
           <div class="onsec qmsec" id="qmSec" hidden>
@@ -974,8 +980,8 @@ body{background:var(--bg)}
       <div class="card frpage">
         <div class="menuhead"><button type="button" class="ghostbtn sm" data-back>← Back</button><h2>Friends</h2></div>
         <div id="frGate" class="signgate" hidden>
-          <p class="muted">Sign in with Facebook to add friends, see who's online and invite them to your room.</p>
-          <button type="button" class="fbbtn" id="frLogin"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9h3l.5-4h-3.5V9c0-.6.4-1 1-1z"/></svg>Continue with Facebook</button>
+          <p class="muted">Sign in to add friends, see who's online and invite them to your room.</p>
+          <button type="button" class="gbtn" id="frLogin"><svg class="gico" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.1C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.2 0-11.5-4.1-13.4-9.8l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>Continue with Google</button>
         </div>
         <div id="frBody">
           <div class="mycode">
@@ -1853,18 +1859,18 @@ function renderRank() {
   $('hRankRow').style.setProperty('--rc', r.color);
   $('hRankStat').textContent = r.name;
   const mini = $('hLoginMini');
-  mini.innerHTML = LIVE && !account.user && account.fb ? '<button type="button" class="fbbtn sm" id="hLoginTop">Continue with Facebook</button>' : '';
-  $('hLoginTop')?.addEventListener('click', () => { location.href = '/auth/facebook'; });
+  mini.innerHTML = LIVE && !account.user && account.fb ? `<button type="button" class="gbtn sm" id="hLoginTop">${G_SVG}Sign in</button>` : '';
+  $('hLoginTop')?.addEventListener('click', () => signIn());
   if (LIVE && account.user && account.user.pic) mini.innerHTML = '';
   const acct = $('hAcct');
   if (!LIVE) {
-    acct.innerHTML = '<p class="loginnote">Preview: your rank is saved in this browser. Facebook sign-in works on the live site.</p>';
+    acct.innerHTML = '<p class="loginnote">Preview: your rank is saved in this browser. Signing in works on the live site.</p>';
   } else if (account.user) {
     const u = account.user;
-    acct.innerHTML = `${u.pic ? `<img alt="" src="${escapeHtml(u.pic)}" referrerpolicy="no-referrer">` : ''}<div class="who"><b>${escapeHtml(u.name)}</b><small>Signed in with Facebook · ${u.rankedGames} ranked match${u.rankedGames === 1 ? '' : 'es'}</small></div>`;
+    acct.innerHTML = `${u.pic ? `<img alt="" src="${escapeHtml(u.pic)}" referrerpolicy="no-referrer">` : ''}<div class="who"><b>${escapeHtml(u.name)}</b><small>Signed in with ${escapeHtml(u.via || 'Google')} · ${u.rankedGames} ranked match${u.rankedGames === 1 ? '' : 'es'}</small></div>`;
   } else {
-    acct.innerHTML = `<p class="loginnote">${account.ready ? (account.fb ? 'Sign in to get ranked. Your rank and progress save to your account.' : 'Sign-in isn\'t set up on this server yet.') : 'Checking your account…'}</p>` + (account.fb ? '<button type="button" class="fbbtn" id="hLogin">Continue with Facebook</button>' : '');
-    $('hLogin')?.addEventListener('click', () => { location.href = '/auth/facebook'; });
+    acct.innerHTML = `<p class="loginnote">${account.ready ? (account.fb ? 'Sign in to get ranked. Your rank and progress save to your account.' : 'Sign-in isn\'t set up on this server yet.') : 'Checking your account…'}</p>` + (account.fb ? `<button type="button" class="gbtn" id="hLogin">${G_SVG}Continue with Google</button>` : '');
+    $('hLogin')?.addEventListener('click', () => signIn());
   }
   $('setAcct').hidden = !(LIVE && account.user);
 }
@@ -1872,7 +1878,7 @@ function renderProfile() {
   try { renderRank(); } catch (e) {}
   try { renderAchGrid(); } catch (e) {}
   const lc = $('hLevelChip');
-  // signed in: your Facebook picture with the level badge on its corner, your name, then level and XP
+  // signed in: your profile picture with the level badge on its corner, your name, then level and XP
   const u = LIVE && account.user;
   lc.classList.toggle('signed', !!u);
   $('hAva').hidden = $('hName').hidden = !u;
@@ -1996,7 +2002,7 @@ async function netInit(refresh) {
   if (!net.ready) { net.ready = true; try { net.room = window.claude?.use ? await window.claude.use('room') : null; } catch (e) { net.room = null; } }
   const ok = !!net.room, gate = ok && needSignIn();
   $('onlineUnavailable').hidden = ok; $('onlineForm').hidden = !ok || gate; $('onlineSignin').hidden = !gate;
-  if (LIVE && account.user) { $('nick').value = cleanNick(account.user.name.split(' ')[0]); $('nick').readOnly = true; $('nick').title = 'Your Facebook first name'; }
+  if (LIVE && account.user) { $('nick').value = cleanNick(account.user.name.split(' ')[0]); $('nick').readOnly = true; $('nick').title = 'Your first name from your account'; }
 }
 $('onAllFriends').onclick = () => openFriends();
 $('btnRankLogin').onclick = () => signIn('/?menu=1');
@@ -2014,7 +2020,7 @@ async function netJoinInner(code) {
   if (!code) { $('onlineMsg').textContent = 'Enter a room code or create a room.'; return; }
   settings.nick = cleanNick($('nick').value); saveSettings();
   $('onlineMsg').textContent = 'Joining…';
-  try { net.nr = await net.room.join('sd-' + code); } catch (e) { $('onlineMsg').textContent = LIVE ? 'Couldn\'t join that room. Check your connection, or sign in again with Facebook.' : 'Could not join: ' + (e?.code || 'error') + '. Rooms need Contributor access or higher on this page.'; return; }
+  try { net.nr = await net.room.join('sd-' + code); } catch (e) { $('onlineMsg').textContent = LIVE ? 'Couldn\'t join that room. Check your connection, or sign in again.' : 'Could not join: ' + (e?.code || 'error') + '. Rooms need Contributor access or higher on this page.'; return; }
   net.code = code; net.recv = {}; net.mid = null; net.rulesShared = false; net.wasHost = null;
   $('lobbyCode').textContent = code.toUpperCase();
   net.unsub.forEach(u => { try { u(); } catch (e) {} }); net.unsub = [];
@@ -2159,7 +2165,7 @@ function netTick(now) {
 const isArena = () => game.mode === 'arena' || (game.mode === 'online' && game.players.length > 2);
 const koCap = () => rules().ko || (game.players.length <= 2 ? 5 : 10);
 const RANKED_MODES = ['cpu', 'arena'];
-const canRank = () => LIVE && !!account.user;     // ranked play only for players signed in with Facebook
+const canRank = () => LIVE && !!account.user;     // ranked play only for signed-in players
 function rankedBegin(kind, size, level) {
   game.ranked = { kind, size, level, id: null, t0: Date.now(), pending: null };
   if (LIVE && account.user) {
@@ -2176,7 +2182,7 @@ async function rankedFinish(place, draw) {
   const before = myRp();
   if (LIVE && !account.user) {
     box.hidden = false;
-    box.innerHTML = `<b>Unranked</b><span class="delta">—</span><p class="muted" style="grid-column:1/-1">Sign in with Facebook on the home page to earn rank points.</p>`;
+    box.innerHTML = `<b>Unranked</b><span class="delta">—</span><p class="muted" style="grid-column:1/-1">Sign in on the home page to earn rank points.</p>`;
     return;
   }
   let res;
@@ -2290,7 +2296,7 @@ function go(w, url) { if (w && !w.closed) w.location.href = url; else location.h
 function shareMsg(t) { const el = $('shareMsg'); el.textContent = t; el.hidden = false; clearTimeout(shareMsg.t); shareMsg.t = setTimeout(() => el.hidden = true, 3500); }
 async function shareCard(kind, data) {
   if (!LIVE) { shareMsg('Sharing to Facebook works on the live site.'); return; }
-  if (!account.user) { location.href = '/auth/facebook?back=' + encodeURIComponent(location.pathname); return; }
+  if (!account.user) { signIn(location.pathname); return; }
   const w = openPopup();                       // open now, inside the click, so browsers don't block it
   shareMsg('Making your card…');
   try {
@@ -2408,7 +2414,8 @@ function trackRank(rp) {
   if (r.tier >= 5) unlock('master');
 }
 const needSignIn = () => LIVE && !account.user;
-function signIn(back) { location.href = '/auth/facebook?back=' + encodeURIComponent(back || (location.pathname + location.search)); }
+function signIn(back) { location.href = `/auth/${account.login || 'google'}?back=` + encodeURIComponent(back || (location.pathname + location.search)); }
+const G_SVG = '<svg class="gico" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.1C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.2 0-11.5-4.1-13.4-9.8l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>';
 function openOnline() { show('ovOnline'); netInit(true); renderOnlineFriends(); if (LIVE && account.user) loadFriends(); }
 function renderOnlineFriends() {
   const ul = $('onFriends'); if (!ul) return;
@@ -2439,7 +2446,7 @@ function syncSocialUI() {
   $('qmSec').hidden = !signedIn;
   document.querySelectorAll('.chip').forEach(c => { if (/RANKED/.test(c.textContent)) c.hidden = !canRank(); });
   $('rankNote').hidden = canRank();
-  $('rankNoteTxt').textContent = LIVE ? 'Ranked play needs Facebook sign-in. You can still play every mode unranked.' : 'Ranked play is on the live site, with Facebook sign-in. Every mode here is unranked.';
+  $('rankNoteTxt').textContent = LIVE ? 'Ranked play needs you to sign in. You can still play every mode unranked.' : 'Ranked play is on the live site, where you sign in. Every mode here is unranked.';
   $('btnRankLogin').hidden = !(LIVE && account.fb);
   if (net.ready) netInit(true);
 }
@@ -2732,7 +2739,7 @@ const EARN_CARDS = [
 ];
 function renderEarn() {
   $('earnGrid').innerHTML = EARN_CARDS.map(c => `<section class="ecard"><h3>${c.t}</h3><p>${c.d}</p>${c.rows.map(([k, chips]) => `<div class="erow"><span class="ek">${k}</span><div class="echips">${chips.join('')}</div></div>`).join('')}</section>`).join('');
-  $('earnFoot').innerHTML = `<p><b>No coins for:</b> Local 2P on one keyboard, or matches that end in under 20 seconds.</p><p><b>Daily limit:</b> up to ${fmtCoins(2500)} coins a day from matches. Achievement coins don't count toward it.</p>${!LIVE || account.user ? '' : '<p><b>Playing as a guest?</b> Your coins are saved in this browser. Sign in with Facebook and they move to your account.</p>'}`;
+  $('earnFoot').innerHTML = `<p><b>No coins for:</b> Local 2P on one keyboard, or matches that end in under 20 seconds.</p><p><b>Daily limit:</b> up to ${fmtCoins(2500)} coins a day from matches. Achievement coins don't count toward it.</p>${!LIVE || account.user ? '' : '<p><b>Playing as a guest?</b> Your coins are saved in this browser. Sign in and they move to your account.</p>'}`;
 }
 function openEarn() { renderEarn(); const d = $('earnModal'); if (d.showModal) d.showModal(); else d.setAttribute('open', ''); }
 function closeEarn() { const d = $('earnModal'); if (d.close) d.close(); else d.removeAttribute('open'); }
@@ -2953,7 +2960,7 @@ function renderShop() {
   const w = wallet();
   $('shopCoins').querySelector('b').textContent = fmtCoins(w.coins);
   document.querySelectorAll('#shopTabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === shopTab)));
-  $('shopNote').textContent = !LIVE ? 'Preview: coins and items are saved in this browser.' : account.user ? '' : 'Playing as a guest: coins and items are saved in this browser. Sign in with Facebook to keep them on your account.';
+  $('shopNote').textContent = !LIVE ? 'Preview: coins and items are saved in this browser.' : account.user ? '' : 'Playing as a guest: coins and items are saved in this browser. Sign in to keep them on your account.';
   $('shopNote').hidden = !$('shopNote').textContent;
   const slot = TABS[shopTab].length > 1 ? shopSub : shopTab;
   $('shopSub').hidden = TABS[shopTab].length < 2;
@@ -3457,7 +3464,7 @@ function end() {
     trackEnd(a, won, place);
     payMatch({ mode: game.mode, won, place, size: game.players.length, level: game.level, score: a.score || 0, lines: a.lines, done: a.lines >= 40, best: game.mode === 'sprint' && a.lines >= 40 && store.get('sprint', 0) === game.elapsed, ms: game.elapsed });
     if (game.ranked) rankedFinish(place, draw);
-    else if (LIVE && !account.user && (RANKED_MODES.includes(game.mode) || game.mode === 'online')) { const bx = $('resRank'); bx.hidden = false; bx.innerHTML = `<b>Unranked</b><span class="delta">—</span><p class="muted" style="grid-column:1/-1">Sign in with Facebook to play ranked and earn rank points.</p>`; }
+    else if (LIVE && !account.user && (RANKED_MODES.includes(game.mode) || game.mode === 'online')) { const bx = $('resRank'); bx.hidden = false; bx.innerHTML = `<b>Unranked</b><span class="delta">—</span><p class="muted" style="grid-column:1/-1">Sign in to play ranked and earn rank points.</p>`; }
     else $('resRank').hidden = true;
     const vs = game.mode === 'cpu' ? `vs ${game.level[0].toUpperCase() + game.level.slice(1)} CPU` : game.mode === 'online' ? 'online match' : '';
     const cardStats = game.mode === 'classic' ? [['Score', a.score.toLocaleString('en-US')], ['Level', a.level], ['Lines', a.lines], ['Best combo', Math.max(0, a.maxCombo)]]
@@ -3720,14 +3727,14 @@ async function openRankings() {
   pod.innerHTML = ''; $('lbMe').innerHTML = '';
   if (!LIVE) {
     $('lbNote').textContent = 'Goes live once the game is deployed';
-    list.innerHTML = '<li><span class="empty">The global leaderboard appears here on the live site, where players sign in with Facebook.</span></li>';
+    list.innerHTML = '<li><span class="empty">The global leaderboard appears here on the live site, where players sign in.</span></li>';
     return;
   }
   $('lbNote').textContent = 'Loading…';
   list.innerHTML = '';
   if (lbScope === 'friends') {
     const inv = `<button type="button" class="fbbtn sm" data-invite="facebook"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9h3l.5-4h-3.5V9c0-.6.4-1 1-1z"/></svg>Invite friends to play</button>`;
-    if (!account.user) { $('lbNote').textContent = ''; list.innerHTML = `<li class="lbempty"><p>Sign in with Facebook to see how you rank against your friends.</p><button type="button" class="fbbtn sm" id="lbLogin">Continue with Facebook</button></li>`; $('lbLogin').onclick = () => signIn('/?rankings=friends'); return; }
+    if (!account.user) { $('lbNote').textContent = ''; list.innerHTML = `<li class="lbempty"><p>Sign in to see how you rank against your friends.</p><button type="button" class="gbtn sm" id="lbLogin">${G_SVG}Continue with Google</button></li>`; $('lbLogin').onclick = () => signIn('/?rankings=friends'); return; }
   }
   try {
     const d = await api.call('/api/leaderboard?limit=100' + (lbScope === 'friends' ? '&scope=friends' : ''));
@@ -3746,7 +3753,7 @@ async function openRankings() {
     const rest = d.top.slice(3);
     list.innerHTML = d.top.length === 0 ? '<li><span class="empty">No ranked players yet. Win a ranked match to claim #1.</span></li>'
       : rest.map(p => { const r = rankOf(p.rp); return `<li class="${isMe(p) ? 'me' : ''}"><span class="pos">${p.position}</span>${avatar(p)}<span class="nm">${escapeHtml(p.name)}</span><span class="rk"><span class="remb">${rankIconFor(p.rp, 24)}</span><span>${r.name}</span></span><span class="rp">${p.rp} RP</span></li>`; }).join('');
-    $('lbMe').innerHTML = !account.user ? 'Sign in with Facebook to appear on the leaderboard.' : d.me?.position ? (d.me.position > 100 ? `You're <b>#${d.me.position}</b> · ${d.me.rp} RP. Reach the top 100 to show up here.` : '') : 'Win a ranked match to get on the board.';
+    $('lbMe').innerHTML = !account.user ? 'Sign in to appear on the leaderboard.' : d.me?.position ? (d.me.position > 100 ? `You're <b>#${d.me.position}</b> · ${d.me.rp} RP. Reach the top 100 to show up here.` : '') : 'Win a ranked match to get on the board.';
   } catch (e) { $('lbNote').textContent = ''; list.innerHTML = '<li><span class="empty">Couldn\'t load the leaderboard. Check your connection and try again.</span></li>'; }
 }
 $('btnSetReset').onclick = () => { const m = settings.muted; Object.assign(settings, DEFAULTS, { muted: m }); saveSettings(); syncSettingsUI(); };
@@ -4434,7 +4441,7 @@ $('shopGrid').addEventListener('click', e => { const b = e.target.closest('[data
 renderProfile(); preview(); layout(); show('ovHome'); syncSocialUI();
 if (LIVE) {
   api.call('/api/me').then(d => {
-    account.fb = !!d.fbConfigured; account.user = d.user; account.ready = true; account.appId = d.appId || null; account.friendsEnabled = !!d.friendsEnabled;
+    account.fb = !!d.fbConfigured; account.login = d.login || null; account.user = d.user; account.ready = true; account.appId = d.appId || null; account.friendsEnabled = !!d.friendsEnabled;
     if (d.user) {
       // bring the account's saved progress into this browser (keeping whichever is further along)
       const pr = store.get('profile', { xp: 0, wins: 0, games: 0 }), sp = d.profile || {};
@@ -4452,7 +4459,7 @@ if (LIVE) {
       else setWallet({ coins: sp.coins || 0, owned: sp.owned || [], eq: sp.eq || {} });
     }
     renderProfile();
-    if (/login=failed/.test(location.search)) { const n = document.querySelector('#hAcct .loginnote'); if (n) n.textContent = 'Facebook sign-in didn\'t finish. Try again.'; show('ovStats'); }
+    if (/login=failed/.test(location.search)) { const n = document.querySelector('#hAcct .loginnote'); if (n) n.textContent = 'Sign-in didn\'t finish. Try again.'; show('ovStats'); }
     syncSocialUI(); renderFriendChip(); startPresence();
     const q = new URLSearchParams(location.search), room = (q.get('room') || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12);
     if (room || q.get('online')) {
