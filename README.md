@@ -1,6 +1,6 @@
 # Block Arena
 
-A falling-block battle game: 2-minute versus matches, 4P and 6P arenas, online rooms where empty seats are filled with bots, Classic (endless) and Sprint 40. Ranked play with Facebook sign-in and a global leaderboard.
+A falling-block battle game: 2-minute versus matches, 4P and 6P arenas, online rooms where empty seats are filled with bots, Classic (endless) and Sprint 40. Ranked play and online rooms with Facebook sign-in, in-game friends with live online status and room invites, a global and friends leaderboard, achievements, and share cards for Facebook.
 
 Everything runs on Cloudflare's free plan:
 
@@ -9,6 +9,7 @@ Everything runs on Cloudflare's free plan:
 | `public/` | The game (one HTML file) and the privacy policy, served as static files |
 | `src/worker.js` | Facebook sign-in, sessions, ranked match results, leaderboard, account deletion |
 | `src/room.js` | Online rooms (a Durable Object per room, WebSockets) |
+| `src/hub.js` | Who's online, room invites and friend requests in real time (one Durable Object, one WebSocket per signed-in player) |
 | `src/rank.js` | Ranking rules. `public/index.html` carries a copy; `npm test` checks they match |
 | `migrations/` | Database tables (Cloudflare D1) |
 
@@ -83,6 +84,15 @@ Cloudflare dashboard → **Workers & Pages → block-arena → Settings → Buil
 
 Buy a domain (about $10/year), add it to Cloudflare, then **Workers & Pages → block-arena → Settings → Domains & Routes → Add custom domain**. Update the three URLs in your Facebook app to match.
 
+## Friends, sharing and achievements
+
+- **Sign-in rules**: ranked play and online rooms need Facebook sign-in. Guests can still play CPU, Classic, Sprint and local 2P unranked.
+- **In-game friends**: every player has a friend code (Friends panel). Add friends by code, with an "add me" link shared on Facebook or Messenger, or with **Add friend** next to players in an online room. Requests are accepted in the Friends panel.
+- **Who's online**: the Friends panel and the home-screen chip show which friends are online, in a room or in a match. **Invite to play** creates a room if you're not in one and sends a live invite; **Join** jumps into a friend's room.
+- **Facebook friends** (optional): Facebook only shares a player's friend list with the "App friends" permission (`user_friends`), which needs Meta App Review. Once approved, set the variable `FB_FRIENDS=1` in Cloudflare (Workers & Pages → block-arena → Settings → Variables) and Facebook friends who play are added automatically when they sign in. In-game friends work without it.
+- **Sharing**: rank, match results and achievements become 1200×630 cards at `/s/<id>`; Facebook shows the card and the link opens the game.
+- **Achievements**: 15 medals, saved to the account and synced across devices.
+
 ## Run it on your computer
 
 ```bash
@@ -101,7 +111,7 @@ npm test   # checks the game's copy of the ranking rules matches the server's
 ## Free plan limits
 
 - **Workers**: 100,000 requests a day.
-- **Durable Objects (rooms)**: 100,000 requests a day. Online WebSocket messages count 20 to 1, so a full 6-player match is about 360 requests.
+- **Durable Objects (rooms and the hub)**: 100,000 requests a day. WebSocket messages count 20 to 1, so a full 6-player match is about 360 requests. Each signed-in player keeps one hub connection; it sleeps while idle and only sends a message when their status changes, so staying online costs almost nothing.
 - **D1 (accounts, ranks)**: 5 million rows read and 100,000 written a day, 5 GB stored.
 
 If a limit is reached, that feature stops until midnight UTC. Nothing is billed unless you upgrade to the $5/month plan.
