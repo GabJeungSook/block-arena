@@ -1149,21 +1149,39 @@ const PROG = [{ root: 40 }, { root: 36 }, { root: 38 }, { root: 35 }];          
 const BASS = [0, null, 0, 12, null, 0, 10, null, 0, null, 0, 13, null, 7, 12, 1];   // 16ths, semitones over the root
 const LEAD = [[76, 0, 77, 0, 79, 0, 77, 76], [72, 0, 0, 74, 0, 72, 71, 0], [74, 0, 76, 0, 77, 0, 79, 81], [83, 0, 0, 81, 0, 79, 0, 0]];
 const music = { timer: null, step: 0, next: 0, mode: 'game', on: false };
-// The soundtrack (music.mp3) plays everywhere: full level on the menus, quiet and softened behind the
+// The soundtrack (three tracks, shuffled) plays everywhere: full level on the menus, quiet and softened behind the
 // effects during a match. If it can't load, the built-in synth music plays instead.
 const TRACK_LEVEL = { menu: 1, game: .3 }, TRACK_TONE = { menu: 20000, game: 6500 };
-const track = { el: null, gain: null, tone: null, failed: false };
+const TRACKS = ['music.mp3', 'music2.mp3', 'music3.mp3'];
+const track = { el: null, gain: null, tone: null, failed: false, cur: -1, bad: new Set() };
+// shuffle: a random track each match (never the same one twice in a row); the menus move on to another when one ends
+function trackPick() {
+  const ok = TRACKS.map((_, i) => i).filter(i => !track.bad.has(i));
+  if (!ok.length) return false;
+  const pool = ok.length > 1 ? ok.filter(i => i !== track.cur) : ok;
+  track.cur = pool[Math.random() * pool.length | 0];
+  track.el.src = TRACKS[track.cur];
+  return true;
+}
 function trackInit() {
   if (track.el || track.failed || !audio.ctx) return;
   try {
-    const el = new Audio(); el.src = 'music.mp3'; el.loop = true; el.preload = 'auto';
-    el.addEventListener('error', () => { track.failed = true; const m = music.on && music.mode; musicStop(); if (m) musicStart(m); });
+    const el = new Audio(); el.preload = 'auto';
+    track.el = el;
+    // a track that won't load is skipped; if none load, the synth music takes over
+    el.addEventListener('error', () => {
+      if (track.cur >= 0) track.bad.add(track.cur);
+      const m = music.on && music.mode;
+      if (!trackPick()) { track.failed = true; musicStop(); if (m) musicStart(m); }
+      else if (m) el.play().catch(() => {});
+    });
+    el.addEventListener('ended', () => { if (music.on) { trackPick(); el.play().catch(() => {}); } });
+    trackPick();
     const src = audio.ctx.createMediaElementSource(el);
     track.tone = audio.ctx.createBiquadFilter(); track.tone.type = 'lowpass'; track.tone.frequency.value = 20000; track.tone.Q.value = .5;
     track.gain = audio.ctx.createGain(); track.gain.gain.value = 0;
     src.connect(track.tone).connect(track.gain).connect(audio.music);
-    track.el = el;
-  } catch (e) { track.failed = true; }
+  } catch (e) { track.failed = true; track.el = null; }
 }
 function musicStart(mode = 'game') {
   if (!audio.ctx) return;
@@ -1171,7 +1189,7 @@ function musicStart(mode = 'game') {
   if (track.el && !track.failed) {
     const t = audio.ctx.currentTime, el = track.el, changed = music.mode !== mode || music.fresh; music.fresh = false;
     if (music.on && music.mode === mode && !el.paused) return;
-    if (mode === 'game' && changed) { try { el.currentTime = 0; } catch (e) {} }   // each match starts the track fresh
+    if (mode === 'game' && changed) trackPick();   // each match gets a fresh random track
     music.mode = mode; music.on = true;
     track.gain.gain.cancelScheduledValues(t); track.gain.gain.setTargetAtTime(TRACK_LEVEL[mode] || 1, t, mode === 'game' ? .05 : .4);
     track.tone.frequency.setTargetAtTime(TRACK_TONE[mode] || 20000, t, .2);
