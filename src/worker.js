@@ -13,6 +13,7 @@
 //   /room/<name>              → WebSocket for an online room (Durable Object)
 //   /api/coins/earn     POST  → add coins after a match (capped)
 //   /api/shop/buy|equip POST  → buy or equip a cosmetic
+//   /api/chat*                → private chat between friends (history, send, mark read)
 //   /api/friends*             → in-game friends: friend codes, requests, list with who's online
 //   /hub                      → WebSocket to the Hub (online status, room invites, friend requests in real time)
 // Everything else is the game itself, served from /public.
@@ -37,6 +38,10 @@ async function ensureSchema(env) {
     env.DB.prepare('CREATE INDEX IF NOT EXISTS shares_user ON shares (user_id, created_at DESC)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS friend_requests (from_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE, to_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE, created_at INTEGER NOT NULL, PRIMARY KEY (from_id, to_id))'),
     env.DB.prepare('CREATE INDEX IF NOT EXISTS friend_requests_to ON friend_requests (to_id)'),
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, from_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE, to_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE, body TEXT NOT NULL, created_at INTEGER NOT NULL, seen INTEGER NOT NULL DEFAULT 0)'),
+    env.DB.prepare('CREATE INDEX IF NOT EXISTS messages_pair ON messages (from_id, to_id, created_at)'),
+    env.DB.prepare('CREATE INDEX IF NOT EXISTS messages_unseen ON messages (to_id, seen)'),
+    env.DB.prepare('CREATE INDEX IF NOT EXISTS messages_age ON messages (created_at)'),
   ]);
   schemaReady = true;
 }
@@ -274,6 +279,9 @@ async function api(req, env, url, p) {
   if (p === '/api/shop/equip' && m === 'POST') return shopEquip(req, env, u);
   if (p === '/api/share' && m === 'POST') return createShare(req, env, url, u);
   if (p === '/api/friends' && m === 'GET') return friendsList(env, u);
+  if (p === '/api/chat' && m === 'GET') return chatHistory(env, u, url);
+  if (p === '/api/chat/send' && m === 'POST') return chatSend(req, env, u);
+  if (p === '/api/chat/read' && m === 'POST') return chatRead(req, env, u);
   if (p === '/api/friends/request' && m === 'POST') return friendRequest(req, env, u);
   if (p === '/api/friends/respond' && m === 'POST') return friendRespond(req, env, u);
   if (p === '/api/friends/remove' && m === 'POST') return friendRemove(req, env, u);
@@ -471,10 +479,12 @@ async function friendsList(env, u) {
     env.DB.prepare('SELECT u.id, u.name, u.pic, u.rp FROM friend_requests r JOIN users u ON u.id = r.to_id WHERE r.from_id = ? ORDER BY r.created_at DESC LIMIT 50').bind(u.id),
   ]);
   const status = f.results.length ? await hubCall(env, '/status', { ids: f.results.map(r => r.id) }) : {};
+  const { results: un } = await env.DB.prepare('SELECT from_id, COUNT(*) AS c FROM messages WHERE to_id = ? AND seen = 0 GROUP BY from_id').bind(u.id).all();
+  const unread = Object.fromEntries(un.map(r => [r.from_id, r.c]));
   const pub = r => ({ id: r.id, name: r.name, pic: r.pic, rp: r.rp, rank: rankOf(r.rp).name });
   return json({
     code: await friendCode(u.id),
-    friends: f.results.map(r => ({ ...pub(r), st: status[r.id]?.st || null, room: status[r.id]?.st === 'room' ? status[r.id].room : null })),
+    friends: f.results.map(r => ({ ...pub(r), st: status[r.id]?.st || null, room: status[r.id]?.st === 'room' ? status[r.id].room : null, unread: unread[r.id] || 0 })),
     incoming: inc.results.map(pub), outgoing: out.results.map(pub),
   });
 }
@@ -516,6 +526,39 @@ async function friendRemove(req, env, u) {
     env.DB.prepare('DELETE FROM friend_requests WHERE (from_id = ? AND to_id = ?) OR (from_id = ? AND to_id = ?)').bind(u.id, id, id, u.id),
   ]);
   await hubCall(env, '/notify', { to: id, msg: { t: 'unfriend', id: u.id } });
+  return json({ ok: true });
+}
+// ---------- chat between friends ----------
+// Friends only, 200 characters, at most 6 messages per 10 seconds; strong swear words are masked.
+// Messages are kept 30 days. Delivery is live through the hub when the friend is online.
+const CHAT_MAX = 200, CHAT_KEEP = 30 * 864e5;
+const SWEAR = /\b(f+u+c+k+\w*|sh+i+t+\w*|b+i+t+c+h+\w*|c+u+n+t+\w*|putang\s*ina\w*|tang\s*ina\w*|puta\b|gago\w*|kupal\w*)/gi;
+const cleanChat = t => String(t || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, CHAT_MAX).replace(SWEAR, w => w[0] + '*'.repeat(Math.max(1, w.length - 1)));
+const areFriends = (env, a, b) => env.DB.prepare('SELECT 1 FROM friendships WHERE user_id = ? AND friend_id = ?').bind(a, b).first();
+async function chatHistory(env, u, url) {
+  const id = Math.floor(+url.searchParams.get('with') || 0);
+  if (!id || !await areFriends(env, u.id, id)) return json({ error: 'not_friends' }, 403);
+  const before = Math.floor(+url.searchParams.get('before') || 0) || 9e15;
+  const { results } = await env.DB.prepare(`SELECT id, from_id, body, created_at FROM messages
+      WHERE ((from_id = ? AND to_id = ?) OR (from_id = ? AND to_id = ?)) AND id < ? ORDER BY id DESC LIMIT 50`).bind(u.id, id, id, u.id, before).all();
+  return json({ messages: results.reverse().map(r => ({ id: r.id, mine: r.from_id === u.id, text: r.body, ts: r.created_at })) });
+}
+async function chatSend(req, env, u) {
+  const b = await body(req), id = Math.floor(+b.to || 0), text = cleanChat(b.text), t = now();
+  if (!text) return json({ error: 'empty' }, 400);
+  if (!id || !await areFriends(env, u.id, id)) return json({ error: 'not_friends' }, 403);
+  const recent = await env.DB.prepare('SELECT COUNT(*) AS c FROM messages WHERE from_id = ? AND created_at > ?').bind(u.id, t - 10000).first();
+  if ((recent?.c || 0) >= 6) return json({ error: 'slow_down' }, 429);
+  const r = await env.DB.prepare('INSERT INTO messages (from_id, to_id, body, created_at) VALUES (?, ?, ?, ?)').bind(u.id, id, text, t).run();
+  const msg = { id: r.meta.last_row_id, text, ts: t };
+  await hubCall(env, '/notify', { to: id, msg: { t: 'dm', from: { id: u.id, name: u.name, pic: u.pic }, m: msg } });
+  // old messages go, so the free database never fills up
+  if (Math.random() < .05) await env.DB.prepare('DELETE FROM messages WHERE created_at < ?').bind(t - CHAT_KEEP).run();
+  return json({ message: { ...msg, mine: true } });
+}
+async function chatRead(req, env, u) {
+  const id = Math.floor(+(await body(req)).with || 0);
+  await env.DB.prepare('UPDATE messages SET seen = 1 WHERE to_id = ? AND from_id = ? AND seen = 0').bind(u.id, id).run();
   return json({ ok: true });
 }
 async function leaderboard(req, env, url) {

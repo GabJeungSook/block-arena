@@ -554,6 +554,72 @@ body{background:var(--bg)}
 .gbtn .gico{width:18px;height:18px;flex:none}
 .gbtn.sm{padding:5px 10px;font-size:12px;gap:8px;box-shadow:0 0 0 2px var(--fg),3px 3px 0 2px var(--ink)}
 .gbtn.sm .gico{width:15px;height:15px}
+/* lobby */
+.card.lobbypage{width:min(940px,100%);max-height:100%;overflow:auto;gap:16px}
+.lbyhead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;border-bottom:2px solid var(--line);padding-bottom:12px}
+.lbytitle h2{margin:2px 0 0;display:flex;align-items:center;gap:12px}
+.lbytitle .code{font-family:var(--mono);letter-spacing:.12em;color:var(--accent)}
+.lbystatus{margin:0;display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:13px;color:var(--muted)}
+.cdot{width:9px;height:9px;border-radius:50%;background:var(--orange);display:inline-block}
+.cdot.on{background:var(--good);box-shadow:0 0 8px var(--good)}
+.lbygrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:stretch}
+.lbyleft{display:flex;flex-direction:column;gap:12px;min-width:0}
+.lbysec{background:var(--navy);border:2px solid var(--line);padding:12px}
+.lbyh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.lbyh .lab{color:var(--accent)}
+.lbyh small{font-family:var(--mono);color:var(--muted);font-size:12px}
+.lobbypage .lobby{border-top:0}
+.lobbypage .lobby li{padding:7px 0;gap:10px}
+.lobbypage .lobby li:last-child{border-bottom:0}
+.lobby .pava{width:28px;height:28px;flex:none;display:grid;place-items:center;font-family:var(--display);font-size:12px;font-weight:900;color:#fff;border:2px solid var(--navy);box-shadow:0 0 0 1.5px var(--fg);overflow:hidden}
+.lobby .pava img{width:100%;height:100%;object-fit:cover}
+.lobby .pname{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lobby .htag{font-family:var(--display);font-size:9px;letter-spacing:.1em;padding:2px 6px;border:2px solid var(--accent);color:var(--accent)}
+.lobby .pempty{color:var(--muted);font-size:13px;font-style:italic}
+.invbtns{display:flex;flex-wrap:wrap;gap:8px}
+.invbtns button{display:inline-flex;align-items:center;gap:6px}
+.lico{width:15px;height:15px}
+.rules summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none}
+.rules summary::-webkit-details-marker{display:none}
+.rules summary::after{content:'▾';margin-left:auto;color:var(--muted)}
+.rules[open] summary::after{content:'▴'}
+.rules[open] summary{margin-bottom:10px}
+.rsum{font-size:12px;color:var(--fg);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lbychat{background:var(--navy);border:2px solid var(--line);padding:12px;display:flex;flex-direction:column;min-height:300px;min-width:0}
+.chatlist{list-style:none;margin:0;padding:0 2px 0 0;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;min-height:160px;max-height:340px}
+.chatlist.big{max-height:min(52vh,420px);min-height:240px}
+.chatlist li{max-width:85%;align-self:flex-start;background:var(--panel-2);border:2px solid var(--line);padding:5px 9px;font-size:14px;line-height:1.35;word-wrap:break-word;overflow-wrap:anywhere}
+.chatlist li.me{align-self:flex-end;background:#123a7a;border-color:#1e5bb8}
+.chatlist li b{display:block;font-size:11px;font-family:var(--display);letter-spacing:.04em;margin-bottom:1px}
+.chatlist li time{display:block;font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px}
+.chatlist li.sys{align-self:center;background:transparent;border:0;color:var(--muted);font-size:12px;font-style:italic;padding:0}
+.chatlist .cempty{align-self:center;background:transparent;border:0;color:var(--muted);font-size:13px;margin:auto 0}
+.chatform{display:flex;gap:8px;margin-top:10px}
+.chatform input{flex:1;min-width:0}
+.lbyfoot{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-top:2px solid var(--line);padding-top:12px}
+.lbyfoot .sub{margin:0;flex:1;min-width:180px}
+.lbyfoot #lobbyMsg:empty{display:none}
+.lbyfoot .row{margin-left:auto}
+.lbyfoot #btnLobbyStart{min-width:180px}
+@media (max-width:720px){.lbygrid{grid-template-columns:1fr}.lbychat{min-height:240px}.lbyfoot .row{width:100%}.lbyfoot .row button{flex:1}}
+/* friend chat */
+.frchat{display:flex;flex-direction:column;gap:10px}
+.chathead{display:flex;align-items:center;gap:10px}
+.chatwho{display:flex;align-items:center;gap:8px;font-weight:700;flex:1;min-width:0}
+.chatwho .ava{width:28px;height:28px}
+.chatwho small{color:var(--muted);font-weight:400;font-size:12px}
+.ubadge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:6px;background:var(--red);color:#fff;font-family:var(--mono);font-size:11px;font-style:normal;font-weight:600;border-radius:9px}
+/* in-match quick chat */
+.qchat{position:fixed;right:12px;bottom:12px;z-index:20;display:flex;flex-direction:column-reverse;align-items:flex-end;gap:6px}
+.qchat button{padding:5px 10px;font-size:12px;background:rgba(13,19,48,.92);border:2px solid var(--line)}
+.qchat .qtog{opacity:.8}
+.qchat .qtog:hover,.qchat.open .qtog{opacity:1;border-color:var(--accent)}
+.qchat .qlist{display:none;flex-direction:column;align-items:stretch;gap:4px}
+.qchat.open .qlist{display:flex}
+.qchat .qlist button{text-align:left}
+.qchat button kbd{margin-right:6px;font-size:10px}
+.qchat button:hover{border-color:var(--accent)}
+@media (pointer:coarse){.qchat{bottom:auto;top:56px;flex-direction:column}.qchat button kbd{display:none}}
 /* quick match */
 .qmsec .lab .chip{margin-left:8px;vertical-align:1px}
 .qmbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -659,7 +725,8 @@ body{background:var(--bg)}
 .fr .acts .x:hover{color:var(--red);border-color:transparent}
 .frsec{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--display);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
 .frempty{color:var(--muted);padding:12px;border:2px dashed var(--line);margin:0}
-.lobby .addf{margin-left:auto;padding:2px 8px;font-size:11px}
+.lobby .addf{padding:2px 8px;font-size:11px}
+.lobby .lright{margin-left:auto;display:flex;align-items:center;gap:8px}
 #inviteToast{position:fixed;right:16px;bottom:16px;z-index:51;display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:center;background:var(--panel);border:3px solid var(--navy);box-shadow:0 0 0 2px var(--accent),5px 6px 0 2px var(--ink);padding:12px 14px;max-width:min(360px,calc(100vw - 32px));box-sizing:border-box}
 #inviteToast .ava{width:40px;height:40px}
 #inviteToast p{margin:0}
@@ -890,22 +957,47 @@ body{background:var(--bg)}
     </div>
 
     <div class="overlay" id="ovLobby" hidden>
-      <div class="card result">
-        <div><h2>Room <span id="lobbyCode" class="code">—</span></h2><p class="sub"><span id="lobbyConn">Connecting…</span> · <span id="lobbyCount">0 players here</span></p></div>
-        <ul class="lobby" id="lobbyList"></ul>
-        <section class="rules" id="rulesSec">
-          <div class="ruleshead"><span class="lab">Room rules</span><span class="rulestag" id="rulesTag">Standard · Ranked</span></div>
-          <div class="rulegrid">
+      <div class="card lobbypage">
+        <header class="lbyhead">
+          <div class="lbytitle"><span class="lab">Room code</span><h2><span id="lobbyCode" class="code">—</span><button type="button" class="ghostbtn sm" id="btnCopyCode" title="Copy the room code">Copy</button></h2></div>
+          <p class="lbystatus"><i class="cdot" id="lobbyDot"></i><span id="lobbyConn">Connecting…</span><span class="sep">·</span><span id="lobbyCount">0 players here</span></p>
+        </header>
+        <div class="lbygrid">
+          <div class="lbyleft">
+            <section class="lbysec">
+              <div class="lbyh"><span class="lab">Players</span><small id="lobbySeats"></small></div>
+              <ul class="lobby" id="lobbyList"></ul>
+            </section>
+            <section class="lbysec" id="lobbyInvite">
+              <div class="lbyh"><span class="lab">Invite</span></div>
+              <div class="invbtns">
+                <button type="button" class="fbbtn sm" data-invite="facebook" data-room><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9h3l.5-4h-3.5V9c0-.6.4-1 1-1z"/></svg>Facebook</button>
+                <button type="button" class="msgrbtn" data-invite="messenger" data-room><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.4 2 2 6.1 2 11.4c0 2.9 1.4 5.5 3.7 7.2V22l3.4-1.9c.9.3 1.9.4 2.9.4 5.6 0 10-4.1 10-9.4S17.6 2 12 2zm1 12.6-2.5-2.7-5 2.7 5.5-5.8 2.6 2.7 4.9-2.7-5.5 5.8z"/></svg>Messenger</button>
+                <button type="button" class="ghostbtn sm" data-invite="copy" data-room><svg viewBox="0 0 24 24" aria-hidden="true" class="lico"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Link</button>
+                <button type="button" class="ghostbtn sm" id="lobbyFriends" hidden><svg viewBox="0 0 24 24" aria-hidden="true" class="lico"><circle cx="9" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M2.5 20c.6-3.6 3-5.5 6.5-5.5s5.9 1.9 6.5 5.5M17 6.5v5M14.5 9h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Friends</button>
+              </div>
+            </section>
+            <details class="lbysec rules" id="rulesSec">
+              <summary><span class="lab">Rules</span><span class="rsum" id="rulesSum"></span><span class="rulestag" id="rulesTag">Standard · Ranked</span></summary>
+              <div class="rulegrid">
             <label><span>Match size</span><select id="lobbySize"><option value="2">2 players</option><option value="4" selected>4 players</option><option value="6">6 players</option></select></label>
             <label><span>Bots</span><select id="ruleBots"><option value="easy">Easy</option><option value="normal">Normal</option><option value="hard">Hard</option><option value="expert">Expert</option></select></label>
             <div id="ruleFields" class="rulefields"></div>
           </div>
           <div class="row rulesfoot"><small class="muted" id="rulesNote">The host sets the rules. Empty seats are filled with bots.</small><button type="button" class="ghostbtn sm" id="rulesReset">Standard rules</button></div>
-        </section>
-        <div class="invite" id="lobbyInvite"><span class="lab">Bring friends</span><button type="button" class="fbbtn sm" data-invite="facebook" data-room><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9h3l.5-4h-3.5V9c0-.6.4-1 1-1z"/></svg>Invite on Facebook</button><button type="button" class="msgrbtn" data-invite="messenger" data-room><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.4 2 2 6.1 2 11.4c0 2.9 1.4 5.5 3.7 7.2V22l3.4-1.9c.9.3 1.9.4 2.9.4 5.6 0 10-4.1 10-9.4S17.6 2 12 2zm1 12.6-2.5-2.7-5 2.7 5.5-5.8 2.6 2.7 4.9-2.7-5.5 5.8z"/></svg>Send on Messenger</button><button type="button" class="ghostbtn sm" data-invite="copy" data-room>Copy link</button><button type="button" class="ghostbtn sm" id="lobbyFriends" hidden>Invite friends online</button></div>
-        <p class="sub" id="lobbyWait">Waiting for the host to start…</p>
-        <p class="sub" id="lobbyMsg"></p>
-        <div class="row"><button class="play" type="button" id="btnLobbyStart">Start</button><button class="ghostbtn" type="button" id="btnLobbyLeave">Leave room</button></div>
+        </details>
+          </div>
+          <section class="lbychat">
+            <div class="lbyh"><span class="lab">Room chat</span></div>
+            <ol class="chatlist" id="lchatList" aria-live="polite"></ol>
+            <form class="chatform" id="lchatForm" autocomplete="off"><input id="lchatIn" maxlength="200" placeholder="Say something to the room…" aria-label="Message the room"><button type="submit" class="play sm">Send</button></form>
+          </section>
+        </div>
+        <footer class="lbyfoot">
+          <p class="sub" id="lobbyWait">Waiting for the host to start…</p>
+          <p class="sub" id="lobbyMsg"></p>
+          <div class="row"><button class="ghostbtn" type="button" id="btnLobbyLeave">Leave</button><button class="play" type="button" id="btnLobbyStart">Start</button></div>
+        </footer>
       </div>
     </div>
 
@@ -983,6 +1075,12 @@ body{background:var(--bg)}
           <p class="muted">Sign in to add friends, see who's online and invite them to your room.</p>
           <button type="button" class="gbtn" id="frLogin"><svg class="gico" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.1C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.2 0-11.5-4.1-13.4-9.8l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>Continue with Google</button>
         </div>
+        <div id="frChat" class="frchat" hidden>
+          <div class="chathead"><button type="button" class="ghostbtn sm" id="chatBack">← Friends</button><span class="chatwho" id="chatWho"></span><button type="button" class="play sm" id="chatInvite">Invite to play</button></div>
+          <ol class="chatlist big" id="chatList" aria-live="polite"></ol>
+          <form class="chatform" id="chatForm" autocomplete="off"><input id="chatIn" maxlength="200" placeholder="Message…" aria-label="Message"><button type="submit" class="play sm">Send</button></form>
+          <p class="sub" id="chatNote"></p>
+        </div>
         <div id="frBody">
           <div class="mycode">
             <span class="lab">Your friend code</span>
@@ -1037,6 +1135,7 @@ body{background:var(--bg)}
   <div id="achToast" role="status" aria-live="polite" hidden></div>
   <p id="shareMsg" role="status" aria-live="polite" hidden></p>
   <div id="inviteToast" role="alert" hidden></div>
+  <div class="qchat" id="qchat" hidden aria-label="Quick chat"></div>
   <div class="touch" id="touch">
     <button type="button" data-a="hold">Hold</button>
     <button type="button" data-a="ccw" aria-label="Rotate left">↺</button>
@@ -2026,8 +2125,11 @@ async function netJoinInner(code) {
   net.unsub.forEach(u => { try { u(); } catch (e) {} }); net.unsub = [];
   net.unsub.push(net.nr.onPeers(() => renderLobby(), e => lobbyErr(e)));
   net.unsub.push(net.nr.on('start', m => onNetStart(m), e => lobbyErr(e)));
-  net.unsub.push(net.nr.onConnection(c => { $('lobbyConn').textContent = c ? 'Connected' : 'Reconnecting…'; }));
-  await net.nr.presence({ nick: settings.nick, st: 'lobby', v: 1, jt: Date.now() });
+  net.unsub.push(net.nr.onConnection(c => { $('lobbyConn').textContent = c ? 'Connected' : 'Reconnecting…'; $('lobbyDot').classList.toggle('on', !!c); }));
+  net.unsub.push(net.nr.on('chat', m => lobbyChatIn(m), () => {}));
+  net.unsub.push(net.nr.on('emote', m => emoteIn(m), () => {}));
+  lchat.length = 0; net.seenPeers = null; renderLobbyChat();
+  await net.nr.presence({ nick: settings.nick, st: 'lobby', v: 1, jt: Date.now(), pic: LIVE && account.user?.pic ? account.user.pic : null });
   show('ovLobby'); renderLobby(); hubState();
   clearInterval(net.qTimer); if (net.quick) net.qTimer = setInterval(() => { if (net.nr && !game.running && !$('ovLobby').hidden) renderLobby(); }, 1000);
 }
@@ -2035,7 +2137,7 @@ function lobbyErr(e) { $('lobbyMsg').textContent = 'Room ended: ' + (e?.code || 
 async function netLeave(nav = true) {
   net.unsub.forEach(u => { try { u(); } catch (e) {} }); net.unsub = [];
   try { await net.nr?.leave(); } catch (e) {}
-  net.nr = null; net.code = null; net.mid = null; net.quick = null; clearInterval(net.qTimer);
+  net.nr = null; net.code = null; net.mid = null; net.quick = null; clearInterval(net.qTimer); showQuickChat(false);
   if (game.mode === 'online') { game.running = false; musicStop(); }
   if (nav) openOnline();
 }
@@ -2049,7 +2151,17 @@ function renderLobby() {
   const sorted = ps.slice().sort(byJoin);
   net.hostPeer = sorted[0]?.peer || null; net.host = net.hostPeer === net.myPeer;
   const inProgress = ps.some(p => p.presence?.st === 'play');
-  $('lobbyList').innerHTML = sorted.map((p, i) => `<li><i class="dot" style="background:${(p.presence?.st === 'play') ? C.good : C.edge}"></i><span>${escapeHtml(cleanNick(p.presence?.nick))}${p.isMe && p.sameTab ? ' (you)' : ''}</span><small>${p.peer === net.hostPeer ? 'HOST' : ''}${p.guest ? ' · guest' : ''}</small>${LIVE && account.user && p.by && !(p.isMe && p.sameTab) && +p.by !== account.user.id ? (friends.ids.has(+p.by) ? '<small class="addf">Friend</small>' : `<button type="button" class="ghostbtn addf" data-fr="addpeer" data-uid="${+p.by}">Add friend</button>`) : ''}</li>`).join('') || '<li><small>Connecting…</small></li>';
+  const want0 = net.quick ? net.quick.size : Math.max(+($('lobbySize').value || 2), 2);
+  const seatTints = [C.you, C.accent2, '#3fd62a', '#ffd21a', '#a338ff', '#ff8f1a'];
+  $('lobbyList').innerHTML = sorted.map((p, i) => {
+    const me = p.isMe && p.sameTab, pr = p.presence || {}, nm = cleanNick(pr.nick), pic = typeof pr.pic === 'string' && /^https:\/\//.test(pr.pic) ? pr.pic : '';
+    const friendBtn = LIVE && account.user && p.by && !me && +p.by !== account.user.id ? (friends.ids.has(+p.by) ? '<small class="addf">Friend</small>' : `<button type="button" class="ghostbtn addf" data-fr="addpeer" data-uid="${+p.by}">Add friend</button>`) : '';
+    return `<li><span class="pava" style="background:${seatTints[i % 6]}">${pic ? `<img alt="" src="${escapeHtml(pic)}" referrerpolicy="no-referrer">` : escapeHtml(nm[0].toUpperCase())}</span>`
+      + `<span class="pname">${escapeHtml(nm)}${me ? ' <small class="muted">(you)</small>' : ''}</span>`
+      + `<span class="lright">${pr.st === 'play' ? '<small class="muted">in match</small>' : ''}${p.peer === net.hostPeer ? '<span class="htag">HOST</span>' : ''}${friendBtn}</span></li>`;
+  }).join('') + Array.from({ length: Math.max(0, Math.min(6, want0) - sorted.length) }, () => '<li><span class="pava" style="background:var(--edge)">·</span><span class="pempty">Open seat · a bot plays if nobody joins</span></li>').join('') || '<li><small>Connecting…</small></li>';
+  $('lobbySeats').textContent = `${sorted.length} / ${Math.max(want0, sorted.length)}`;
+  lobbyJoinLeave(sorted);
   const n = sorted.length, want = Math.max(+($('lobbySize').value || 2), 2);
   $('lobbyCount').textContent = `${n} player${n === 1 ? '' : 's'} here`;
   $('lobbySize').disabled = !net.host;
@@ -2472,12 +2584,13 @@ async function loadFriends() {
 function frChanged() {
   friends.list.sort((a, b) => (b.online - a.online) || (b.rp - a.rp));
   friends.online = friends.list.filter(f => f.online).length;
-  renderFriendChip(); if (!$('ovFriends').hidden) renderFriends(); if (!$('ovOnline').hidden) renderOnlineFriends(); if (net.nr) renderLobby();
+  renderFriendChip(); if (!$('ovFriends').hidden) { if (dm.with) renderChatHead(); else renderFriends(); } if (!$('ovOnline').hidden) renderOnlineFriends(); if (net.nr) renderLobby();
 }
 function renderFriendChip() {
   const chip = $('hFriends'); chip.hidden = !LIVE;
   const on = $('hFrOn'); on.classList.toggle('live', friends.online > 0); on.querySelector('span').textContent = `${friends.online} online`;
-  const rq = $('hFrReq'); rq.hidden = !friends.requests; rq.textContent = friends.requests; rq.title = `${friends.requests} friend request${friends.requests === 1 ? '' : 's'}`;
+  const un = unreadTotal(), n = friends.requests + un, rq = $('hFrReq');
+  rq.hidden = !n; rq.textContent = n; rq.title = [friends.requests ? `${friends.requests} friend request${friends.requests === 1 ? '' : 's'}` : '', un ? `${un} unread message${un === 1 ? '' : 's'}` : ''].filter(Boolean).join(', ');
   $('lobbyFriends').hidden = !(LIVE && account.user);
 }
 function frRow(f, acts) {
@@ -2496,12 +2609,14 @@ function renderFriends() {
   $('frList').innerHTML = friends.list.length ? friends.list.map(f => frRow(f,
     (f.online && f.room && f.room !== net.code ? `<button type="button" class="play" data-fr="join" data-room="${escapeHtml(f.room)}">Join</button>` : '') +
     (f.online && f.st !== 'match' && (!net.code || f.room !== net.code) ? `<button type="button" data-fr="invite">${net.code ? 'Invite' : 'Invite to play'}</button>` : '') +
+    `<button type="button" data-fr="chat">Chat${f.unread ? `<i class="ubadge">${f.unread}</i>` : ''}</button>` +
     `<button type="button" class="x" data-fr="remove" title="Remove friend" aria-label="Remove ${escapeHtml(f.name)}">✕</button>`)).join('')
     : '<li class="frempty">No friends yet. Share your code or add link, or add players you meet in online rooms.</li>';
   $('frOutWrap').hidden = !friends.outgoing.length;
   $('frOut').innerHTML = friends.outgoing.map(f => frRow(f, `<button type="button" class="x" data-fr="cancel" title="Cancel request">✕</button>`)).join('');
 }
 function openFriends() {
+  dm.with = null; $('frChat').hidden = true; $('frBody').hidden = false;
   show('ovFriends'); renderFriends(); setFrMsg('');
   loadFriends();
 }
@@ -2538,6 +2653,7 @@ document.addEventListener('click', async e => {
       hub.ws.send(JSON.stringify({ t: 'inv', to: id, room: net.code }));
       return;
     }
+    else if (act === 'chat') { openChat(id); return; }
     else if (act === 'join') { const room = b.dataset.room; if (net.nr) await netLeave(); openOnline(); await netInit(); $('roomCode').value = room; netJoin(room); return; }
     else if (act === 'addpeer') { b.disabled = true; const r = await addFriend({ id: +b.dataset.uid }); b.textContent = r?.status === 'friends' ? 'Friends' : 'Sent'; return; }
     loadFriends();
@@ -2591,6 +2707,7 @@ function onHub(m) {
   else if (m.t === 'qn') { qm.n = Math.max(1, m.n | 0); }
   else if (m.t === 'match') quickMatched(m);
   else if (m.t === 'qdone') quickStop(false);
+  else if (m.t === 'dm') dmIn(m);
 }
 // ---- quick match: the hub queues players who press Quick match and puts them in a room together ----
 const qm = { size: 0, t0: 0, timer: null, went: false, n: 1 };
@@ -2623,6 +2740,130 @@ async function quickMatched(m) {
 $('qmCancel').onclick = () => quickStop();
 $('qmModal').addEventListener('cancel', () => quickStop());
 document.addEventListener('click', e => { const b = e.target.closest('[data-qm]'); if (b) quickStart(+b.dataset.qm); });
+// ================= chat =================
+const SWEAR_RX = /\b(f+u+c+k+\w*|sh+i+t+\w*|b+i+t+c+h+\w*|c+u+n+t+\w*|putang\s*ina\w*|tang\s*ina\w*|puta\b|gago\w*|kupal\w*)/gi;
+const cleanMsg = t => String(t || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200).replace(SWEAR_RX, w => w[0] + '*'.repeat(Math.max(1, w.length - 1)));
+const hhmm = ts => new Date(ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+const chatLi = (m, who) => m.sys ? `<li class="sys">${escapeHtml(m.text)}</li>`
+  : `<li class="${m.mine ? 'me' : ''}">${who ? `<b style="color:${m.tint || C.accent}">${escapeHtml(who)}</b>` : ''}${escapeHtml(m.text)}<time>${hhmm(m.ts)}</time></li>`;
+function scrollEnd(el) { el.scrollTop = el.scrollHeight; }
+
+// ---- room chat: sent as a room event to everyone in the room, not saved anywhere ----
+const lchat = [];
+let lchatLast = 0;
+function renderLobbyChat() {
+  const el = $('lchatList');
+  el.innerHTML = lchat.length ? lchat.map(m => chatLi(m, m.mine || m.sys ? '' : m.name)).join('') : '<li class="cempty">Say hi while you wait for the match.</li>';
+  scrollEnd(el);
+}
+function lobbyChatAdd(m) { lchat.push(m); if (lchat.length > 80) lchat.shift(); renderLobbyChat(); }
+function lobbyChatIn(m) {
+  const text = cleanMsg(m.data?.text); if (!text) return;
+  const peers = lobbyPeers().slice().sort(byJoin), i = peers.findIndex(p => p.peer === m.peer), pr = peers[i]?.presence || {};
+  const tints = [C.you, C.accent2, '#3fd62a', '#ffd21a', '#a338ff', '#ff8f1a'];
+  lobbyChatAdd({ text, mine: !!m.isMe, name: cleanNick(pr.nick), tint: tints[(i < 0 ? 0 : i) % 6], ts: Date.now() });
+  if (!m.isMe && !$('ovLobby').hidden) sfx.tick?.(3);
+}
+function lobbyJoinLeave(sorted) {
+  // "Ben joined" / "Ben left" lines in the room chat. A name arrives a moment after the join itself,
+  // so a player only counts once their name is known. Anyone already here when I arrive is added quietly.
+  if (!net.seenPeers) { net.seenPeers = new Map(); net.jlFirst = new Set(sorted.map(p => p.peer)); }
+  const here = new Set(sorted.map(p => p.peer));
+  for (const p of sorted) {
+    const nick = p.presence?.nick; if (!nick || p.peer === net.myPeer || net.seenPeers.has(p.peer)) continue;
+    const nm = cleanNick(nick); net.seenPeers.set(p.peer, nm);
+    if (!net.jlFirst.has(p.peer)) lobbyChatAdd({ sys: true, text: `${nm} joined` });
+  }
+  for (const [peer, nm] of net.seenPeers) if (!here.has(peer)) { net.seenPeers.delete(peer); lobbyChatAdd({ sys: true, text: `${nm} left` }); }
+}
+$('lchatForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const text = cleanMsg($('lchatIn').value); if (!text || !net.nr) return;
+  if (Date.now() - lchatLast < 700) return;            // no flooding
+  lchatLast = Date.now(); $('lchatIn').value = '';
+  net.nr.emit('chat', { text }).catch(() => lobbyChatAdd({ sys: true, text: 'Message not sent. Check your connection.' }));
+});
+$('btnCopyCode').onclick = () => { const c = (net.code || '').toUpperCase(); navigator.clipboard?.writeText(c).then(() => shareMsg('Room code copied'), () => shareMsg(c)); };
+
+// ---- quick chat in online matches: one tap (or keys 1–6), shown in a bubble over your board ----
+const EMOTES = ['GG', 'NICE!', 'CLOSE ONE!', 'REMATCH?', 'OOPS!', 'WOW'];
+let emoteLast = 0;
+// one small button in the corner; the six phrases open from it (keys 1–6 work without opening it)
+$('qchat').innerHTML = `<button type="button" class="qtog" aria-expanded="false">Quick chat <kbd>1–6</kbd></button><div class="qlist">${EMOTES.map((t, i) => `<button type="button" data-emote="${i}"><kbd>${i + 1}</kbd>${t}</button>`).join('')}</div>`;
+function qchatOpen(on) { $('qchat').classList.toggle('open', on); $('qchat').querySelector('.qtog').setAttribute('aria-expanded', on); }
+$('qchat').addEventListener('click', e => {
+  const b = e.target.closest('[data-emote]');
+  if (b) { sendEmote(+b.dataset.emote); qchatOpen(false); b.blur(); return; }
+  if (e.target.closest('.qtog')) { qchatOpen(!$('qchat').classList.contains('open')); e.target.closest('.qtog').blur(); }
+});
+function sendEmote(i) {
+  if (!net.nr || game.mode !== 'online' || Date.now() - emoteLast < 1500) return;
+  emoteLast = Date.now(); net.nr.emit('emote', { i }).catch(() => {});
+}
+function emoteIn(m) {
+  const i = +m.data?.i; if (!(i >= 0 && i < EMOTES.length) || game.mode !== 'online') return;
+  const p = m.isMe ? game.players[0] : game.players.find(q => q.id === m.peer);
+  if (p) { p.say = { t: EMOTES[i], age: 0 }; if (!m.isMe) sfx.tick?.(2); }
+}
+function showQuickChat(on) { $('qchat').hidden = !on; if (!on) qchatOpen(false); }
+
+// ---- private chat with friends (saved on the server for 30 days) ----
+const dm = { with: null, msgs: [] };
+function unreadTotal() { return friends.list.reduce((a, f) => a + (f.unread || 0), 0); }
+async function openChat(id) {
+  const f = friends.list.find(x => x.id === id); if (!f) return;
+  dm.with = id; dm.msgs = [];
+  $('frBody').hidden = true; $('frChat').hidden = false; setFrMsg('');
+  renderChatHead(); $('chatList').innerHTML = '<li class="cempty">Loading…</li>'; $('chatNote').textContent = '';
+  try {
+    const d = await api.call(`/api/chat?with=${id}`);
+    if (dm.with !== id) return;
+    dm.msgs = d.messages; renderChat();
+    if (f.unread) { f.unread = 0; renderFriendChip(); api.call('/api/chat/read', 'POST', { with: id }).catch(() => {}); }
+  } catch (e) { $('chatList').innerHTML = '<li class="cempty">Couldn\'t load messages.</li>'; }
+  $('chatIn').focus();
+}
+function closeChat() { dm.with = null; $('frChat').hidden = true; $('frBody').hidden = false; renderFriends(); }
+function renderChatHead() {
+  const f = friends.list.find(x => x.id === dm.with); if (!f) return;
+  $('chatWho').innerHTML = `${avatar(f)}<span>${escapeHtml(f.name)}<br><small>${escapeHtml(frStatus(f))}</small></span>`;
+  $('chatInvite').hidden = !(f.online && f.st !== 'match');
+}
+function renderChat() {
+  const el = $('chatList');
+  el.innerHTML = dm.msgs.length ? dm.msgs.map(m => chatLi(m, '')).join('') : '<li class="cempty">No messages yet. Say hi!</li>';
+  scrollEnd(el);
+}
+$('chatBack').onclick = closeChat;
+$('chatForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const text = cleanMsg($('chatIn').value), to = dm.with; if (!text || !to) return;
+  $('chatIn').value = '';
+  const temp = { text, mine: true, ts: Date.now() }; dm.msgs.push(temp); renderChat();
+  try { const d = await api.call('/api/chat/send', 'POST', { to, text }); Object.assign(temp, d.message); renderChat(); $('chatNote').textContent = ''; }
+  catch (err) {
+    dm.msgs.splice(dm.msgs.indexOf(temp), 1); renderChat(); $('chatIn').value = text;
+    $('chatNote').textContent = err.message === 'slow_down' ? 'Slow down a little, then try again.' : err.message === 'not_friends' ? 'You\'re no longer friends.' : 'Message not sent. Try again.';
+  }
+});
+$('chatInvite').onclick = async () => {
+  const b = $('chatInvite'); if (!hub.ws || hub.ws.readyState !== 1 || !dm.with) return;
+  const to = dm.with; b.disabled = true;
+  if (!net.code && !await ensureRoom()) { b.disabled = false; return; }
+  hub.ws.send(JSON.stringify({ t: 'inv', to, room: net.code })); b.disabled = false;
+};
+function dmIn(m) {
+  const fid = m.from?.id, f = friends.list.find(x => x.id === fid), msg = { ...m.m, mine: false };
+  if (!msg.text) return;
+  if (dm.with === fid && !$('frChat').hidden && !$('ovFriends').hidden) {
+    dm.msgs.push(msg); renderChat(); api.call('/api/chat/read', 'POST', { with: fid }).catch(() => {});
+  } else {
+    if (f) f.unread = (f.unread || 0) + 1;
+    renderFriendChip(); if (!$('ovFriends').hidden && !dm.with) renderFriends();
+    if (!inMatch()) shareMsg(`${m.from?.name || 'A friend'}: ${msg.text.slice(0, 60)}`);
+  }
+  sfx.tick?.(1);
+}
 function startPresence() {
   if (!LIVE || !account.user || hub.started) return;
   hub.started = true;
@@ -3397,6 +3638,7 @@ function launch(mode, ps, size) {
   game.inputs = ps.filter(p => p.human && !p.remote).map(p => new Input(p));
   game.cpus = ps.filter(p => !p.human && !p.remote).map(p => new CPU(p, game.level));
   game.running = true;
+  showQuickChat(mode === 'online');
   if (mode !== 'demo') document.activeElement?.blur?.();
   show(null);
   $('touch').classList.toggle('show', mode !== 'local');
@@ -3410,7 +3652,7 @@ function launch(mode, ps, size) {
 function end() {
   if (game.mode === 'demo') { startDemo(); return; }
   if (game.over) return;
-  game.over = true; game.running = false; musicStop();
+  game.over = true; game.running = false; musicStop(); showQuickChat(false);
   game.inputs.forEach(i => i.clear());
   const [a, b] = game.players;
   const pps = p => game.elapsed ? (p.pieces / (game.elapsed / 1000)).toFixed(2) : '0.00';
@@ -3551,6 +3793,7 @@ addEventListener('keydown', e => {
   if (!$('ovPause').hidden || !$('ovSettings').hidden) return;
   if ((e.code === 'KeyT' || e.code === 'Tab') && game.running && isArena()) { e.preventDefault(); if (!game.paused && !e.repeat) cycleTarget(); return; }
   if (!game.running || game.paused) return;
+  if (game.mode === 'online' && /^Digit[1-6]$/.test(e.code)) { e.preventDefault(); if (!e.repeat) sendEmote(+e.code.slice(5) - 1); return; }
   const r = route(e.code); if (!r) return;
   e.preventDefault(); if (e.repeat) return;
   if (game.countdown > 0) { if (r[1] === 'left' || r[1] === 'right') { r[0].held[r[1]] = true; r[0].dir = r[1] === 'left' ? -1 : 1; } return; }
@@ -3592,7 +3835,7 @@ document.querySelectorAll('#diff button').forEach(b => b.addEventListener('click
 }));
 $('btnPause').onclick = () => pause($('ovPause').hidden);
 $('btnResume').onclick = () => { if (game.mode === 'online') { show(null); } else pause(false); };
-const quitTo = where => () => { if (inMatch()) { game.running = false; game.paused = false; musicStop(); game.inputs.forEach(i => i.clear()); } if (net.nr) netLeave(false); show(where); };
+const quitTo = where => () => { showQuickChat(false); if (inMatch()) { game.running = false; game.paused = false; musicStop(); game.inputs.forEach(i => i.clear()); } if (net.nr) netLeave(false); show(where); };
 $('btnQuit').onclick = $('btnBack').onclick = quitTo('ovMenu');
 $('btnMenu').onclick = quitTo('ovHome');
 document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => show(b.dataset.go)));
@@ -3646,7 +3889,8 @@ function showRules() {
   document.querySelectorAll('[data-rule]').forEach(sel => { const k = sel.dataset.rule; sel.value = String(RULE_OPTS[k].findIndex(o => o[0] === ru[k])); sel.disabled = !net.host; });
   $('ruleBots').value = bl; $('ruleBots').disabled = !net.host;
   if (!net.host && [2, 4, 6].includes(+hp.size)) $('lobbySize').value = String(hp.size);
-  const std = isStdRules(ru);
+  const std = isStdRules(ru), lab = (k, v) => (RULE_OPTS[k].find(o => o[0] === v) || [, ''])[1];
+  $('rulesSum').textContent = [lab('type', ru.type).replace(' (40 lines)', ''), ru.time ? lab('time', ru.time) : 'no time limit', `${$('lobbySize').value}P`, `${bl[0].toUpperCase() + bl.slice(1)} bots`].join(' · ');
   $('rulesTag').textContent = std ? 'Standard · Ranked' : 'Custom · Unranked'; $('rulesTag').classList.toggle('custom', !std);
   $('rulesReset').hidden = !net.host || std;
   $('rulesNote').textContent = net.host ? (std ? 'You\'re the host: change any rule. Custom rules make the match unranked.' : 'Custom rules: this match won\'t count toward rank.') : 'Only the host can change the rules.';
@@ -4006,6 +4250,18 @@ function drawBoard(p, bx, by, cell, small) {
     ctx.fillStyle = tot >= 6 ? C.warn : C.accent; ctx.globalAlpha = on ? 1 : .7; ctx.fillRect(mx, by + H - h, mw, h); ctx.globalAlpha = 1;
     ctx.fillStyle = C.well; for (let i = 1; i < Math.min(20, tot); i++) ctx.fillRect(mx, by + H - i * cell, mw, 1);
     if (!small) num(tot, mx + mw / 2, by + H - h - 5, { size: 11, color: C.warn, align: 'center', base: 'bottom' });
+  }
+  if (p.say) {
+    p.say.age += frameDt;
+    if (p.say.age > 2600) p.say = null;
+    else {
+      const k = p.say.age / 2600, a = k < .06 ? k / .06 : k > .8 ? (1 - k) / .2 : 1, sz = small ? 8 : 15;
+      ctx.font = `900 ${sz}px ${DISPLAY}`; const tw = ctx.measureText(p.say.t).width + sz * 1.4, th = sz * 2, bx2 = bx + W / 2 - tw / 2, by2 = by + (small ? 4 : 10);
+      const fade = !small && p.human ? clearFade(p, 'fadeS', hits(p.clear, bx2, by2, bx2 + tw, by2 + th)) : 1;
+      ctx.globalAlpha = a * fade; ctx.fillStyle = C.ink; ctx.fillRect(bx2 + 3, by2 + 3, tw, th); ctx.fillStyle = C.fg; ctx.fillRect(bx2, by2, tw, th);
+      ctx.beginPath(); ctx.moveTo(bx + W / 2 - 6, by2 + th); ctx.lineTo(bx + W / 2 + 6, by2 + th); ctx.lineTo(bx + W / 2, by2 + th + (small ? 5 : 8)); ctx.fill();
+      ctx.fillStyle = C.navy; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(p.say.t, bx + W / 2, by2 + th / 2 + 1); ctx.globalAlpha = 1;
+    }
   }
   if (p.out || p.fin) {      // eliminated / finished boards are dimmed with a label
     ctx.globalAlpha = .62; ctx.fillStyle = C.ink; ctx.fillRect(bx, by, W, H); ctx.globalAlpha = 1;
