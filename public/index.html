@@ -511,8 +511,34 @@ body{background:var(--bg)}
 .premtag{position:absolute;top:8px;left:8px;z-index:1;font-family:var(--display);font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink);background:var(--gold);padding:3px 7px;border:2px solid var(--navy);box-shadow:2px 2px 0 var(--ink)}
 #shopMsg.bad{color:var(--red)}
 #shopNote{margin:0}
-.coinrules{grid-template-columns:160px 1fr}
-@media (max-width:560px){.shopgrid{grid-template-columns:1fr 1fr;gap:8px}.sinfo small{display:none}.coinrules{grid-template-columns:1fr}.coinchip .lab{display:none}}
+@media (max-width:560px){.shopgrid{grid-template-columns:1fr 1fr;gap:8px}.sinfo small{display:none}.coinchip .lab{display:none}}
+/* "How to earn coins" pop-up */
+.earnbtn{display:inline-flex;align-items:center;gap:6px;margin-left:auto;align-self:center}
+.earnbtn .coin{width:16px;height:16px}
+.shoppage .menuhead .earnbtn + .coinbal{margin-left:10px}
+.modal{width:min(820px,calc(100vw - 32px));max-height:calc(100vh - 40px);overflow:auto;padding:24px;box-sizing:border-box;background:var(--panel);color:var(--fg);border:3px solid var(--line);box-shadow:8px 8px 0 var(--ink);border-radius:4px}
+.modal::backdrop{background:rgba(2,3,8,.8)}
+.modal[open]{display:flex;flex-direction:column;gap:14px;animation:mIn .22s cubic-bezier(.2,1.3,.4,1)}
+@keyframes mIn{from{opacity:0;transform:translateY(12px) scale(.97)}}
+.mhead2{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.mhead2 h2{margin:0;font-family:var(--display);font-weight:900;font-size:24px;text-transform:uppercase;letter-spacing:.02em}
+.mlead{margin:0;color:var(--muted)}
+.earngrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.ecard{background:var(--navy);border:2px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:8px}
+.ecard h3{margin:0;font-family:var(--display);font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--accent)}
+.ecard p{margin:0;font-size:13px;color:var(--muted);line-height:1.4}
+.erow{display:flex;flex-direction:column;gap:6px}
+.ek{font-family:var(--display);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.echips{display:flex;flex-wrap:wrap;gap:6px}
+.echip{display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;padding:5px 9px;border:2px solid var(--line);background:var(--panel)}
+.echip small{font-size:11px;color:var(--muted);white-space:nowrap}
+.echip b{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:15px;color:var(--gold)}
+.echip .coin{width:15px;height:15px}
+.echip.hi{border-color:var(--gold)}
+.earnfoot{border-top:2px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+.earnfoot p{margin:0}
+.earnfoot b{color:var(--fg)}
+@media (max-width:640px){.earngrid{grid-template-columns:1fr}.earnbtn{font-size:0;gap:0;padding:6px 8px}.earnbtn .coin{width:18px;height:18px}.modal{padding:16px}}
 /* lobby room rules */
 .rules{border:2px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--navy)}
 .ruleshead{display:flex;justify-content:space-between;align-items:center;gap:10px}
@@ -816,13 +842,12 @@ body{background:var(--bg)}
 
     <div class="overlay" id="ovShop" hidden>
       <div class="card shoppage">
-        <div class="menuhead"><button type="button" class="ghostbtn sm" data-back>← Back</button><h2>Shop</h2><span class="coinbal" id="shopCoins"><svg class="coin" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="#ffd21a" stroke="#0a0f24" stroke-width="2"/><circle cx="12" cy="12" r="6.6" fill="none" stroke="#b07a00" stroke-width="1.6"/><rect x="9.6" y="9.6" width="4.8" height="4.8" fill="#b07a00"/></svg><b>0</b></span></div>
+        <div class="menuhead"><button type="button" class="ghostbtn sm" data-back>← Back</button><h2>Shop</h2><button type="button" class="ghostbtn sm earnbtn" id="btnEarn"><svg class="coin" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="#ffd21a" stroke="#0a0f24" stroke-width="2"/><circle cx="12" cy="12" r="6.6" fill="none" stroke="#b07a00" stroke-width="1.6"/><rect x="9.6" y="9.6" width="4.8" height="4.8" fill="#b07a00"/></svg>How to earn coins</button><span class="coinbal" id="shopCoins"><svg class="coin" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="#ffd21a" stroke="#0a0f24" stroke-width="2"/><circle cx="12" cy="12" r="6.6" fill="none" stroke="#b07a00" stroke-width="1.6"/><rect x="9.6" y="9.6" width="4.8" height="4.8" fill="#b07a00"/></svg><b>0</b></span></div>
         <div class="shoptabs" id="shopTabs" role="tablist"><button type="button" role="tab" data-tab="block">Blocks</button><button type="button" role="tab" data-tab="ghost">Ghost</button><button type="button" role="tab" data-tab="fx">Effects</button><button type="button" role="tab" data-tab="bg">Backgrounds</button></div>
         <div class="shopsub" id="shopSub" hidden></div>
         <p class="muted" id="shopNote" hidden></p>
         <div class="shopgrid" id="shopGrid"></div>
         <p class="sub" id="shopMsg" role="status"></p>
-        <details class="rphow"><summary>How to earn coins</summary><div class="rptable coinrules" id="coinRules"></div></details>
       </div>
     </div>
 
@@ -957,6 +982,13 @@ body{background:var(--bg)}
     </div>
   </main>
 
+  <dialog class="modal" id="earnModal" aria-labelledby="earnTitle">
+    <div class="mhead2"><h2 id="earnTitle">How to earn coins</h2><button type="button" class="ghostbtn sm" id="earnClose" aria-label="Close">✕</button></div>
+    <p class="mlead">Every match you finish pays coins. Spend them in the shop on new looks for your blocks, ghost, effects and background.</p>
+    <div class="earngrid" id="earnGrid"></div>
+    <div class="earnfoot" id="earnFoot"></div>
+    <div class="row"><button type="button" class="play" id="earnOk">Got it</button></div>
+  </dialog>
   <div id="achToast" role="status" aria-live="polite" hidden></div>
   <p id="shareMsg" role="status" aria-live="polite" hidden></p>
   <div id="inviteToast" role="alert" hidden></div>
@@ -2571,14 +2603,22 @@ function coinsFor(r) {
   if (r.mode === 'sprint') return r.done ? 15 + (r.best ? 10 : 0) : 0;
   return 0;
 }
-const COIN_RULES = [
-  ['1 vs 1 CPU', 'Win 15 / 25 / 35 / 50 (Easy → Expert), loss 5'],
-  ['Arena vs CPUs', '1st 40, 2nd 25, 3rd 15, then 10 / 5. Harder CPUs and 6P pay more'],
-  ['Online', '1 vs 1: win 40, loss 10. 4P/6P: 50 / 30 / 20 / 12 / 8 / 5 by place'],
-  ['Classic', '1 coin per 4,000 points (+3), up to 40. Needs 10 lines'],
-  ['Sprint 40', '15 for finishing, +10 for a new best'],
-  ['Bonuses', 'First win of the day +25 · every achievement +50'],
+// the "How to earn coins" pop-up, built from the same numbers the game pays out
+const chip = (label, n, hi) => `<span class="echip${hi ? ' hi' : ''}"><small>${label}</small><b>${COIN_SVG}${fmtCoins(n)}</b></span>`;
+const EARN_CARDS = [
+  { t: '1 vs 1 CPU battle', d: 'Win to earn more. Harder CPUs pay more.', rows: [['Win', Object.entries(COIN_CPU).map(([k, v]) => chip(k[0].toUpperCase() + k.slice(1), v, k === 'expert'))], ['Lose', [chip('Any', 5)]]] },
+  { t: 'Arena (4P / 6P) vs CPUs', d: 'Paid by your finishing place, on Normal CPUs. Easy pays less (×0.6), Hard ×1.3, Expert ×1.6. 6-player arenas pay 25% more.', rows: [['Place', [chip('1st', 40, 1), chip('2nd', 25), chip('3rd', 15), chip('4th', 10), chip('5th–6th', 5)]]] },
+  { t: 'Online', d: 'Play your friends. Standard and custom rules both pay.', rows: [['1 vs 1', [chip('Win', 40, 1), chip('Lose', 10)]], ['4–6 players', [chip('1st', 50, 1), chip('2nd', 30), chip('3rd', 20), chip('4th', 12), chip('5th', 8), chip('6th', 5)]]] },
+  { t: 'Classic', d: 'Clear at least 10 lines. You get 3 coins plus 1 coin for every 4,000 points.', rows: [['Examples', [chip('20,000 pts', 8), chip('60,000 pts', 18), chip('148,000+ pts', 40, 1)]]] },
+  { t: 'Sprint 40', d: 'Clear all 40 lines to get paid.', rows: [['Finish', [chip('Done', 15), chip('New best', 25, 1)]]] },
+  { t: 'Bonuses', d: 'On top of what the match pays.', rows: [['Extra', [chip('First win each day', 25, 1), chip('Every achievement', 50, 1)]]] },
 ];
+function renderEarn() {
+  $('earnGrid').innerHTML = EARN_CARDS.map(c => `<section class="ecard"><h3>${c.t}</h3><p>${c.d}</p>${c.rows.map(([k, chips]) => `<div class="erow"><span class="ek">${k}</span><div class="echips">${chips.join('')}</div></div>`).join('')}</section>`).join('');
+  $('earnFoot').innerHTML = `<p><b>No coins for:</b> Local 2P on one keyboard, or matches that end in under 20 seconds.</p><p><b>Daily limit:</b> up to ${fmtCoins(2500)} coins a day from matches. Achievement coins don't count toward it.</p>${!LIVE || account.user ? '' : '<p><b>Playing as a guest?</b> Your coins are saved in this browser. Sign in with Facebook and they move to your account.</p>'}`;
+}
+function openEarn() { renderEarn(); const d = $('earnModal'); if (d.showModal) d.showModal(); else d.setAttribute('open', ''); }
+function closeEarn() { const d = $('earnModal'); if (d.close) d.close(); else d.removeAttribute('open'); }
 async function payMatch(r) {
   const box = $('resCoins');
   let base = coinsFor(r), bonus = 0;
@@ -3380,6 +3420,7 @@ addEventListener('blur', () => { game.inputs.forEach(i => i.clear()); if (inMatc
 document.addEventListener('visibilitychange', () => { if (document.hidden && inMatch() && !game.paused) pause(true); });
 function homeKeys(e) {
   const t = e.target; if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT')) return;
+  if ($('earnModal').open) return;          // Esc closes the pop-up only, not the shop behind it
   if (!$('ovHome').hidden) {
     if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); show('ovMenu'); }
     else if (e.code === 'KeyH') show('ovHow');
@@ -4226,7 +4267,9 @@ document.querySelectorAll('#diff button').forEach(x => x.setAttribute('aria-pres
 $('diffTxt').textContent = DIFF_TXT[game.level];
 if (IN_CLAUDE) document.querySelector('.onsub').textContent = 'Play with friends on their own devices. Empty seats are filled with bots. Share this page with them as Contributors or higher, then share a room code.';
 applyCosmetics(); renderCoins();
-$('coinRules').innerHTML = '<span class="h">Mode</span><span class="h">Coins</span>' + COIN_RULES.map(([k, v]) => `<span>${k}</span><span>${v}</span>`).join('');
+$('btnEarn').onclick = openEarn;
+$('earnClose').onclick = $('earnOk').onclick = closeEarn;
+$('earnModal').addEventListener('click', e => { if (e.target === $('earnModal')) closeEarn(); });      // click outside the box closes it
 $('shopTabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) { shopTab = b.dataset.tab; shopMsg(''); renderShop(); } });
 $('shopSub').addEventListener('click', e => { const b = e.target.closest('[data-sub]'); if (b) { shopSub = b.dataset.sub; shopMsg(''); renderShop(); } });
 $('shopGrid').addEventListener('click', e => { const b = e.target.closest('[data-buy],[data-equip]'); if (!b) return; if (b.dataset.buy) buyItem(b.dataset.buy); else equipItem(b.dataset.equip); });
