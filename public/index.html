@@ -2946,6 +2946,12 @@ function drawBoard(p, bx, by, cell, small) {
       for (const x of xs) ctx.fillRect(bx + (x - pc.x + p.vis.x) * cell, by, cell, H);
       ctx.globalAlpha = 1;
     }
+    {
+      const cs = CELLS[pc.t][pc.r], xs = cs.map(c => c[0]), ys = cs.map(c => c[1]);
+      const x0 = pc.x + Math.min(...xs) - 1, x1 = pc.x + Math.max(...xs) + 2;
+      const y0 = Math.min(pc.y, p.vis.y) + Math.min(...ys) - HIDDEN - 1, y1 = gy + Math.max(...ys) - HIDDEN + 2;
+      p.clear = { x0: bx + x0 * cell, x1: bx + x1 * cell, y0: by + y0 * cell, y1: by + y1 * cell };
+    }
     if (!small && settings.ghost) for (const [cx, cy] of CELLS[pc.t][pc.r]) {
       const x = bx + (pc.x + cx) * cell, y = by + (gy + cy - HIDDEN) * cell;
       ctx.globalAlpha = .55; ctx.strokeStyle = COLORS[pc.t]; ctx.lineWidth = 2; ctx.strokeRect(x + 2, y + 2, cell - 4, cell - 4); ctx.globalAlpha = 1;
@@ -2998,8 +3004,16 @@ function banner(x, y, label, fill, size, alpha, small) {
   ctx.globalAlpha = 1;
 }
 const COMBO_COLORS = ['#22b8ff', '#3fd62a', '#ffd21a', '#ff8f1a', '#ff2b3b', '#a338ff'];
+// Callouts never hide the piece you're placing: anything that overlaps the falling piece, its drop
+// path or its landing spot fades to a faint outline until the piece moves away.
+const hits = (c, x0, y0, x1, y1) => c && x0 < c.x1 && x1 > c.x0 && y0 < c.y1 && y1 > c.y0;
+function clearFade(p, key, overlap) {
+  const target = overlap ? .14 : 1, f = p[key] ?? 1;
+  return (p[key] = f + (target - f) * Math.min(1, frameDt / (overlap ? 60 : 160)));
+}
 function drawCallouts(p, bx, by, W, H, cell, small) {
   const cx = bx + W / 2, ease = k => 1 - Math.pow(1 - k, 3);
+  const keep = !small && p.piece && !p.remote ? p.clear : null;
   // K.O.: a red band across the middle of the board
   if (p.koT > 0) {
     ctx.globalAlpha = p.koT * .22; ctx.fillStyle = C.warn; ctx.fillRect(bx, by, W, H); ctx.globalAlpha = 1;
@@ -3020,20 +3034,32 @@ function drawCallouts(p, bx, by, W, H, cell, small) {
       const a = k < .08 ? k / .08 : k > .7 ? 1 - (k - .7) / .3 : 1;
       const pop = k < .1 ? 1.45 - ease(k / .1) * .45 : 1, lift = k > .7 ? (k - .7) * 30 : 0;
       const col = COMBO_COLORS[Math.min(COMBO_COLORS.length - 1, Math.floor((cs.n - 1) / 2))];
-      const big = small ? 18 : Math.min(54, 34 + cs.n * 2);
+      const big = small ? 18 : Math.min(46, 30 + cs.n * 2);
       const cy = by + H * .56 - lift;
-      ctx.save(); ctx.translate(cx, cy); ctx.scale(pop, pop); ctx.globalAlpha = a * .95;
+      const fade = clearFade(p, 'fadeC', hits(keep, cx - big, cy - big * .7, cx + big, cy + big * 1.2));
+      const af = a * fade;
+      ctx.save(); ctx.translate(cx, cy); ctx.scale(pop, pop); ctx.globalAlpha = af * .95;
       ctx.font = `900 ${big}px ${DISPLAY}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
       const t = String(cs.n);
       ctx.lineWidth = small ? 4 : 9; ctx.strokeStyle = C.ink; ctx.strokeText(t, 2, 4);
       ctx.lineWidth = small ? 3 : 6; ctx.strokeStyle = C.fg; ctx.strokeText(t, 0, 0);
       ctx.fillStyle = col; ctx.fillText(t, 0, 0);
       ctx.restore(); ctx.globalAlpha = 1;
-      banner(cx, cy + big * .62 + (small ? 3 : 6), 'COMBO', col, small ? 6 : 11, a * .95, small);
+      banner(cx, cy + big * .62 + (small ? 3 : 6), 'COMBO', col, small ? 6 : 11, af * .95, small);
     }
   }
   // action banners (quad, T-spin, bombs, back-to-back, attack, perfect clear), stacked in the upper middle
-  let i = 0;
+  let i = 0, over = false;
+  const shown = [];
+  for (const f of p.fx) {
+    if (f.age < 0) continue;
+    if (shown.length >= 3) break;
+    const size = small ? 6 : f.big ? 16 : 12, ty = by + H * .2 + shown.length * (size * 2.3);
+    ctx.font = `900 ${size}px ${DISPLAY}`; const hw = ctx.measureText(f.t).width / 2 + size;
+    if (hits(keep, cx - hw, ty - size, cx + hw, ty + size)) over = true;
+    shown.push(f);
+  }
+  const fadeB = clearFade(p, 'fadeB', over);
   for (const f of p.fx) {
     if (f.age < 0) continue;
     const k = f.age / 1300;
@@ -3043,7 +3069,7 @@ function drawCallouts(p, bx, by, W, H, cell, small) {
     if (i >= 3) break;
     const ty = by + H * .2 + i * (size * 2.3) - Math.max(0, k - .62) * 40;
     ctx.save(); ctx.translate(cx, ty); ctx.scale(pop, pop);
-    banner(0, 0, f.t, f.c === C.fg ? C.you : f.c, size, Math.max(0, a), small);
+    banner(0, 0, f.t, f.c === C.fg ? C.you : f.c, size, Math.max(0, a) * fadeB, small);
     ctx.restore();
     i++;
   }
