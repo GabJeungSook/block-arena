@@ -876,7 +876,17 @@ const crack = (vol = .3, o = {}) => { hiss({ f: 2400, type: 'bandpass', q: .7, d
 const crash = (vol = .2, o = {}) => hiss({ f: 6000, type: 'highpass', dur: .9, vol, wet: .4, ...o });
 // E-phrygian ladder for combos: every combo step climbs a rung
 const LADDER = [52, 53, 55, 57, 59, 60, 62, 64, 65, 67, 69, 71];
+// combo ladder: each combo step plays the next note up a bright major scale, like an arcade combo counter
+const COMBO_STEPS = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19, 21, 23, 24];
 const sfx = {
+  combo:   c => {
+    const st = COMBO_STEPS[Math.min(COMBO_STEPS.length - 1, Math.max(0, c - 1))], f = mf(72 + st);
+    tone({ f, dur: .22, type: 'square', vol: .07, cutoff: 6000, cutoffTo: 2000, drive: true });
+    tone({ f: f * 2, dur: .16, type: 'triangle', vol: .06, delay: .045, wet: .3 });
+    tone({ f: f * 1.5, dur: .12, type: 'sine', vol: .04, delay: .09, wet: .4 });
+    if (c >= 4) hiss({ f: 9000, type: 'highpass', dur: .18 + Math.min(c, 10) * .02, vol: .05 + Math.min(c, 10) * .006, wet: .3 });
+    if (c >= 7) tone({ f: f / 2, dur: .3, type: 'sawtooth', vol: .04, cutoff: 3000, cutoffTo: 400, drive: true });
+  },
   ui:      () => { tone({ f: 1800, dur: .025, type: 'square', vol: .05, cutoff: 4000, pan: 0 }); hiss({ f: 6000, type: 'highpass', dur: .02, vol: .12, pan: 0 }); },
   move:    () => { tone({ f: 1500, dur: .016, type: 'square', vol: .045, cutoff: 3500 }); hiss({ f: 6500, type: 'highpass', dur: .016, vol: .2 }); },
   rotate:  () => { tone({ f: 1100, to: 2300, dur: .045, type: 'square', vol: .07, cutoff: 5000, drive: true }); hiss({ f: 5200, type: 'bandpass', q: 4, dur: .035, vol: .2 }); },
@@ -946,21 +956,27 @@ function musicTick() {
   const s16 = 60 / (music.mode === 'menu' ? 100 : intense ? 172 : 148) / 4;
   while (music.next < a.currentTime + .15) { musicStep(music.step, music.next, intense, s16); music.next += s16; music.step++; }
 }
-const kick = at => { tone({ at, bus: 'music', f: 200, to: 36, dur: .2, vol: .7, drive: true }); hiss({ at, bus: 'music', f: 4000, dur: .01, vol: .25 }); };
+const kick = (at, v = 1) => { tone({ at, bus: 'music', f: 210, to: 34, dur: .22, vol: .75 * v, drive: true }); tone({ at, bus: 'music', f: 55, to: 40, dur: .3, vol: .45 * v }); hiss({ at, bus: 'music', f: 4500, dur: .012, vol: .3 * v }); };
+const clap = (at, v = 1) => [0, .011, .023].forEach(d => hiss({ at: at + d, bus: 'music', f: 1500, type: 'bandpass', q: 1.2, dur: .12, vol: .32 * v, wet: .25 }));
 const snare = (at, vol = 1) => { hiss({ at, bus: 'music', f: 2200, type: 'bandpass', q: .6, dur: .15, vol: .4 * vol, wet: .2, drive: true }); tone({ at, bus: 'music', f: 230, to: 160, dur: .09, type: 'triangle', vol: .25 * vol, drive: true }); };
-const hat = (at, open) => hiss({ at, bus: 'music', f: 9500, type: 'highpass', dur: open ? .1 : .025, vol: open ? .1 : .07 });
+const hat = (at, open, v = 1) => hiss({ at, bus: 'music', f: 9500, type: 'highpass', dur: open ? .1 : .025, vol: (open ? .1 : .07) * v });
 function musicStep(st, at, intense, s16) {
   const s = st % 16, bar = (st >> 4) % 4, phrase = (st >> 6) % 2, ch = PROG[bar], o = { at, bus: 'music' };
   if (music.mode === 'menu') {
     if (s % 2 === 0) tone({ ...o, f: mf(ch.root), dur: .18, type: 'sawtooth', vol: .1, cutoff: 500 + (s * 40), cutoffTo: 150, drive: true });
     if (s === 0) [12, 19, 24].forEach((iv, i) => tone({ ...o, f: mf(ch.root + iv), dur: 2.6, type: 'sawtooth', vol: .012, attack: .7, cutoff: 900, wet: .5, detune: i % 2 ? 8 : -8 }));
-    if (s === 8 || s === 12) hiss({ ...o, f: 8000, type: 'highpass', dur: .03, vol: .04 });
-    if (phrase === 1 && s % 4 === 0) { const n = LEAD[bar][s / 2]; if (n) tone({ ...o, f: mf(n), dur: .6, type: 'triangle', vol: .03, wet: .5 }); }
+    // beat: four-on-the-floor kick, clap on 2 and 4, offbeat hats, a ghost kick to push into the next bar
+    if (s % 4 === 0) kick(at, .75);
+    if (s === 14 && bar % 2) kick(at, .5);
+    if (s === 4 || s === 12) clap(at, .8);
+    if (s % 4 === 2) hat(at, true, .8); else if (s % 2 === 1) hat(at, false, .6);
+    if (s === 0 && bar === 0) hiss({ ...o, f: 6000, type: 'highpass', dur: .7, vol: .07, wet: .3 });
+    if (phrase === 1 && s % 4 === 0) { const n = LEAD[bar][s / 2]; if (n) tone({ ...o, f: mf(n), dur: .6, type: 'triangle', vol: .035, wet: .5 }); }
     return;
   }
   // drums
   if (s === 0 || s === 3 || s === 8 || s === 10 || (intense && (s === 6 || s === 14))) kick(at);
-  if (s === 4 || s === 12) snare(at);
+  if (s === 4 || s === 12) { snare(at); clap(at, .5); }
   if (s === 15 && (bar === 3 || intense)) snare(at, .6);
   if (s === 7 && bar % 2) snare(at, .35);
   if (intense || s % 2 === 0) hat(at, s % 8 === 6);
@@ -1077,11 +1093,12 @@ class Player {
       if (hard && this.b2b) { atk += 1; labels.push({ t: 'BACK-TO-BACK', c: C.good }); }
       if (nl > 0) this.b2b = hard;   // bomb-only detonations keep the back-to-back chain alive
       this.combo++; this.maxCombo = Math.max(this.maxCombo, this.combo);
+      if (this.combo >= 1) this.comboShow = { n: this.combo, age: 0 };
       atk += COMBO[Math.min(this.combo, COMBO.length - 1)];
       const pc = this.board.every(row => row.every(v => !v));
       if (pc && this.mode === 'classic') this.gain += 3000 * this.level;
       if (pc) { atk += 10; this.pcs = (this.pcs || 0) + 1; this.pcT = 1; labels.push({ t: 'PERFECT CLEAR', c: C.gold, big: true }); this.ev.push({ type: 'perfect' }); if (this.human) sfx.perfect(); }
-      if (this.human) { if (nb) sfx.boom(); else if (ts || nl === 4 || pc) sfx.big(); sfx.clear(Math.min(n, 4), this.combo); }
+      if (this.human) { if (nb) sfx.boom(); else if (ts || nl === 4 || pc) sfx.big(); sfx.clear(Math.min(n, 4), this.combo); if (this.combo >= 1) sfx.combo(this.combo); }
     } else {
       if (this.combo >= 2 && this.human) sfx.comboBreak();
       this.combo = -1;
@@ -1380,7 +1397,8 @@ class RemotePlayer {
     this.hold = SHAPES[s.h] ? s.h : null; this.queue = SHAPES[s.q] ? [s.q] : [];
     this.pend = Math.max(0, +s.pend | 0);
     this.sentTo = (s.sentTo && typeof s.sentTo === 'object') ? s.sentTo : {}; this.kod = (s.kod && typeof s.kod === 'object') ? s.kod : {};
-    this.combo = +s.cb | 0; this.b2b = !!s.b2b;
+    const cb = +s.cb | 0; if (cb >= 1 && cb !== this.combo) this.comboShow = { n: cb, age: 0 };
+    this.combo = cb; this.b2b = !!s.b2b;
     if (typeof s.lblN === 'number' && s.lblN !== this.lblN && typeof s.lbl === 'string') { this.lblN = s.lblN; this.fx.push({ t: s.lbl.slice(0, 20), c: C.fg, age: 0, big: s.lbl.length > 6 }); }
     const kodN = sum(this.kod); if (kodN > this.kodN) { this.koT = 1; this.ev.push({ type: 'ko' }); } this.kodN = kodN;
     if (s.pcT) this.pcT = Math.max(this.pcT, .8);
@@ -2148,27 +2166,7 @@ function drawBoard(p, bx, by, cell, small) {
     ctx.fillStyle = C.well; for (let i = 1; i < Math.min(20, tot); i++) ctx.fillRect(mx, by + H - i * cell, mw, 1);
     if (!small) num(tot, mx + mw / 2, by + H - h - 5, { size: 11, color: C.warn, align: 'center', base: 'bottom' });
   }
-  // K.O. flash
-  if (p.koT > 0) {
-    ctx.globalAlpha = p.koT * .25; ctx.fillStyle = C.warn; ctx.fillRect(bx, by, W, H); ctx.globalAlpha = 1;
-    const sc = 1 + (1 - Math.min(1, (1 - p.koT) * 6)) * .5;
-    ctx.save(); ctx.translate(bx + W / 2, by + H / 2); ctx.scale(sc, sc); ctx.globalAlpha = Math.min(1, p.koT * 1.6);
-    text('K.O.', 0, 0, { size: small ? 20 : 52, weight: 900, align: 'center', base: 'middle' }); ctx.restore(); ctx.globalAlpha = 1;
-  }
-  // action labels
-  let i = 0;
-  for (const f of p.fx) {
-    if (f.age < 0) continue;
-    const k = f.age / 1300, a = k < .1 ? k / .1 : 1 - Math.max(0, (k - .6) / .4);
-    const pop = k < .12 ? 1 + (1 - k / .12) * .35 : 1;
-    const size = small ? 8 : f.big ? 19 : 13;
-    const ty = by + H * .3 + i * (size + 10) - k * 16;
-    ctx.save(); ctx.translate(bx + W / 2, ty); ctx.scale(pop, pop); ctx.globalAlpha = Math.max(0, a);
-    ctx.font = `900 ${size}px ${DISPLAY}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.lineWidth = small ? 3 : 6; ctx.strokeStyle = C.ink; ctx.lineJoin = 'miter'; ctx.strokeText(f.t, 0, 0);
-    ctx.fillStyle = f.c; ctx.fillText(f.t, 0, 0); ctx.restore();
-    i++;
-  }
+  drawCallouts(p, bx, by, W, H, cell, small);
   ctx.globalAlpha = 1;
   consume(p, bx, by, cell, small);
 }
@@ -2176,6 +2174,74 @@ function drawBoard(p, bx, by, cell, small) {
 function statBlock(x, y, label, value, color = C.fg) {
   text(label, x, y, { size: 9, weight: 700, color: C.muted, spacing: true });
   num(value, x, y + 13, { size: 24, color });
+}
+// ---- center-board callouts: K.O., combo counter and action banners ----
+// Banners are short, slightly translucent and sit in the middle third of the board, so they read at a
+// glance without hiding the stack. Everything pops in, holds briefly, then lifts away.
+function banner(x, y, label, fill, size, alpha, small) {
+  ctx.font = `900 ${size}px ${DISPLAY}`;
+  const w = ctx.measureText(label).width + size * 1.4, h = size * 1.75, sh = small ? 2 : 4;
+  ctx.globalAlpha = alpha * .9;
+  ctx.fillStyle = C.ink; ctx.fillRect(x - w / 2 + sh, y - h / 2 + sh, w, h);
+  ctx.fillStyle = C.fg; ctx.fillRect(x - w / 2 - 2, y - h / 2 - 2, w + 4, h + 4);
+  ctx.fillStyle = fill; ctx.fillRect(x - w / 2, y - h / 2, w, h);
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = (fill === C.warn || fill === COLORS.T || fill === COLORS.J || fill === C.you || fill === '#a338ff') ? C.fg : C.navy;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(label, x, y + 1);
+  ctx.globalAlpha = 1;
+}
+const COMBO_COLORS = ['#22b8ff', '#3fd62a', '#ffd21a', '#ff8f1a', '#ff2b3b', '#a338ff'];
+function drawCallouts(p, bx, by, W, H, cell, small) {
+  const cx = bx + W / 2, ease = k => 1 - Math.pow(1 - k, 3);
+  // K.O.: a red band across the middle of the board
+  if (p.koT > 0) {
+    ctx.globalAlpha = p.koT * .22; ctx.fillStyle = C.warn; ctx.fillRect(bx, by, W, H); ctx.globalAlpha = 1;
+    const k = 1 - p.koT, sc = k < .12 ? 1.6 - ease(k / .12) * .6 : 1, a = Math.min(1, p.koT * 2.2);
+    ctx.save(); ctx.translate(cx, by + H * .5); ctx.scale(sc, sc);
+    ctx.globalAlpha = a * .92; ctx.fillStyle = C.fg; ctx.fillRect(-W / 2, -(small ? 15 : 34), W, small ? 30 : 68);
+    ctx.fillStyle = C.warn; ctx.fillRect(-W / 2, -(small ? 12 : 29), W, small ? 24 : 58); ctx.globalAlpha = a;
+    ctx.font = `900 ${small ? 16 : 40}px ${DISPLAY}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = C.fg;
+    ctx.fillText('K.O.', 0, 2); ctx.restore(); ctx.globalAlpha = 1;
+  }
+  // combo counter: big number in the middle, re-pops on every step, color climbs with the combo
+  const cs = p.comboShow;
+  if (cs) {
+    cs.age += frameDt;
+    const k = cs.age / 1400;
+    if (k >= 1 || p.combo < 1) p.comboShow = null;
+    else {
+      const a = k < .08 ? k / .08 : k > .7 ? 1 - (k - .7) / .3 : 1;
+      const pop = k < .1 ? 1.45 - ease(k / .1) * .45 : 1, lift = k > .7 ? (k - .7) * 30 : 0;
+      const col = COMBO_COLORS[Math.min(COMBO_COLORS.length - 1, Math.floor((cs.n - 1) / 2))];
+      const big = small ? 18 : Math.min(54, 34 + cs.n * 2);
+      const cy = by + H * .56 - lift;
+      ctx.save(); ctx.translate(cx, cy); ctx.scale(pop, pop); ctx.globalAlpha = a * .95;
+      ctx.font = `900 ${big}px ${DISPLAY}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+      const t = String(cs.n);
+      ctx.lineWidth = small ? 4 : 9; ctx.strokeStyle = C.ink; ctx.strokeText(t, 2, 4);
+      ctx.lineWidth = small ? 3 : 6; ctx.strokeStyle = C.fg; ctx.strokeText(t, 0, 0);
+      ctx.fillStyle = col; ctx.fillText(t, 0, 0);
+      ctx.restore(); ctx.globalAlpha = 1;
+      banner(cx, cy + big * .62 + (small ? 3 : 6), 'COMBO', col, small ? 6 : 11, a * .95, small);
+    }
+  }
+  // action banners (quad, T-spin, bombs, back-to-back, attack, perfect clear), stacked in the upper middle
+  let i = 0;
+  for (const f of p.fx) {
+    if (f.age < 0) continue;
+    const k = f.age / 1300;
+    const a = k < .08 ? k / .08 : 1 - Math.max(0, (k - .62) / .38);
+    const pop = k < .1 ? 1.3 - ease(k / .1) * .3 : 1;
+    const size = small ? 6 : f.big ? 16 : 12;
+    if (i >= 3) break;
+    const ty = by + H * .2 + i * (size * 2.3) - Math.max(0, k - .62) * 40;
+    ctx.save(); ctx.translate(cx, ty); ctx.scale(pop, pop);
+    banner(0, 0, f.t, f.c === C.fg ? C.you : f.c, size, Math.max(0, a), small);
+    ctx.restore();
+    i++;
+  }
+  ctx.globalAlpha = 1;
 }
 function drawFull(p, ox, oy) {
   const bx = ox + 114;
@@ -2188,7 +2254,7 @@ function drawFull(p, ox, oy) {
     : [['K.O.', p.ko, C.accent], ['SENT', p.sent, C.fg], ['LINES', p.lines, C.fg]];
   stats.forEach(([k, v, c], i) => statBlock(ox + 2, oy + 116 + i * 54, k, v, c));
   // combo counter: a bar that fills one notch per combo step
-  if (p.combo >= 1) {
+  if (false) {   // combo now shows in the middle of the board
     const y = oy + 116 + 3 * 54 + 2;
     ctx.fillStyle = C.ink; ctx.fillRect(ox + 3, y + 3, 96, 52); ctx.fillStyle = C.panel; ctx.fillRect(ox, y, 96, 52); ctx.strokeStyle = C.accent; ctx.lineWidth = 2; ctx.strokeRect(ox + 1, y + 1, 94, 50);
     num('×' + p.combo, ox + 10, y + 8, { size: 22, color: C.accent });
