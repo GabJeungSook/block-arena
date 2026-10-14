@@ -1,6 +1,9 @@
 name = "block-arena"
 main = "src/worker.js"
 compatibility_date = "2026-09-01"
+workers_dev = true
+preview_urls = true
+keep_vars = true          # keep variables/secrets set in the Cloudflare dashboard when deploying
 
 # The game files. The Worker runs first only for the server routes below; everything else is static.
 [assets]
