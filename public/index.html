@@ -123,8 +123,6 @@ kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-b
 .settings .tog{justify-content:flex-start;gap:10px;align-items:center;cursor:pointer}
 input[type=range]{width:100%;accent-color:var(--accent);height:22px}
 input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent)}
-.online{border:2px solid var(--line);border-radius:3px;padding:14px;display:flex;flex-direction:column;gap:10px}
-.online b{font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:.03em}
 .muted{color:var(--muted);margin:0;font-size:14px}
 .orow{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
 .field{display:flex;flex-direction:column;gap:4px;flex:1 1 140px;min-width:0}
@@ -242,8 +240,6 @@ button[aria-pressed="true"]{border-color:var(--accent)}
 .pips i{background:var(--line)}
 .pips i.me{background:var(--blue)}
 .mode:hover .pips i:not(.me){background:var(--red)}
-.online{border:3px solid var(--line);border-top:6px solid var(--accent);background:var(--panel)}
-.online .ico{stroke:var(--accent)}
 input:not([type]),input[type=text],select{background:var(--navy);border-color:var(--line)}
 .card[data-outcome="win"]{border-color:var(--accent);box-shadow:8px 8px 0 var(--accent)}
 .card[data-outcome="win"] h2{color:var(--accent)}
@@ -420,6 +416,17 @@ input:not([type]),input[type=text],select{background:var(--navy);border-color:va
   .rptable .h:not(:first-child){display:none}
   .rptable .up,.rptable .down{text-align:left;border-bottom:0;padding:0}
 }
+/* online screen + ranked note */
+.onlinepage{display:flex;flex-direction:column;gap:12px}
+.onlinepage .menuhead .chip{margin-left:auto}
+.onlinepage .onsub{margin:-4px 0 0}
+#onlineForm{display:flex;flex-direction:column;gap:12px}
+.onsec{display:flex;flex-direction:column;gap:8px;border-top:2px solid var(--line);padding-top:12px}
+.onsec>.lab{font-family:var(--display);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.onsec p{margin:0}
+.onsec .orow{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.onsec .field{flex:1;min-width:160px}
+.ranknote{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border:2px dashed var(--line);padding:10px 12px;color:var(--muted);font-size:14px}
 /* social: achievements, sharing, sign-in gates */
 #achToast{position:fixed;top:14px;left:50%;transform:translate(-50%,-140%);z-index:50;display:flex;align-items:center;gap:12px;background:var(--panel);border:3px solid var(--navy);box-shadow:0 0 0 2px var(--fg),5px 6px 0 2px var(--ink),0 0 26px rgba(255,210,26,.25);padding:8px 14px 8px 10px;max-width:calc(100vw - 32px);box-sizing:border-box;transition:transform .35s cubic-bezier(.2,1.4,.4,1)}
 #achToast.in{transform:translate(-50%,0)}
@@ -453,9 +460,6 @@ input:not([type]),input[type=text],select{background:var(--navy);border-color:va
 .lbempty{display:grid;gap:10px;justify-items:start;padding:14px;border:2px dashed var(--line)}
 .lbempty p{margin:0;color:var(--muted)}
 .myrank .sharerank{grid-column:1/-1;justify-self:start}
-.rtag{display:inline-block;font-family:var(--display);font-size:9px;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;margin-left:6px;vertical-align:2px;border:1px solid currentColor}
-.rtag.on{color:var(--accent)}
-.rtag.off{color:var(--muted)}
 /* friends */
 .frchip{gap:10px;padding:6px 12px}
 .frchip .fico{width:22px;height:22px;fill:none;stroke:var(--fg);stroke-width:2}
@@ -638,25 +642,7 @@ input:not([type]),input[type=text],select{background:var(--navy);border-color:va
             <span class="pips" aria-hidden="true"><i class="me"></i><i></i><i></i><i></i><i></i><i></i></span>
           </button>
         </div>
-        <div class="online">
-          <div class="mhead"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg><b>ONLINE · 2P / 4P / 6P</b><i class="chip">RANKED</i></div>
-          <p id="onlineUnavailable" class="muted">Online play isn't available here right now.</p>
-          <div id="onlineSignin" class="signgate" hidden>
-            <p class="muted">Online matches are played with your Facebook account, so your friends know it's you and every win counts toward your rank.</p>
-            <button type="button" class="fbbtn" id="btnOnlineLogin"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9h3l.5-4h-3.5V9c0-.6.4-1 1-1z"/></svg>Continue with Facebook</button>
-          </div>
-          <div id="onlineForm" hidden>
-            <p class="muted" id="onlineHelp">Play with friends on their own devices. Empty seats are filled with bots. Create a room and send your friends the code.</p>
-            <div class="orow">
-              <label class="field"><span class="lab">Your name</span><input id="nick" maxlength="14" placeholder="Player" autocomplete="off"></label>
-              <label class="field"><span class="lab">Room code</span><input id="roomCode" maxlength="12" placeholder="e.g. k7m2p" autocomplete="off" spellcheck="false"></label>
-              <button class="play" type="button" id="btnJoin">Join</button>
-              <button type="button" id="btnCreate">Create room</button>
-            </div>
-            <small id="onlineMsg" class="muted"></small>
-            <div class="invite" id="menuInvite" hidden><span class="lab">Invite friends</span><button type="button" class="fbbtn sm" data-invite="facebook"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9h3l.5-4h-3.5V9c0-.6.4-1 1-1z"/></svg>Share on Facebook</button><button type="button" class="msgrbtn" data-invite="messenger"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.4 2 2 6.1 2 11.4c0 2.9 1.4 5.5 3.7 7.2V22l3.4-1.9c.9.3 1.9.4 2.9.4 5.6 0 10-4.1 10-9.4S17.6 2 12 2zm1 12.6-2.5-2.7-5 2.7 5.5-5.8 2.6 2.7 4.9-2.7-5.5 5.8z"/></svg>Messenger</button></div>
-          </div>
-        </div>
+        <div class="ranknote" id="rankNote" hidden><span id="rankNoteTxt">Ranked play needs Facebook sign-in. You can still play every mode unranked.</span><button type="button" class="fbbtn sm" id="btnRankLogin"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9h3l.5-4h-3.5V9c0-.6.4-1 1-1z"/></svg>Sign in to play ranked</button></div>
         <div class="modes two">
           <button class="mode pick slim" type="button" data-mode="classic">
             <span class="mhead"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M6 20V9h4v11M10 20V4h4v16M14 20v-7h4v7"/></svg><b>Classic</b></span><small id="classicTxt">Endless solo. Speeds up every 10 lines.</small>
@@ -669,6 +655,42 @@ input:not([type]),input[type=text],select{background:var(--navy);border-color:va
           </button>
         </div>
         <div class="menufoot"><button type="button" class="ghostbtn" data-go="ovHow">How to play</button></div>
+      </div>
+    </div>
+
+    <div class="overlay" id="ovOnline" hidden>
+      <div class="card onlinepage">
+        <div class="menuhead"><button type="button" class="ghostbtn sm" data-go="ovHome">← Home</button><h2>Play online</h2><i class="chip" id="onRanked" hidden>RANKED</i></div>
+        <p class="muted onsub">2, 4 or 6 players, each on their own device. Empty seats are filled with bots.</p>
+        <p id="onlineUnavailable" class="muted">Online play isn't available here right now.</p>
+        <div id="onlineSignin" class="signgate" hidden>
+          <p class="muted">Online matches are played with your Facebook account, so your friends know it's you and every win counts toward your rank.</p>
+          <button type="button" class="fbbtn" id="btnOnlineLogin"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9h3l.5-4h-3.5V9c0-.6.4-1 1-1z"/></svg>Continue with Facebook</button>
+        </div>
+        <div id="onlineForm" hidden>
+          <div class="onsec">
+            <span class="lab">Start a room</span>
+            <div class="orow">
+              <label class="field"><span class="lab">Your name</span><input id="nick" maxlength="14" placeholder="Player" autocomplete="off"></label>
+              <button class="play" type="button" id="btnCreate">Create room</button>
+            </div>
+          </div>
+          <div class="onsec">
+            <span class="lab">Join a friend</span>
+            <div class="orow">
+              <label class="field"><span class="lab">Room code</span><input id="roomCode" maxlength="12" placeholder="e.g. k7m2p" autocomplete="off" spellcheck="false"></label>
+              <button type="button" id="btnJoin">Join</button>
+            </div>
+          </div>
+          <small id="onlineMsg" class="muted"></small>
+          <div class="onsec" id="onInvite" hidden>
+            <span class="lab">Invite Facebook friends</span>
+            <p class="muted">We'll open a room for you and send your friends a link straight into it.</p>
+            <div class="invite"><button type="button" class="fbbtn sm" data-fbinv="facebook"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9h3l.5-4h-3.5V9c0-.6.4-1 1-1z"/></svg>Invite on Facebook</button><button type="button" class="msgrbtn" data-fbinv="messenger"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.4 2 2 6.1 2 11.4c0 2.9 1.4 5.5 3.7 7.2V22l3.4-1.9c.9.3 1.9.4 2.9.4 5.6 0 10-4.1 10-9.4S17.6 2 12 2zm1 12.6-2.5-2.7-5 2.7 5.5-5.8 2.6 2.7 4.9-2.7-5.5 5.8z"/></svg>Send on Messenger</button></div>
+            <div class="frsec"><span>Friends online</span><button type="button" class="ghostbtn sm" id="onAllFriends">All friends</button></div>
+            <ul class="frlist" id="onFriends"></ul>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1714,6 +1736,8 @@ async function netInit(refresh) {
   $('onlineUnavailable').hidden = ok; $('onlineForm').hidden = !ok || gate; $('onlineSignin').hidden = !gate;
   if (LIVE && account.user) { $('nick').value = cleanNick(account.user.name.split(' ')[0]); $('nick').readOnly = true; $('nick').title = 'Your Facebook first name'; }
 }
+$('onAllFriends').onclick = () => openFriends();
+$('btnRankLogin').onclick = () => signIn('/?menu=1');
 $('btnOnlineLogin').onclick = () => { const c = $('roomCode').value.toLowerCase().replace(/[^a-z0-9]/g, ''); signIn(c ? '/?room=' + c : '/?online=1'); };
 function randomCode() { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; let c = ''; for (let i = 0; i < 5; i++) c += a[Math.random() * a.length | 0]; return c; }
 async function netJoin(code) {
@@ -1739,7 +1763,7 @@ async function netLeave() {
   try { await net.nr?.leave(); } catch (e) {}
   net.nr = null; net.code = null; net.mid = null;
   if (game.mode === 'online') { game.running = false; musicStop(); }
-  show('ovMenu');
+  openOnline();
 }
 function lobbyPeers() { return net.nr ? net.nr.peers().filter(p => p.kind === 'viewer') : []; }
 function renderLobby() {
@@ -1792,7 +1816,7 @@ function startOnline(d) {
     else ps.push(new RemotePlayer(b.id, cleanNick(b.name), /^#[0-9a-f]{6}$/i.test(b.tint) ? b.tint : C.accent2));
   });
   game.size = size; game.level = LEVELS[d.level] ? d.level : game.level;
-  rankedBegin('online', ps.length, null);
+  if (canRank()) rankedBegin('online', ps.length, null); else game.ranked = null;
   launch('online', ps, size);
   net.nr?.presence({ st: 'play', mid: net.mid, ...snapOf(me) });
 }
@@ -1850,6 +1874,7 @@ function netTick(now) {
 const isArena = () => game.mode === 'arena' || (game.mode === 'online' && game.players.length > 2);
 const koCap = () => game.players.length <= 2 ? 5 : 10;
 const RANKED_MODES = ['cpu', 'arena'];
+const canRank = () => LIVE && !!account.user;     // ranked play only for players signed in with Facebook
 function rankedBegin(kind, size, level) {
   game.ranked = { kind, size, level, id: null, t0: Date.now(), pending: null };
   if (LIVE && account.user) {
@@ -2098,17 +2123,37 @@ function trackRank(rp) {
 }
 const needSignIn = () => LIVE && !account.user;
 function signIn(back) { location.href = '/auth/facebook?back=' + encodeURIComponent(back || (location.pathname + location.search)); }
+function openOnline() { show('ovOnline'); netInit(true); renderOnlineFriends(); if (LIVE && account.user) loadFriends(); }
+function renderOnlineFriends() {
+  const ul = $('onFriends'); if (!ul) return;
+  const on = friends.list.filter(f => f.online);
+  ul.innerHTML = on.length ? on.map(f => frRow(f,
+    (f.room && f.room !== net.code ? `<button type="button" class="play" data-fr="join" data-room="${escapeHtml(f.room)}">Join</button>` : '') +
+    (f.st !== 'match' ? `<button type="button" data-fr="invite">Invite to play</button>` : ''))).join('')
+    : `<li class="frempty">${friends.list.length ? 'None of your friends are online right now. Invite them on Facebook above.' : 'Add friends in the Friends panel to see when they\'re online.'}</li>`;
+}
+// make sure there's a room, then run fn; the popup is opened first, inside the click, so browsers allow it
+async function ensureRoom() {
+  if (net.code) return true;
+  await netInit(); const c = randomCode(); $('roomCode').value = c; await netJoin(c);
+  return !!net.code;
+}
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-fbinv]'); if (!b) return;
+  if (needSignIn()) { signIn('/?online=1'); return; }
+  const w = openPopup();
+  if (!await ensureRoom()) { if (w && !w.closed) w.close(); shareMsg('Couldn\'t open a room. Try again.'); return; }
+  const link = gameUrl(`?room=${encodeURIComponent(net.code)}`);
+  go(w, b.dataset.fbinv === 'messenger' ? messengerUrl(link) : fbShareUrl(link));
+});
 function syncSocialUI() {
   const signedIn = LIVE && !!account.user;
   $('btnInviteStats').hidden = !signedIn;
-  $('menuInvite').hidden = !signedIn;
-  document.querySelectorAll('.mode.pick[data-mode="cpu"] b, .mode.pick[data-mode="arena"] b').forEach(b => {
-    b.querySelector('.rtag')?.remove();
-    const t = document.createElement('span');
-    t.className = 'rtag ' + (signedIn || !LIVE ? 'on' : 'off');
-    t.textContent = signedIn || !LIVE ? 'Ranked' : 'Sign in to rank';
-    b.append(t);
-  });
+  $('onInvite').hidden = !signedIn;
+  document.querySelectorAll('.chip').forEach(c => { if (/RANKED/.test(c.textContent)) c.hidden = !canRank(); });
+  $('rankNote').hidden = canRank();
+  $('rankNoteTxt').textContent = LIVE ? 'Ranked play needs Facebook sign-in. You can still play every mode unranked.' : 'Ranked play is on the live site, with Facebook sign-in. Every mode here is unranked.';
+  $('btnRankLogin').hidden = !(LIVE && account.fb);
   if (net.ready) netInit(true);
 }
 document.addEventListener('click', e => {
@@ -2133,7 +2178,7 @@ async function loadFriends() {
 function frChanged() {
   friends.list.sort((a, b) => (b.online - a.online) || (b.rp - a.rp));
   friends.online = friends.list.filter(f => f.online).length;
-  renderFriendChip(); if (!$('ovFriends').hidden) renderFriends(); if (net.nr) renderLobby();
+  renderFriendChip(); if (!$('ovFriends').hidden) renderFriends(); if (!$('ovOnline').hidden) renderOnlineFriends(); if (net.nr) renderLobby();
 }
 function renderFriendChip() {
   const chip = $('hFriends'); chip.hidden = !LIVE;
@@ -2195,15 +2240,11 @@ document.addEventListener('click', async e => {
     else if (act === 'invite') {
       if (!hub.ws || hub.ws.readyState !== 1) { setFrMsg('Not connected. Give it a second and try again.', true); return; }
       b.disabled = true; b.textContent = 'Inviting…';
-      if (!net.code) {                 // not in a room yet: make one, then invite
-        await netInit(); $('roomCode').value = randomCode(); await netJoin($('roomCode').value);
-        if (!net.code) { setFrMsg('Couldn\'t create a room. Try again.', true); b.disabled = false; return; }
-        openFriends();
-      }
+      if (!net.code && !await ensureRoom()) { setFrMsg('Couldn\'t create a room. Try again.', true); shareMsg('Couldn\'t create a room. Try again.'); b.disabled = false; return; }
       hub.ws.send(JSON.stringify({ t: 'inv', to: id, room: net.code }));
       return;
     }
-    else if (act === 'join') { const room = b.dataset.room; if (net.nr) await netLeave(); show('ovMenu'); await netInit(); $('roomCode').value = room; netJoin(room); return; }
+    else if (act === 'join') { const room = b.dataset.room; if (net.nr) await netLeave(); openOnline(); await netInit(); $('roomCode').value = room; netJoin(room); return; }
     else if (act === 'addpeer') { b.disabled = true; const r = await addFriend({ id: +b.dataset.uid }); b.textContent = r?.status === 'friends' ? 'Friends' : 'Sent'; return; }
     loadFriends();
   } catch (err) { setFrMsg('Something went wrong. Try again.', true); }
@@ -2243,7 +2284,7 @@ function onHub(m) {
   } else if (m.t === 'inv') {
     showInvite({ ...m.from, room: m.room });
   } else if (m.t === 'invsent') {
-    const f = find(m.to); setFrMsg(`Invite sent to ${f ? f.name : 'your friend'}.`);
+    const f = find(m.to); setFrMsg(`Invite sent to ${f ? f.name : 'your friend'}.`); shareMsg(`Invite sent to ${f ? f.name : 'your friend'}`);
     const b = document.querySelector(`#frList [data-id="${+m.to}"] [data-fr="invite"]`); if (b) { b.textContent = 'Invited'; b.disabled = true; }
   } else if (m.t === 'invfail') {
     setFrMsg(m.why === 'offline' ? 'They just went offline.' : 'You can only invite friends.', true); renderFriends();
@@ -2278,14 +2319,14 @@ function showInvite(inv) {
     done();
     if (inMatch() && game.mode !== 'online') { game.running = false; game.ranked = null; }
     if (net.nr) await netLeave();
-    show('ovMenu'); await netInit(); $('roomCode').value = i.room; netJoin(i.room);
+    openOnline(); await netInit(); $('roomCode').value = i.room; netJoin(i.room);
   };
   el.t = setTimeout(done, 30000);
 }
 
 function start(mode) {
   initAudio();
-  if (RANKED_MODES.includes(mode)) rankedBegin(mode, mode === 'arena' ? game.size : 2, game.level); else game.ranked = null;
+  if (RANKED_MODES.includes(mode) && canRank()) rankedBegin(mode, mode === 'arena' ? game.size : 2, game.level); else game.ranked = null;
   if (mode !== 'online') store.set('last', { mode, size: game.size });
   const versus = mode !== 'sprint' && mode !== 'classic';
   const mk = (name, human) => new Player({ name, human, mode, versus });
@@ -2386,7 +2427,9 @@ function end() {
     if (game.mode === 'arena' || (game.mode === 'online' && game.players.length > 2)) place = rankPlayers().indexOf(a) + 1;
     else if (b) draw = a.ko === b.ko && a.sent === b.sent && !won && a.stackHeight() === b.stackHeight();
     trackEnd(a, won, place);
-    if (game.ranked) rankedFinish(place, draw); else $('resRank').hidden = true;
+    if (game.ranked) rankedFinish(place, draw);
+    else if (LIVE && !account.user && (RANKED_MODES.includes(game.mode) || game.mode === 'online')) { const bx = $('resRank'); bx.hidden = false; bx.innerHTML = `<b>Unranked</b><span class="delta">—</span><p class="muted" style="grid-column:1/-1">Sign in with Facebook to play ranked and earn rank points.</p>`; }
+    else $('resRank').hidden = true;
     const vs = game.mode === 'cpu' ? `vs ${game.level[0].toUpperCase() + game.level.slice(1)} CPU` : game.mode === 'online' ? 'online match' : '';
     const cardStats = game.mode === 'classic' ? [['Score', a.score.toLocaleString('en-US')], ['Level', a.level], ['Lines', a.lines], ['Best combo', Math.max(0, a.maxCombo)]]
       : game.mode === 'sprint' ? [['Time', fmtPrecise(game.elapsed)], ['Lines', a.lines], ['Pieces/sec', pps(a)], ['Pieces', a.pieces]]
@@ -2418,10 +2461,10 @@ const row = (k, v) => `<span class="k">${k}</span><span></span><span class="v">$
 const row2 = (k, a, b) => `<span class="k">${k}</span><span class="v">${a}</span><span class="v">${b}</span>`;
 
 function show(id) {
-  ['ovHome', 'ovHow', 'ovMenu', 'ovPause', 'ovResult', 'ovSettings', 'ovLobby', 'ovRank', 'ovStats', 'ovFriends'].forEach(o => $(o).hidden = o !== id);
+  ['ovHome', 'ovHow', 'ovMenu', 'ovOnline', 'ovPause', 'ovResult', 'ovSettings', 'ovLobby', 'ovRank', 'ovStats', 'ovFriends'].forEach(o => $(o).hidden = o !== id);
   if (id && id !== 'ovHow' && id !== 'ovRank' && id !== 'ovStats' && id !== 'ovFriends') lastScreen = id;
-  if ((id === 'ovHome' || id === 'ovMenu' || id === 'ovLobby' || id === 'ovHow' || (id === 'ovSettings' && !inMatch())) && audio.ctx) musicStart('menu');
-  if ((id === 'ovHome' || id === 'ovMenu') && !inMatch() && game.mode !== 'demo' && !demoBusy) startDemo();
+  if ((id === 'ovHome' || id === 'ovMenu' || id === 'ovOnline' || id === 'ovLobby' || id === 'ovHow' || (id === 'ovSettings' && !inMatch())) && audio.ctx) musicStart('menu');
+  if ((id === 'ovHome' || id === 'ovMenu' || id === 'ovOnline') && !inMatch() && game.mode !== 'demo' && !demoBusy) startDemo();
   if (id === 'ovHome') renderProfile();
   $('btnPause').hidden = !inMatch();
   $('btnMenu').hidden = id === 'ovHome';
@@ -2430,7 +2473,7 @@ let lastScreen = 'ovHome', demoBusy = false;
 function startDemo() {
   // attract mode: two bots play a silent match behind the home screen and menu
   demoBusy = true;
-  const keep = ['ovHome', 'ovMenu', 'ovHow', 'ovSettings', 'ovLobby', 'ovResult'].find(id => !$(id).hidden) || 'ovHome';
+  const keep = ['ovHome', 'ovMenu', 'ovOnline', 'ovHow', 'ovSettings', 'ovLobby', 'ovResult'].find(id => !$(id).hidden) || 'ovHome';
   const pair = [RIVALS[0], RIVALS[1 + (Math.random() * 4 | 0)]];
   const ps = pair.map((r, i) => { const q = new Player({ name: r.name, human: false, mode: 'demo', versus: true }); q.id = 'd' + i; q.tint = r.tint; q.sentTo = {}; q.kod = {}; return q; });
   const lvl = game.level; game.level = 'hard';
@@ -2487,7 +2530,7 @@ function homeKeys(e) {
     else if (e.code === 'KeyC') start('classic');
   } else if (e.code === 'Escape') {
     if (!$('ovHow').hidden || !$('ovRank').hidden || !$('ovStats').hidden) { show(lastScreen); }
-    else if (!$('ovMenu').hidden) show('ovHome');
+    else if (!$('ovMenu').hidden || !$('ovOnline').hidden) show('ovHome');
     else if (!$('ovSettings').hidden) $('btnSetDone').click();
   }
 }
@@ -2519,7 +2562,7 @@ document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click'
 $('hPlay').onclick = () => show('ovMenu');
 $('hClassic').onclick = () => start('classic');
 $('hSettings').onclick = () => $('btnSettings').click();
-$('hOnline').onclick = () => { show('ovMenu'); const o = document.querySelector('.online'); o.scrollIntoView({ block: 'center' }); (net.room ? $('nick') : o).focus?.(); o.animate?.([{ borderColor: '#ff6b35' }, { borderColor: '#3a3943' }], { duration: 1200 }); };
+$('hOnline').onclick = () => openOnline();
 $('hAgain').onclick = () => { const l = store.get('last', null); if (!l) return; if (l.size) game.size = l.size; start(l.mode); };
 const TIPS = [
   'Land a piece on a bomb to blow up its row. It keeps your combo alive.',
@@ -2553,7 +2596,7 @@ $('btnSound').onclick = () => { settings.muted = !settings.muted; initAudio(); s
 syncSound();
 document.addEventListener('pointerdown', e => {
   const first = !audio.ctx; initAudio();
-  if (first && !inMatch() && (!$('ovMenu').hidden || !$('ovHome').hidden || !$('ovHow').hidden)) musicStart('menu');
+  if (first && !inMatch() && (!$('ovMenu').hidden || !$('ovOnline').hidden || !$('ovHome').hidden || !$('ovHow').hidden)) musicStart('menu');
   if (e.target.closest('button') && !e.target.closest('#touch')) sfx.ui();
 });
 
@@ -2578,7 +2621,7 @@ $('sChain').onchange = () => { settings.bombChain = $('sChain').checked; saveSet
 $('sShake').onchange = () => { settings.shake = $('sShake').checked; saveSettings(); };
 $('btnSettings').onclick = () => {
   if (inMatch() && !game.paused) pause(true);
-  settingsReturn = inMatch() ? 'ovPause' : !$('ovResult').hidden ? 'ovResult' : !$('ovMenu').hidden ? 'ovMenu' : !$('ovLobby').hidden ? 'ovLobby' : 'ovHome';
+  settingsReturn = inMatch() ? 'ovPause' : !$('ovResult').hidden ? 'ovResult' : !$('ovMenu').hidden ? 'ovMenu' : !$('ovOnline').hidden ? 'ovOnline' : !$('ovLobby').hidden ? 'ovLobby' : 'ovHome';
   syncSettingsUI(); show('ovSettings');
 };
 $('btnSetDone').onclick = () => show(settingsReturn);
@@ -3262,7 +3305,7 @@ function preview() {
 game.level = LEVELS[store.get('level', 'normal')] ? store.get('level', 'normal') : 'normal';
 document.querySelectorAll('#diff button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.d === game.level)));
 $('diffTxt').textContent = DIFF_TXT[game.level];
-if (IN_CLAUDE) $('onlineHelp').textContent = 'Play with friends on their own devices. Empty seats are filled with bots. Share this page with them as Contributors or higher, then share a room code.';
+if (IN_CLAUDE) document.querySelector('.onsub').textContent = 'Play with friends on their own devices. Empty seats are filled with bots. Share this page with them as Contributors or higher, then share a room code.';
 renderProfile(); preview(); layout(); show('ovHome'); syncSocialUI();
 if (LIVE) {
   api.call('/api/me').then(d => {
@@ -3284,14 +3327,14 @@ if (LIVE) {
     syncSocialUI(); renderFriendChip(); startPresence();
     const q = new URLSearchParams(location.search), room = (q.get('room') || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12);
     if (room || q.get('online')) {
-      show('ovMenu'); netInit(true).then(() => {
-        document.querySelector('.online')?.scrollIntoView({ block: 'center' });
+      openOnline(); netInit(true).then(() => {
         if (room) { $('roomCode').value = room; if (account.user) netJoin(room); }
       });
     } else if (q.get('add')) {
       if (!account.user) signIn('/?add=' + encodeURIComponent(q.get('add')));
       else { openFriends(); addFriend({ code: q.get('add') }); }
     } else if (q.get('friends')) { openFriends();
+    } else if (q.get('menu')) { show('ovMenu');
     } else if (q.get('rankings')) { lbScope = q.get('rankings') === 'friends' ? 'friends' : 'global'; openRankings(); }
     if (location.search) history.replaceState(null, '', '/');
   }).catch(() => { account.ready = true; renderProfile(); syncSocialUI(); renderFriendChip(); });
