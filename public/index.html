@@ -426,11 +426,14 @@ input:not([type]),input[type=text],select{background:var(--navy);border-color:va
 }
 /* home logo animation: boards drop in and float, the plate pops, letters land one by one, then hop every few seconds */
 .hlogo{cursor:pointer;-webkit-tap-highlight-color:transparent}
-.hlogo img{animation:lgBoards .75s cubic-bezier(.2,1.5,.4,1) both,lgFloat 4.6s ease-in-out 1.1s infinite}
-@keyframes lgBoards{from{opacity:0;transform:translateY(-40px) scale(.92)}}
-@keyframes lgFloat{50%{transform:translateY(-6px) rotate(-.4deg)}}
+/* the whole logo floats as one piece, so the boards never separate from the plate */
+.hlogo{animation:lgFloat 4.6s ease-in-out 1.3s infinite}
+@keyframes lgFloat{50%{transform:translateY(-6px)}}
+/* the boards rise up from behind the plate: the clip keeps their bottom edge pinned where the plate covers it */
+.hlogo img{animation:lgBoards .6s cubic-bezier(.2,.9,.3,1) .2s both}
+@keyframes lgBoards{from{transform:translateY(42%);clip-path:inset(0 0 42% 0)}to{transform:none;clip-path:inset(0 0 0 0)}}
 .wordmark .wplate,.wordmark .wl,.wordmark .wa{transform-box:fill-box}
-.wordmark .wplate{transform-origin:50% 50%;animation:lgPlate .5s cubic-bezier(.2,1.6,.4,1) .12s both}
+.wordmark .wplate{transform-origin:50% 50%;animation:lgPlate .45s cubic-bezier(.2,1.6,.4,1) both}
 @keyframes lgPlate{from{opacity:0;transform:scale(.55,.4)}}
 .wordmark .wl{transform-origin:50% 100%;animation:lgDrop .55s cubic-bezier(.25,1.55,.45,1) both;animation-delay:calc(.32s + var(--i) * .075s)}
 @keyframes lgDrop{0%{opacity:0;transform:translateY(-150px) scale(.9,1.25)}60%{opacity:1}}
