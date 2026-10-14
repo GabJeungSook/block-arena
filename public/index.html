@@ -1148,14 +1148,44 @@ const sfx = {
 const PROG = [{ root: 40 }, { root: 36 }, { root: 38 }, { root: 35 }];            // E  C  D  B
 const BASS = [0, null, 0, 12, null, 0, 10, null, 0, null, 0, 13, null, 7, 12, 1];   // 16ths, semitones over the root
 const LEAD = [[76, 0, 77, 0, 79, 0, 77, 76], [72, 0, 0, 74, 0, 72, 71, 0], [74, 0, 76, 0, 77, 0, 79, 81], [83, 0, 0, 81, 0, 79, 0, 0]];
-const music = { timer: null, step: 0, next: 0, mode: 'game' };
+const music = { timer: null, step: 0, next: 0, mode: 'game', on: false };
+// The soundtrack (music.mp3) plays everywhere: full level on the menus, quiet and softened behind the
+// effects during a match. If it can't load, the built-in synth music plays instead.
+const TRACK_LEVEL = { menu: 1, game: .3 }, TRACK_TONE = { menu: 20000, game: 6500 };
+const track = { el: null, gain: null, tone: null, failed: false };
+function trackInit() {
+  if (track.el || track.failed || !audio.ctx) return;
+  try {
+    const el = new Audio(); el.src = 'music.mp3'; el.loop = true; el.preload = 'auto';
+    el.addEventListener('error', () => { track.failed = true; const m = music.on && music.mode; musicStop(); if (m) musicStart(m); });
+    const src = audio.ctx.createMediaElementSource(el);
+    track.tone = audio.ctx.createBiquadFilter(); track.tone.type = 'lowpass'; track.tone.frequency.value = 20000; track.tone.Q.value = .5;
+    track.gain = audio.ctx.createGain(); track.gain.gain.value = 0;
+    src.connect(track.tone).connect(track.gain).connect(audio.music);
+    track.el = el;
+  } catch (e) { track.failed = true; }
+}
 function musicStart(mode = 'game') {
   if (!audio.ctx) return;
+  trackInit();
+  if (track.el && !track.failed) {
+    const t = audio.ctx.currentTime, el = track.el, changed = music.mode !== mode || music.fresh; music.fresh = false;
+    if (music.on && music.mode === mode && !el.paused) return;
+    if (mode === 'game' && changed) { try { el.currentTime = 0; } catch (e) {} }   // each match starts the track fresh
+    music.mode = mode; music.on = true;
+    track.gain.gain.cancelScheduledValues(t); track.gain.gain.setTargetAtTime(TRACK_LEVEL[mode] || 1, t, mode === 'game' ? .05 : .4);
+    track.tone.frequency.setTargetAtTime(TRACK_TONE[mode] || 20000, t, .2);
+    el.play().catch(() => {});        // blocked until the first tap; the first-tap handler calls this again
+    return;
+  }
   if (music.timer && music.mode === mode) return;
-  musicStop(); music.mode = mode; music.step = 0;
+  musicStop(); music.mode = mode; music.step = 0; music.on = true;
   music.next = audio.ctx.currentTime + .08; music.timer = setInterval(musicTick, 25);
 }
-function musicStop() { clearInterval(music.timer); music.timer = null; setMusicDanger(false); }
+function musicStop() {
+  clearInterval(music.timer); music.timer = null; music.on = false; setMusicDanger(false);
+  if (track.el && !track.el.paused) track.el.pause();
+}
 function musicTick() {
   const a = audio.ctx; if (!a) return;
   const intense = music.mode === 'game' && (game.mode === 'classic' ? (game.players[0]?.level || 1) >= 10 : game.mode !== 'sprint' && game.timeLeft <= 30000);
@@ -2281,7 +2311,7 @@ function launch(mode, ps, size) {
   $('touch').classList.toggle('show', mode !== 'local');
   game.myLevel = levelOf(store.get('profile', { xp: 0 }).xp).lvl;
   game.lastTick = 99; game.heartT = 0;
-  if (mode !== 'demo') musicStop(); layout();
+  if (mode !== 'demo') { musicStop(); music.fresh = true; } layout();
   game.intro = mode === 'sprint' || mode === 'classic' || mode === 'demo' ? 0 : 1700;
   if (game.intro) { sfx.whoosh(); setTimeout(() => game.running && sfx.vs(), 380); } else sfx.riser();
 }
@@ -2523,7 +2553,7 @@ function syncSettingsUI() {
   $('sGhost').checked = settings.ghost; $('sShake').checked = settings.shake; $('sChain').checked = settings.bombChain;
 }
 for (const [id, key, fromUI, , label] of SLIDERS) $(id).addEventListener('input', () => { settings[key] = fromUI($(id).value); $(id + 'Out').textContent = label(settings[key]); saveSettings(); });
-$('sMusic').addEventListener('change', () => { if (!music.timer && audio.ctx) musicStart('menu'); });
+$('sMusic').addEventListener('change', () => { if (!music.on && audio.ctx && !inMatch()) musicStart('menu'); });
 $('sSfx').addEventListener('change', () => sfx.clear(2, 1));
 $('sGhost').onchange = () => { settings.ghost = $('sGhost').checked; saveSettings(); };
 $('sChain').onchange = () => { settings.bombChain = $('sChain').checked; saveSettings(); };
