@@ -73,7 +73,7 @@ canvas{display:block;touch-action:none}
 .seg button:last-child{border-right:0}
 .seg button[aria-pressed="true"]{background:var(--fg);color:var(--ink)}
 .modes{display:grid;gap:10px}
-.modes.three{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.modes.three{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
 .modes.two{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-top:-6px}
 .mode{display:flex;flex-direction:column;gap:8px;background:var(--panel);border:2px solid var(--line);border-radius:3px;padding:14px;min-width:0;text-align:left;font-weight:400;font-family:var(--body)}
 .mode.pick:hover{border-color:var(--accent);box-shadow:4px 4px 0 var(--accent);transform:translate(-1px,-1px)}
@@ -539,6 +539,20 @@ body{background:var(--bg)}
 .earnfoot p{margin:0}
 .earnfoot b{color:var(--fg)}
 @media (max-width:640px){.earngrid{grid-template-columns:1fr}.earnbtn{font-size:0;gap:0;padding:6px 8px}.earnbtn .coin{width:18px;height:18px}.modal{padding:16px}}
+/* quick match */
+.qmsec .lab .chip{margin-left:8px;vertical-align:1px}
+.qmbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.qmbtns .play{padding:12px 10px;font-size:15px}
+.qmmodal{width:min(380px,calc(100vw - 32px));text-align:center;align-items:center}
+.qmmodal h2{margin:0;font-family:var(--display);font-weight:900;font-size:22px;text-transform:uppercase}
+.qmmodal .row{justify-content:center}
+.qmclock{margin:0;font-family:var(--mono);font-size:28px;color:var(--accent)}
+.qmspin{display:grid;grid-template-columns:repeat(2,18px);gap:4px;margin:6px auto 4px}
+.qmspin i{width:18px;height:18px;background:var(--blue);border:2px solid var(--navy);box-shadow:0 0 0 2px var(--fg);animation:qmPulse 1.2s ease-in-out infinite}
+.qmspin i:nth-child(2){background:var(--red);animation-delay:.15s}
+.qmspin i:nth-child(3){background:var(--accent);animation-delay:.45s}
+.qmspin i:nth-child(4){background:var(--green);animation-delay:.3s}
+@keyframes qmPulse{50%{transform:scale(.6)}}
 /* lobby room rules */
 .rules{border:2px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--navy)}
 .ruleshead{display:flex;justify-content:space-between;align-items:center;gap:10px}
@@ -787,6 +801,10 @@ body{background:var(--bg)}
             <span class="mhead"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="5.5" height="7" rx="1.5"/><rect x="9.25" y="4" width="5.5" height="7" rx="1.5"/><rect x="16.5" y="4" width="5.5" height="7" rx="1.5"/><rect x="2" y="13" width="5.5" height="7" rx="1.5"/><rect x="9.25" y="13" width="5.5" height="7" rx="1.5"/><rect x="16.5" y="13" width="5.5" height="7" rx="1.5"/></svg><b>6P Arena</b><i class="chip">RANKED</i></span><small>Free-for-all against 5 CPUs.</small>
             <span class="pips" aria-hidden="true"><i class="me"></i><i></i><i></i><i></i><i></i><i></i></span>
           </button>
+          <button class="mode pick" type="button" data-mode="survival" data-size="6">
+            <span class="mhead"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-4.4-7-10.2C5 7.6 7.2 5.5 9.8 5.5c1 0 1.7.4 2.2 1 .5-.6 1.2-1 2.2-1 2.6 0 4.8 2.1 4.8 5.3C19 16.6 12 21 12 21z"/></svg><b>Last one standing</b><i class="chip">RANKED</i></span><small>6 players, 3 lives each. Outlast every CPU.</small>
+            <span class="pips" aria-hidden="true"><i class="me"></i><i></i><i></i><i></i><i></i><i></i></span>
+          </button>
         </div>
         <div class="ranknote" id="rankNote" hidden><span id="rankNoteTxt">Ranked play needs Facebook sign-in. You can still play every mode unranked.</span><button type="button" class="fbbtn sm" id="btnRankLogin"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9h3l.5-4h-3.5V9c0-.6.4-1 1-1z"/></svg>Sign in to play ranked</button></div>
         <div class="modes two">
@@ -814,6 +832,11 @@ body{background:var(--bg)}
           <button type="button" class="fbbtn" id="btnOnlineLogin"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9h3l.5-4h-3.5V9c0-.6.4-1 1-1z"/></svg>Continue with Facebook</button>
         </div>
         <div id="onlineForm" hidden>
+          <div class="onsec qmsec" id="qmSec" hidden>
+            <span class="lab">Quick match <i class="chip">RANKED</i></span>
+            <p class="muted">Jump into a match with players searching right now. If nobody turns up within 20 seconds, bots fill the empty seats.</p>
+            <div class="qmbtns"><button type="button" class="play" data-qm="2">1 vs 1</button><button type="button" class="play" data-qm="6">6 players</button></div>
+          </div>
           <div class="onsec">
             <span class="lab">Start a room</span>
             <div class="orow">
@@ -855,7 +878,7 @@ body{background:var(--bg)}
       <div class="card result">
         <div><h2>Room <span id="lobbyCode" class="code">—</span></h2><p class="sub"><span id="lobbyConn">Connecting…</span> · <span id="lobbyCount">0 players here</span></p></div>
         <ul class="lobby" id="lobbyList"></ul>
-        <section class="rules">
+        <section class="rules" id="rulesSec">
           <div class="ruleshead"><span class="lab">Room rules</span><span class="rulestag" id="rulesTag">Standard · Ranked</span></div>
           <div class="rulegrid">
             <label><span>Match size</span><select id="lobbySize"><option value="2">2 players</option><option value="4" selected>4 players</option><option value="6">6 players</option></select></label>
@@ -982,6 +1005,13 @@ body{background:var(--bg)}
     </div>
   </main>
 
+  <dialog class="modal qmmodal" id="qmModal" aria-labelledby="qmTitle">
+    <div class="qmspin" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <h2 id="qmTitle">Finding players</h2>
+    <p class="mlead" id="qmTxt">Searching…</p>
+    <p class="qmclock" id="qmClock">0:00</p>
+    <div class="row"><button type="button" class="ghostbtn" id="qmCancel">Cancel</button></div>
+  </dialog>
   <dialog class="modal" id="earnModal" aria-labelledby="earnTitle">
     <div class="mhead2"><h2 id="earnTitle">How to earn coins</h2><button type="button" class="ghostbtn sm" id="earnClose" aria-label="Close">✕</button></div>
     <p class="mlead">Every match you finish pays coins. Spend them in the shop on new looks for your blocks, ghost, effects and background.</p>
@@ -1128,8 +1158,9 @@ const COLS = 10, ROWS = 24, HIDDEN = 4, CELL = 24, TAU = Math.PI * 2;
 const LOCK_DELAY = 500, MAX_RESETS = 15;
 const BATTLE_MS = 120000;
 // Match rules. Every mode plays the standard rules; an online host can change them for their room.
-const STD_RULES = { time: 120000, ko: 0, garbage: 1, speed: 'normal', chain: false, hold: true };   // ko 0 = 5 in 2P, 10 in 4P/6P
+const STD_RULES = { type: 'battle', time: 120000, ko: 0, garbage: 1, speed: 'normal', chain: false, hold: true };   // ko 0 = 5 in 2P, 10 in 4P/6P
 const RULE_OPTS = {
+  type: [['battle', 'K.O. battle'], ['race', 'Sprint race (40 lines)'], ['survival', 'Last one standing']],
   time: [[60000, '1:00'], [120000, '2:00'], [180000, '3:00'], [300000, '5:00'], [0, 'No limit']],
   ko: [[0, 'Standard (5 / 10)'], [3, '3'], [5, '5'], [7, '7'], [10, '10'], [15, '15']],
   garbage: [[.5, '× 0.5 (gentle)'], [1, '× 1'], [1.5, '× 1.5'], [2, '× 2 (brutal)']],
@@ -1137,7 +1168,7 @@ const RULE_OPTS = {
   chain: [[false, 'One row per hit'], [true, 'Chain stacked bombs']],
   hold: [[true, 'On'], [false, 'Off']],
 };
-const RULE_LABEL = { time: 'Match time', ko: 'K.O.s to win', garbage: 'Garbage sent', speed: 'Fall speed', chain: 'Bombs', hold: 'Hold' };
+const RULE_LABEL = { type: 'Game type', time: 'Match time', ko: 'K.O.s to win', garbage: 'Garbage sent', speed: 'Fall speed', chain: 'Bombs', hold: 'Hold' };
 function cleanRules(x) {
   const out = { ...STD_RULES };
   if (x && typeof x === 'object') for (const k in RULE_OPTS) { const v = RULE_OPTS[k].find(o => o[0] === x[k]); if (v) out[k] = v[0]; }
@@ -1147,6 +1178,17 @@ function cleanRules(x) {
 const isStdRules = x => Object.keys(STD_RULES).every(k => x[k] === STD_RULES[k]);
 const rules = () => game.rules || STD_RULES;
 const matchMs = () => rules().time;
+// game types: K.O. battle (most K.O.s), sprint race (first to 40 lines, no garbage), last one standing (3 lives)
+const gtype = () => rules().type || 'battle';
+const LIVES = 3;
+const SURVIVAL_RULES = { ...STD_RULES, type: 'survival', time: 0 };
+// the number a board is judged by in this game type: [label, shown value, value for bars]
+function statOf(p) {
+  const t = gtype(), lv = p.lives ?? LIVES;
+  if (t === 'race') return ['LINES', `${Math.min(40, p.lines)}/40`, p.fin ? 40 : Math.min(40, p.lines)];
+  if (t === 'survival') return ['LIVES', p.out ? 'OUT' : lv, p.out ? 0 : lv];
+  return ['K.O.', p.ko, p.ko];
+}
 const DISPLAY = 'Unbounded, "Arial Black", Impact, sans-serif';
 const BODY = '"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif';
 const MONO = '"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace';
@@ -1590,6 +1632,7 @@ class Player {
       if (lv > this.level) { this.level = lv; this.lvlT = 1; this.fx.push({ t: 'LEVEL ' + lv, c: C.accent, big: true, age: -200 }); if (this.human) sfx.lvl(); }
     }
     if (this.mode === 'sprint' && this.lines >= 40) { this.onFinish(); return; }
+    if (gtype() === 'race' && this.mode !== 'sprint' && this.mode !== 'classic' && this.lines >= 40 && !this.fin) { this.fin = game.elapsed || 1; this.fx.push({ t: 'FINISHED', c: C.good, big: true, age: 0 }); this.onFinish(); return; }
     this.canHold = true;
     if (this.anim) this.waitSpawn = true; else this.spawn();
   }
@@ -1622,6 +1665,7 @@ class Player {
     return Math.max(30, base * ({ fast: .55, insane: .28 }[rules().speed] || 1));
   }
   update(dt) {
+    if (this.out) { this.fx.forEach(f => f.age += dt); this.fx = this.fx.filter(f => f.age < 1300); this.koT = Math.max(0, (this.koT || 0) - dt / 1200); return; }
     curPan = this.pan || 0;
     this.fx.forEach(f => f.age += dt); this.fx = this.fx.filter(f => f.age < 1300);
     this.pulse = Math.max(0, this.pulse - dt / 260); this.boom = Math.max(0, this.boom - dt / 500); this.pcT = Math.max(0, (this.pcT || 0) - dt / 1400);
@@ -1733,7 +1777,7 @@ class CPU {
     return pick ? { id: p.pid, r: pick.r, x: pick.x, steps: 0 } : null;
   }
   update(dt) {
-    const p = this.p; if (!p.piece || p.stun > 0) return;
+    const p = this.p; if (!p.piece || p.stun > 0 || p.out) return;
     if (!this.plan || this.plan.id !== p.pid) { this.plan = this.think(); this.t = -this.L.think; if (!this.plan) return; }
     this.t += dt;
     while (this.t >= this.L.step && this.plan && p.piece) {
@@ -1844,7 +1888,7 @@ function renderProfile() {
   $('hCombo').textContent = pr.bestCombo ? '×' + pr.bestCombo : '—';
   const cb = store.get('classic', 0); $('hSprint').textContent = cb ? cb.toLocaleString('en-US') : '—';
   $('classicTxt').textContent = cb ? 'Endless. High score: ' + cb.toLocaleString('en-US') : 'Endless solo. Speeds up every 10 lines.';
-  const last = store.get('last', null), names = { cpu: '1 vs 1', sprint: 'Sprint 40', local: 'Local 2P', classic: 'Classic' };
+  const last = store.get('last', null), names = { cpu: '1 vs 1', sprint: 'Sprint 40', local: 'Local 2P', classic: 'Classic', survival: 'Last one standing' };
   $('hAgain').hidden = !last;
   if (last) $('hAgainName').textContent = last.mode === 'arena' ? `${last.size}P Arena · ${game.level[0].toUpperCase() + game.level.slice(1)}` : (names[last.mode] || 'Last mode') + (last.mode === 'cpu' ? ' · ' + game.level[0].toUpperCase() + game.level.slice(1) : '');
 }
@@ -1861,10 +1905,15 @@ const RIVALS = [
   { name: 'Mira', tint: '#a338ff' }, { name: 'Zed', tint: '#ff8f1a' },
 ];
 const ord = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 - 20) % 10] || ['th', 'st', 'nd', 'rd'][n % 100] || 'th');
-const rankPlayers = () => game.players.map((p, i) => [p, i]).sort((x, y) => y[0].ko - x[0].ko || y[0].sent - x[0].sent || x[0].stackHeight() - y[0].stackHeight() || x[1] - y[1]).map(x => x[0]);
-function leader(p) { return rankPlayers().find(q => q !== p); }
+const RANKERS = {
+  battle: (a, b) => b.ko - a.ko || b.sent - a.sent || a.stackHeight() - b.stackHeight(),
+  race: (a, b) => (a.fin || 1e12) - (b.fin || 1e12) || b.lines - a.lines || a.stackHeight() - b.stackHeight(),
+  survival: (a, b) => (a.out ? 1 : 0) - (b.out ? 1 : 0) || (b.lives ?? LIVES) - (a.lives ?? LIVES) || (b.outT || 0) - (a.outT || 0) || b.ko - a.ko || b.sent - a.sent,
+};
+const rankPlayers = () => game.players.map((p, i) => [p, i]).sort((x, y) => (RANKERS[gtype()] || RANKERS.battle)(x[0], y[0]) || x[1] - y[1]).map(x => x[0]);
+function leader(p) { return rankPlayers().find(q => q !== p && !q.out); }
 function pickTarget(p) {
-  const opps = game.players.filter(q => q !== p);
+  const opps = game.players.filter(q => q !== p && !q.out);
   if (opps.length <= 1) return opps[0] || null;
   if (p.human) return p.autoTarget ? leader(p) : (opps.includes(p.target) ? p.target : leader(p));
   const r = Math.random();
@@ -1895,7 +1944,7 @@ const cleanNick = n => String(n || '').replace(/[^\w\- ]/g, '').trim().slice(0, 
 class RemotePlayer {
   constructor(id, name, tint) {
     Object.assign(this, { id, name, tint, remote: true, human: false, board: emptyBoard(), piece: null, hold: null, queue: [], lines: 0, ko: 0, sent: 0, pieces: 0,
-      sentTo: {}, kod: {}, pend: 0, fx: [], ev: [], pulse: 0, boom: 0, koT: 0, hit: 0, pcT: 0, anim: null, stun: 0, lockT: 0, gone: false, lblN: 0, kodN: 0, maxCombo: 0, combo: -1, b2b: false });
+      sentTo: {}, kod: {}, lives: LIVES, out: false, outT: 0, fin: 0, pend: 0, fx: [], ev: [], pulse: 0, boom: 0, koT: 0, hit: 0, pcT: 0, anim: null, stun: 0, lockT: 0, gone: false, lblN: 0, kodN: 0, maxCombo: 0, combo: -1, b2b: false });
   }
   grounded() { return false; }
   pendingTotal() { return this.pend; }
@@ -1914,6 +1963,9 @@ class RemotePlayer {
     if (typeof s.lblN === 'number' && s.lblN !== this.lblN && typeof s.lbl === 'string') { this.lblN = s.lblN; this.fx.push({ t: s.lbl.slice(0, 20), c: C.fg, age: 0, big: s.lbl.length > 6 }); }
     const kodN = sum(this.kod); if (kodN > this.kodN) { this.koT = 1; this.ev.push({ type: 'ko' }); } this.kodN = kodN;
     if (s.pcT) this.pcT = Math.max(this.pcT, .8);
+    if (typeof s.lv === 'number') this.lives = Math.max(0, Math.min(LIVES, s.lv | 0));
+    if (s.out && !this.out) this.fx.push({ t: 'ELIMINATED', c: C.warn, big: true, age: 0 });
+    this.out = !!s.out; this.outT = +s.ot || 0; this.fin = +s.fin || 0;
   }
   update(dt) {
     this.fx.forEach(f => f.age += dt); this.fx = this.fx.filter(f => f.age < 1300);
@@ -1926,6 +1978,7 @@ const snapOf = p => ({
   b: encBoard(p.board), pc: p.piece ? [p.piece.t, p.piece.r, p.piece.x, p.piece.y] : null, h: p.hold, q: p.queue[0] || null,
   ln: p.lines, pcs: p.pieces, pend: p.pendingTotal(), sentTo: p.sentTo || {}, kod: p.kod || {}, cb: Math.max(0, p.combo), b2b: !!p.b2b,
   lbl: p.lastLbl || '', lblN: p.lblN || 0, pcT: p.pcT > .5 ? 1 : 0,
+  lv: p.lives ?? LIVES, out: p.out ? 1 : 0, ot: p.outT || 0, fin: p.fin || 0,
 });
 async function netInit(refresh) {
   if (net.ready && !refresh) return;
@@ -1954,12 +2007,13 @@ async function netJoin(code) {
   net.unsub.push(net.nr.onConnection(c => { $('lobbyConn').textContent = c ? 'Connected' : 'Reconnecting…'; }));
   await net.nr.presence({ nick: settings.nick, st: 'lobby', v: 1, jt: Date.now() });
   show('ovLobby'); renderLobby(); hubState();
+  clearInterval(net.qTimer); if (net.quick) net.qTimer = setInterval(() => { if (net.nr && !game.running && !$('ovLobby').hidden) renderLobby(); }, 1000);
 }
 function lobbyErr(e) { $('lobbyMsg').textContent = 'Room ended: ' + (e?.code || 'error') + '. Leave and join again.'; }
 async function netLeave() {
   net.unsub.forEach(u => { try { u(); } catch (e) {} }); net.unsub = [];
   try { await net.nr?.leave(); } catch (e) {}
-  net.nr = null; net.code = null; net.mid = null;
+  net.nr = null; net.code = null; net.mid = null; net.quick = null; clearInterval(net.qTimer);
   if (game.mode === 'online') { game.running = false; musicStop(); }
   openOnline();
 }
@@ -1977,6 +2031,14 @@ function renderLobby() {
   const n = sorted.length, want = Math.max(+($('lobbySize').value || 2), 2);
   $('lobbyCount').textContent = `${n} player${n === 1 ? '' : 's'} here`;
   $('lobbySize').disabled = !net.host;
+  const q = net.quick;
+  $('rulesSec').hidden = !!q; $('lobbyInvite').hidden = !!q; $('lobbyFriends').hidden = !!q || !(LIVE && account.user);
+  if (q) {
+    $('btnLobbyStart').hidden = true; $('lobbyWait').hidden = false;
+    $('lobbyWait').textContent = q.started && net.mid && !game.running ? 'Match over. Find another match or leave the room.' : q.started ? 'Starting…' : `Quick match · ${n} of ${q.expect} player${q.expect === 1 ? '' : 's'} here · starting…`;
+    if (net.host && !q.started && (n >= q.expect || Date.now() - q.t0 > 7000)) { q.started = true; netHostStart(); }
+    return;
+  }
   showRules();
   if (net.host !== net.wasHost) { net.wasHost = net.host; net.rulesShared = false; }     // the host left and you took over
   if (net.host && !net.rulesShared) { net.rulesShared = true; pushRules(); }
@@ -1989,13 +2051,13 @@ const escapeHtml = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': 
 async function netHostStart() {
   if (!net.nr || !net.host) return;
   const ps = lobbyPeers().slice().sort(byJoin);
-  const want = Math.max(+($('lobbySize').value || 2), 2);
+  const want = net.quick ? net.quick.size : Math.max(+($('lobbySize').value || 2), 2);
   const size = Math.max(want, ps.length);
   const tints = [C.accent2, '#3fd62a', '#ffd21a', '#a338ff', '#ff8f1a', '#22b8ff'];
   const humans = ps.map((p, i) => ({ peer: p.peer, nick: cleanNick(p.presence?.nick), tint: tints[i % tints.length] }));
   const used = new Set(humans.map(h => h.tint)), free = tints.concat(RIVALS.map(r => r.tint)).filter((t, i, a) => a.indexOf(t) === i && !used.has(t));
   const bots = RIVALS.slice(0, size - ps.length).map((r, i) => ({ id: 'b' + (i + 1), name: r.name, tint: free[i % free.length] || r.tint }));
-  const data = { mid: randomCode() + Date.now().toString(36), size, level: net.botLevel || game.level, humans, bots, host: net.myPeer, rules: cleanRules(net.rules) };
+  const data = { mid: randomCode() + Date.now().toString(36), size, level: net.quick ? 'normal' : (net.botLevel || game.level), humans, bots, host: net.myPeer, rules: net.quick ? { ...STD_RULES } : cleanRules(net.rules) };
   await net.nr.emit('start', data);
 }
 function onNetStart(m) {
@@ -2062,7 +2124,7 @@ function netTick(now) {
     if (pr.kind !== 'viewer' || (pr.isMe && pr.sameTab)) continue;
     const s = pr.presence || {};
     const rp = game.players.find(p => p.remote && p.id === pr.peer);
-    if (rp && s.st === 'play' && s.mid === net.mid) rp.apply(s);
+    if (rp && (s.st === 'play' || s.st === 'done') && s.mid === net.mid) rp.apply(s);     // 'done' carries a player's final state (eliminated, finished)
     if (pr.peer === net.hostPeer && s.bots && typeof s.bots === 'object') for (const id in s.bots) { const bp = game.players.find(p => p.remote && p.id === id); if (bp) bp.apply(s.bots[id]); }
   }
   for (const p of game.players) if (p.remote) p.gone = !peers.some(pr => pr.peer === p.id) && !(net.hostPeer && peers.some(pr => pr.peer === net.hostPeer) && /^b\d$/.test(p.id));
@@ -2354,6 +2416,7 @@ function syncSocialUI() {
   const signedIn = LIVE && !!account.user;
   $('btnInviteStats').hidden = !signedIn;
   $('onInvite').hidden = !signedIn;
+  $('qmSec').hidden = !signedIn;
   document.querySelectorAll('.chip').forEach(c => { if (/RANKED/.test(c.textContent)) c.hidden = !canRank(); });
   $('rankNote').hidden = canRank();
   $('rankNoteTxt').textContent = LIVE ? 'Ranked play needs Facebook sign-in. You can still play every mode unranked.' : 'Ranked play is on the live site, with Facebook sign-in. Every mode here is unranked.';
@@ -2498,7 +2561,40 @@ function onHub(m) {
   } else if (m.t === 'acc') {
     loadFriends(); shareMsg(`${m.name || 'Your friend'} accepted your friend request`); sfx.lvl?.();
   } else if (m.t === 'unfriend') loadFriends();
+  else if (m.t === 'qn') { qm.n = Math.max(1, m.n | 0); }
+  else if (m.t === 'match') quickMatched(m);
 }
+// ---- quick match: the hub queues players who press Quick match and puts them in a room together ----
+const qm = { size: 0, t0: 0, timer: null, went: false, n: 1 };
+function quickStart(size) {
+  if (needSignIn()) { signIn('/?online=1'); return; }
+  if (!hub.ws || hub.ws.readyState !== 1) { $('onlineMsg').textContent = 'Connecting to the server… try again in a moment.'; hubConnect(); return; }
+  Object.assign(qm, { size, t0: Date.now(), went: false, n: 1 });
+  hub.ws.send(JSON.stringify({ t: 'q', size }));
+  const d = $('qmModal'); if (d.showModal && !d.open) d.showModal();
+  clearInterval(qm.timer); qm.timer = setInterval(qmTick, 250); qmTick();
+}
+function qmTick() {
+  const s = Math.floor((Date.now() - qm.t0) / 1000);
+  $('qmClock').textContent = fmt(s * 1000);
+  $('qmTxt').textContent = `${qm.size === 2 ? '1 vs 1' : '6 players'} · ${qm.n} searching` + (s >= 15 ? ' · bots join soon' : '');
+  if (s >= 20 && !qm.went && hub.ws?.readyState === 1) { qm.went = true; hub.ws.send(JSON.stringify({ t: 'qgo' })); }   // start with whoever is here
+}
+function quickStop(send = true) {
+  clearInterval(qm.timer); qm.timer = null; qm.size = 0;
+  if (send && hub.ws?.readyState === 1) hub.ws.send(JSON.stringify({ t: 'qx' }));
+  const d = $('qmModal'); if (d.open) d.close();
+}
+async function quickMatched(m) {
+  quickStop(false);
+  if (net.nr) await netLeave();
+  net.quick = { size: m.size === 6 ? 6 : 2, expect: Math.max(1, Math.min(6, m.n | 0)), t0: Date.now(), started: false };
+  await netInit(); $('roomCode').value = m.room; await netJoin(m.room);
+  if (!net.code) { net.quick = null; openOnline(); $('onlineMsg').textContent = 'Couldn\'t join the match. Try again.'; }
+}
+$('qmCancel').onclick = () => quickStop();
+$('qmModal').addEventListener('cancel', () => quickStop());
+document.addEventListener('click', e => { const b = e.target.closest('[data-qm]'); if (b) quickStart(+b.dataset.qm); });
 function startPresence() {
   if (!LIVE || !account.user || hub.started) return;
   hub.started = true;
@@ -3219,8 +3315,10 @@ async function equipItem(id) {
 
 function start(mode) {
   initAudio();
+  const asked = mode;
+  if (mode === 'survival') { game.pendingRules = SURVIVAL_RULES; mode = 'arena'; game.size = 6; }
   if (RANKED_MODES.includes(mode) && canRank()) rankedBegin(mode, mode === 'arena' ? game.size : 2, game.level); else game.ranked = null;
-  if (mode !== 'online') store.set('last', { mode, size: game.size });
+  if (mode !== 'online') store.set('last', { mode: asked, size: game.size });
   const versus = mode !== 'sprint' && mode !== 'classic';
   const mk = (name, human) => new Player({ name, human, mode, versus });
   const ps = [mk(mode === 'local' ? 'P1' : 'You', true)];
@@ -3232,11 +3330,12 @@ function start(mode) {
   launch(mode, ps, ps.length);
 }
 function launch(mode, ps, size) {
-  if (mode !== 'online') game.rules = STD_RULES;
+  if (mode !== 'online') { game.rules = game.pendingRules || STD_RULES; game.pendingRules = null; }
   game.mode = mode; game.over = false; game.paused = false; game.elapsed = 0; game.timeLeft = matchMs() || 1e9; game.countdown = 3000; game.goT = 0;
   fx.parts = []; fx.sweeps = []; fx.trails = []; fx.glows = []; fx.orbs = []; fx.rings = []; fx.blasts = [];
   game.players = ps; game.size = size;
   ps[0].autoTarget = true;
+  ps.forEach(p => { p.lives = LIVES; p.out = false; p.fin = 0; p.outT = 0; if (gtype() === 'race' && !p.remote) p.versus = false; });
   ps.forEach(p => {
     if (p.remote) return;
     p.onAttack = n => {
@@ -3248,11 +3347,19 @@ function launch(mode, ps, size) {
     };
     p.onTopOut = me => {
       if (mode === 'sprint' || mode === 'classic') { end(); return; }
+      if (gtype() === 'race') { me.koReset(); me.lastHitBy = null; if (me.human) sfx.ko(); return; }     // racing: topping out just costs time
       const killer = me.lastHitBy || (ps.length === 2 ? ps.find(q => q !== me) : null);
       if (killer) { me.kod[killer.id] = (me.kod[killer.id] || 0) + 1; killer.koFlash = 1; if (!killer.remote) killer.ko++; }
-      me.koReset(); me.lastHitBy = null;
+      if (gtype() === 'survival') {
+        me.lives = Math.max(0, (me.lives ?? LIVES) - 1);
+        if (!me.lives) { me.out = true; me.outT = game.elapsed || 1; me.piece = null; me.pending = []; me.fx.push({ t: 'ELIMINATED', c: C.warn, big: true, age: 0 }); }
+        else me.koReset();
+      } else me.koReset();
+      me.lastHitBy = null;
       if (killer && killer.human) sfx.koWin(); else if (me.human || mode === 'local') sfx.ko(); else sfx.koFar();
-      if (killer && !killer.remote && killer.ko >= koCap()) end();
+      if (gtype() === 'battle' && killer && !killer.remote && killer.ko >= koCap()) end();
+      if (gtype() === 'survival' && game.players.filter(q => !q.out).length <= 1) end();
+      else if (gtype() === 'survival' && me.human && me.out && mode !== 'online') end();     // your place is settled; no need to watch the CPUs finish
     };
     p.onFinish = () => end();
   });
@@ -3297,13 +3404,16 @@ function end() {
     html = row('Time', fmtPrecise(t)) + row('Pieces per second', pps(a)) + row('Best time', best ? fmtPrecise(best) : '—');
     xp = done ? 20 + Math.max(0, Math.round((120000 - t) / 4000)) : 4;
     won = done;
-  } else if (game.mode === 'arena' || (game.mode === 'online' && game.players.length > 2)) {
-    const ranked = rankPlayers(), place = ranked.indexOf(a) + 1;
+  } else if (game.mode === 'arena' || (game.mode === 'online' && (game.players.length > 2 || gtype() !== 'battle'))) {
+    const ranked = rankPlayers(), place = ranked.indexOf(a) + 1, t = gtype();
     won = place === 1;
-    $('resTitle').textContent = won ? '1st place!' : `${ord(place)} place`;
-    sub = game.mode === 'online' ? `${game.players.length}-player online match${isStdRules(rules()) ? '' : ' · custom rules'}` : `${game.players.length}-player arena · ${game.level[0].toUpperCase() + game.level.slice(1)} CPUs`;
-    html = `<span class="h">Player</span><span class="h" style="text-align:right">K.O.</span><span class="h" style="text-align:right">Sent</span>` +
-      ranked.map((p, i) => `<span class="k${p === a ? ' me' : ''}"><i class="medal m${i + 1}">${i + 1}</i><i class="dot" style="background:${p.tint}"></i>${p.name}</span><span class="v">${p.ko}</span><span class="v">${p.sent}</span>`).join('');
+    $('resTitle').textContent = won ? (t === 'race' ? 'You won the race!' : t === 'survival' ? 'Last one standing!' : '1st place!') : `${ord(place)} place`;
+    const kind = t === 'race' ? 'sprint race' : t === 'survival' ? 'last one standing' : game.mode === 'online' ? 'online match' : 'arena';
+    sub = game.mode === 'online' ? `${game.players.length}-player ${kind}${isStdRules(rules()) || t !== 'battle' ? '' : ' · custom rules'}` : `${game.players.length}-player ${kind} · ${game.level[0].toUpperCase() + game.level.slice(1)} CPUs`;
+    const cols = t === 'race' ? [['Lines', p => Math.min(40, p.lines)], ['Time', p => p.fin ? fmtPrecise(p.fin) : '—']]
+      : t === 'survival' ? [['Lives', p => p.out ? 'Out' : (p.lives ?? LIVES)], ['K.O.', p => p.ko]] : [['K.O.', p => p.ko], ['Sent', p => p.sent]];
+    html = `<span class="h">Player</span>${cols.map(c => `<span class="h" style="text-align:right">${c[0]}</span>`).join('')}` +
+      ranked.map((p, i) => `<span class="k${p === a ? ' me' : ''}"><i class="medal m${i + 1}">${i + 1}</i><i class="dot" style="background:${p.tint}"></i>${p.name}</span>${cols.map(c => `<span class="v">${c[1](p)}</span>`).join('')}`).join('');
     xp = Math.round((a.sent + a.ko * 8 + a.lines * .5 + [45, 25, 14, 9, 6, 4][place - 1]) * (game.mode === 'online' ? 1.2 : LEVELS[game.level].xp));
   } else {
     const w = a.ko !== b.ko ? (a.ko > b.ko ? a : b) : a.sent !== b.sent ? (a.sent > b.sent ? a : b) : null;
@@ -3319,7 +3429,7 @@ function end() {
   $('resStats').innerHTML = html;
   {
     let place = won ? 1 : 2, draw = false;
-    if (game.mode === 'arena' || (game.mode === 'online' && game.players.length > 2)) place = rankPlayers().indexOf(a) + 1;
+    if (game.mode === 'arena' || (game.mode === 'online' && (game.players.length > 2 || gtype() !== 'battle'))) place = rankPlayers().indexOf(a) + 1;
     else if (b) draw = a.ko === b.ko && a.sent === b.sent && !won && a.stackHeight() === b.stackHeight();
     trackEnd(a, won, place);
     payMatch({ mode: game.mode, won, place, size: game.players.length, level: game.level, score: a.score || 0, lines: a.lines, done: a.lines >= 40, best: game.mode === 'sprint' && a.lines >= 40 && store.get('sprint', 0) === game.elapsed, ms: game.elapsed });
@@ -3350,6 +3460,7 @@ function end() {
   if (won || game.mode === 'local') confetti();
   $('ovResult').querySelector('.card').dataset.outcome = won || game.mode === 'local' ? 'win' : 'lose';
   $('btnAgain').hidden = game.mode === 'online'; $('btnLobby').hidden = game.mode !== 'online';
+  $('btnLobby').textContent = net.quick ? 'Find another match' : 'Back to lobby';
   if (game.mode === 'online' && net.nr) { const me = game.players[0]; net.nr.presence({ st: 'done', mid: net.mid, ...snapOf(me) }).catch(() => {}); }
   show('ovResult');
 }
@@ -3484,7 +3595,8 @@ $('hRankRow').onclick = () => openRankings();
 $('hTipNext').onclick = () => { tipI++; showTip(); };
 showTip();
 $('btnAgain').onclick = () => start(game.mode);
-$('btnLobby').onclick = () => { game.running = false; game.mode = 'online-idle'; musicStop(); if (net.nr) { net.nr.presence({ st: 'lobby', mid: null, bots: null, b: null }).catch(() => {}); show('ovLobby'); renderLobby(); } else show('ovMenu'); };
+$('btnLobby').onclick = () => {
+  if (net.quick) { const size = net.quick.size; game.running = false; game.mode = 'online-idle'; musicStop(); netLeave().then(() => quickStart(size)); return; } game.running = false; game.mode = 'online-idle'; musicStop(); if (net.nr) { net.nr.presence({ st: 'lobby', mid: null, bots: null, b: null }).catch(() => {}); show('ovLobby'); renderLobby(); } else show('ovMenu'); };
 $('btnCreate').onclick = () => { $('roomCode').value = randomCode(); netJoin($('roomCode').value); };
 $('btnJoin').onclick = () => netJoin($('roomCode').value);
 $('roomCode').addEventListener('keydown', e => { if (e.key === 'Enter') netJoin($('roomCode').value); });
@@ -3512,6 +3624,7 @@ function showRules() {
 document.querySelectorAll('[data-rule]').forEach(sel => sel.addEventListener('change', () => {
   const k = sel.dataset.rule; net.rules = cleanRules({ ...net.rules, [k]: RULE_OPTS[k][+sel.value][0] });
   if (k === 'time' && !net.rules.time && !net.rules.ko) net.rules.ko = 0;
+  if (k === 'type' && net.rules.type !== 'battle') net.rules.time = 0;      // races and last-one-standing run until someone wins
   store.set('roomRules', net.rules); pushRules(); showRules();
 }));
 $('ruleBots').onchange = () => { net.botLevel = $('ruleBots').value; store.set('roomBots', net.botLevel); pushRules(); showRules(); };
@@ -3864,6 +3977,12 @@ function drawBoard(p, bx, by, cell, small) {
     ctx.fillStyle = C.well; for (let i = 1; i < Math.min(20, tot); i++) ctx.fillRect(mx, by + H - i * cell, mw, 1);
     if (!small) num(tot, mx + mw / 2, by + H - h - 5, { size: 11, color: C.warn, align: 'center', base: 'bottom' });
   }
+  if (p.out || p.fin) {      // eliminated / finished boards are dimmed with a label
+    ctx.globalAlpha = .62; ctx.fillStyle = C.ink; ctx.fillRect(bx, by, W, H); ctx.globalAlpha = 1;
+    const lbl = p.out ? 'OUT' : 'DONE', col = p.out ? C.warn : C.good;
+    text(lbl, bx + W / 2, by + H / 2, { size: small ? 14 : 40, weight: 900, align: 'center', base: 'middle', color: col });
+    if (!small && p.fin) num(fmtPrecise(p.fin), bx + W / 2, by + H / 2 + 34, { size: 16, align: 'center', base: 'middle', color: C.fg });
+  }
   drawCallouts(p, bx, by, W, H, cell, small);
   ctx.globalAlpha = 1;
   consume(p, bx, by, cell, small);
@@ -3976,6 +4095,8 @@ function drawFull(p, ox, oy) {
     ? [['SCORE', p.score.toLocaleString('en-US'), C.accent], ['LEVEL', p.level, C.fg], ['LINES', p.lines, C.fg]]
     : game.mode === 'sprint'
     ? [['LINES', Math.min(40, p.lines) + '/40', C.fg], ['PIECES', p.pieces, C.fg], ['PPS', game.elapsed ? (p.pieces / (game.elapsed / 1000)).toFixed(2) : '0.00', C.fg]]
+    : gtype() === 'race' ? [['LINES', Math.min(40, p.lines) + '/40', C.accent], ['PIECES', p.pieces, C.fg], ['PPS', game.elapsed ? (p.pieces / (game.elapsed / 1000)).toFixed(2) : '0.00', C.fg]]
+    : gtype() === 'survival' ? [['LIVES', p.out ? 'OUT' : (p.lives ?? LIVES), C.warn], ['K.O.', p.ko, C.accent], ['SENT', p.sent, C.fg]]
     : [['K.O.', p.ko, C.accent], ['SENT', p.sent, C.fg], ['LINES', p.lines, C.fg]];
   stats.forEach(([k, v, c], i) => statBlock(ox + 2, oy + 116 + i * 54, k, v, c));
   // combo counter: a bar that fills one notch per combo step
@@ -4010,7 +4131,8 @@ function drawMini(p, ox, oy) {
   text(game.mode === 'online' ? (p.name.toUpperCase() + (p.gone ? ' · LEFT' : '')) : 'OPPONENT', ox, oy, { size: 9, weight: 700, color: game.mode === 'online' ? p.tint : C.muted, spacing: true });
   drawBoard(p, ox + 12, oy + 22, cell, true);
   const sy = oy + 22 + 20 * cell + 20;
-  statBlock(ox, sy, 'K.O.', p.ko, C.accent); statBlock(ox, sy + 50, 'SENT', p.sent);
+  const [sl, sv] = statOf(p); statBlock(ox, sy, sl, sv, C.accent);
+  if (gtype() === 'race') statBlock(ox, sy + 50, 'PIECES', p.pieces); else statBlock(ox, sy + 50, 'SENT', p.sent);
   text('NEXT', ox + 62, sy, { size: 9, weight: 700, color: C.muted, spacing: true });
   if (p.queue[0]) miniPiece(p.queue[0], ox + 84, sy + 34, 10);
 }
@@ -4031,7 +4153,8 @@ function drawSeat(p, x, y, cell, me) {
   text(p.name.toUpperCase(), bx, y + 3, { size: cell > 12 ? 11 : 9, weight: 700, color: p.tint, spacing: true });
   // K.O. count; flashes when this rival scores one
   p.koFlash = Math.max(0, (p.koFlash || 0) - frameDt / 900);
-  num(`${p.ko} KO`, bx + bw, y + 2, { size: cell > 12 ? 12 : 10, align: 'right', color: p.koFlash > 0 ? C.gold : C.muted });
+  const st = statOf(p), stTxt = gtype() === 'battle' ? `${p.ko} KO` : gtype() === 'race' ? st[1] : (p.out ? 'OUT' : '♥'.repeat(p.lives ?? LIVES));
+  num(stTxt, bx + bw, y + 2, { size: cell > 12 ? 12 : 10, align: 'right', color: p.koFlash > 0 ? C.gold : gtype() === 'survival' && !p.out ? C.warn : C.muted });
   drawBoard(p, bx, by, cell, true);
   const H = 20 * cell;
   if (targeted) {
@@ -4058,7 +4181,7 @@ function drawSeat(p, x, y, cell, me) {
 function drawStandings(x, y, w, h) {
   panel(x, y, w, h, 'STANDINGS');
   const ranked = rankPlayers(), wide = w > 300;
-  const maxKo = Math.max(1, ...ranked.map(p => p.ko));
+  const maxKo = gtype() === 'race' ? 40 : gtype() === 'survival' ? LIVES : Math.max(1, ...ranked.map(p => p.ko));
   ranked.forEach((p, i) => {
     const cols = wide ? 2 : 1, per = Math.ceil(ranked.length / cols);
     const cx = x + 12 + (i / per | 0) * ((w - 12) / cols), cy = y + 32 + (i % per) * (wide ? 26 : 31), cw = (w - 24) / cols - (cols > 1 ? 12 : 0);
@@ -4066,11 +4189,11 @@ function drawStandings(x, y, w, h) {
     num(i + 1, cx + 2, cy + 7, { size: 11, base: 'middle', color: i === 0 ? C.gold : C.muted });
     ctx.fillStyle = p.tint; ctx.fillRect(cx + 15, cy + 3, 8, 8);
     text(p.human ? 'YOU' : p.name.toUpperCase(), cx + 29, cy + 7, { size: 9, weight: 700, base: 'middle', color: p.human ? C.fg : '#c9d2f2', spacing: true });
-    num(p.ko, cx + cw, cy + 7, { size: 12, base: 'middle', align: 'right', color: C.fg });
+    num(statOf(p)[1], cx + cw, cy + 7, { size: 12, base: 'middle', align: 'right', color: p.out ? C.warn : C.fg });
     const bw = Math.max(0, cw - 100);
     if (bw > 10) {
       ctx.fillStyle = C.ink; ctx.fillRect(cx + cw - 22 - bw, cy + 4, bw, 6);
-      if (p.ko) { ctx.fillStyle = p.tint; ctx.fillRect(cx + cw - 22 - bw, cy + 4, bw * p.ko / maxKo, 6); }
+      const v = statOf(p)[2]; if (v) { ctx.fillStyle = p.tint; ctx.fillRect(cx + cw - 22 - bw, cy + 4, bw * v / maxKo, 6); }
     }
   });
 }
@@ -4120,7 +4243,7 @@ function drawHUD() {
   if (!a || !b) return;
   if (isArena()) {
     text(`YOU · LV ${game.myLevel || 1}`, 0, 14, { size: 11, weight: 700, base: 'middle', color: a.tint, spacing: true });
-    num(`${a.ko} KO`, 0, 34, { size: 12, base: 'middle', color: C.muted });
+    num(gtype() === 'battle' ? `${a.ko} KO` : gtype() === 'race' ? `${statOf(a)[1]} lines` : (a.out ? 'OUT' : `${'♥'.repeat(a.lives ?? LIVES)}  ${a.ko} KO`), 0, 34, { size: 12, base: 'middle', color: gtype() === 'survival' ? C.warn : C.muted });
     const place = rankPlayers().indexOf(a) + 1, rw = 128, rx = L.W - rw;
     ctx.fillStyle = C.ink; ctx.fillRect(rx + 3, 7, rw, 40);
     ctx.fillStyle = place === 1 ? C.gold : C.panel; ctx.fillRect(rx, 4, rw, 40);
@@ -4136,10 +4259,11 @@ function drawHUD() {
     if (game.mode === 'cpu') name = p.human ? `You  ·  Lv ${game.myLevel || 1}` : `CPU  ·  ${game.level[0].toUpperCase() + game.level.slice(1)}`;
     if (game.mode === 'online') name = p === a ? `You  ·  Lv ${game.myLevel || 1}` : p.name + (/^b\d$/.test(p.id) ? '  ·  Bot' : '');
     text(name.toUpperCase(), x, 14, { size: 11, weight: 700, align, base: 'middle', color: p.tint || C.fg, spacing: true });
-    const dots = Math.max(3, p.ko);
+    if (gtype() === 'race') { num(statOf(p)[1] + (p.fin ? '  ✓' : ''), x, 34, { size: 13, align, base: 'middle', color: p.fin ? C.good : C.muted }); return; }
+    const surv = gtype() === 'survival', dots = surv ? LIVES : Math.max(3, p.ko), fill = surv ? (p.out ? 0 : p.lives ?? LIVES) : p.ko;
     for (let i = 0; i < dots; i++) {
       const dx = align === 'left' ? x + i * 14 : x - i * 14 - 10;
-      ctx.fillStyle = i < p.ko ? C.accent : C.edge; ctx.fillRect(dx, 29, 10, 10);
+      ctx.fillStyle = i < fill ? (surv ? C.warn : C.accent) : C.edge; ctx.fillRect(dx, 29, 10, 10);
     }
   };
   chip(a, 0, 'left'); chip(b, L.W, 'right');
@@ -4232,7 +4356,13 @@ function frame(now) {
       game.inputs.forEach(i => i.update(dt));
       game.cpus.forEach(c => c.update(dt));
       const me0 = game.players[0]; if (me0 && me0.autoTarget && isArena()) me0.target = leader(me0);
-      if (game.mode === 'online') { netTick(now); if (game.players.some(p => p.ko >= koCap())) end(); }
+      if (game.mode === 'online') {
+        netTick(now);
+        const t = gtype();
+        if (t === 'battle' && game.players.some(p => p.ko >= koCap())) end();
+        else if (t === 'race' && game.players.some(p => p.fin)) end();
+        else if (t === 'survival' && game.players.filter(p => !p.out).length <= 1) end();
+      }
       game.players.forEach(p => p.update(dt));
       if (game.mode === 'online') game.players.forEach(p => { if (p.remote && p.gone && !p.goneShown) { p.goneShown = true; p.fx.push({ t: 'LEFT', c: C.muted, age: 0 }); } });
       if (game.mode !== 'sprint' && game.mode !== 'classic') {

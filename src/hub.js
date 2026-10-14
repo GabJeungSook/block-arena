@@ -91,7 +91,37 @@ export class Hub {
       const me = await this.env.DB.prepare('SELECT id, name, pic FROM users WHERE id = ?').bind(a.uid).first();
       this.send(to, { t: 'inv', from: me, room });
       ws.send(JSON.stringify({ t: 'invsent', to }));
+    } else if (m.t === 'q' && (m.size === 2 || m.size === 6)) {
+      a.q = { size: m.size, at: now }; ws.serializeAttachment(a);
+      this.matchmake(m.size, false);
+    } else if (m.t === 'qx') {
+      const size = a.q?.size; a.q = null; ws.serializeAttachment(a); if (size) this.matchmake(size, false);
+    } else if (m.t === 'qgo') {
+      ws.serializeAttachment(a); if (a.q) this.matchmake(a.q.size, true);
     } else ws.serializeAttachment(a);
+  }
+  // ---- quick match ----
+  // Players waiting for a quick match carry { q: { size, at } } on their socket, so the queue survives the
+  // object sleeping. Full groups start at once; after 20 s a waiting player asks to start with whoever is
+  // there ('qgo'), and bots fill the rest of the seats.
+  matchmake(size, force) {
+    const seen = new Set();
+    const list = this.ctx.getWebSockets().map(ws => [ws, ws.deserializeAttachment() || {}])
+      .filter(([, a]) => a.q && a.q.size === size).sort((x, y) => x[1].q.at - y[1].q.at)
+      .filter(([, a]) => !seen.has(a.uid) && seen.add(a.uid));
+    while (list.length >= size) this.makeMatch(list.splice(0, size), size);
+    if (force && list.length) this.makeMatch(list.splice(0, list.length), size);
+    const msg = JSON.stringify({ t: 'qn', n: list.length });
+    for (const [ws] of list) { try { ws.send(msg); } catch (e) {} }
+  }
+  makeMatch(group, size) {
+    const room = 'qm' + crypto.randomUUID().replace(/-/g, '').slice(0, 8);
+    const msg = JSON.stringify({ t: 'match', room, size, n: group.length });
+    for (const [ws, a] of group) {
+      // the same player in another tab stops searching too
+      for (const w2 of this.socketsOf(a.uid)) { const b = w2.deserializeAttachment() || {}; if (b.q) { b.q = null; w2.serializeAttachment(b); } }
+      try { ws.send(msg); } catch (e) {}
+    }
   }
   async webSocketClose(ws) { this.gone(ws); }
   async webSocketError(ws) { this.gone(ws); }
@@ -100,5 +130,6 @@ export class Hub {
     try { ws.close(1000, 'bye'); } catch (e) {}
     // only "offline" once their last tab is gone (statusOf skips this closing socket)
     if (a.uid) this.tellFriends(a.uid, a.fr, ws);
+    if (a.q) { a.q = null; try { ws.serializeAttachment(a); } catch (e) {} this.matchmake(2, false); this.matchmake(6, false); }
   }
 }

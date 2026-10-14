@@ -93,9 +93,19 @@ Buy a domain (about $10/year), add it to Cloudflare, then **Workers & Pages → 
 - **Sharing**: rank, match results and achievements become 1200×630 cards at `/s/<id>`; Facebook shows the card and the link opens the game.
 - **Achievements**: 15 medals, saved to the account and synced across devices.
 
+## Game types
+
+- **K.O. battle** (standard): most K.O.s when the clock runs out, or first to the K.O. target.
+- **Sprint race** (online rooms): no garbage; first to clear 40 lines wins, everyone else is ranked by lines cleared.
+- **Last one standing**: 3 lives each; topping out costs a life, and losing all three knocks you out. The last player left wins. Playable offline against 5 CPUs (ranked) or as an online room type.
+
+## Quick match
+
+Signed-in players can press **Quick match** (1 vs 1 or 6 players) to be paired with whoever else is searching. The hub Durable Object keeps the queue on each waiting player's socket; full groups start at once, and after 20 seconds the match starts with whoever is there and bots fill the empty seats. Quick matches use the standard rules and count toward rank.
+
 ## Online room rules
 
-The host of an online room can change the rules in the lobby: match time (1, 2, 3, 5 minutes or no limit), K.O.s to win, garbage strength (×0.5 to ×2), fall speed, chained bombs, hold on/off, bot difficulty and match size. Everyone in the room sees the rules live, and they apply to every player. Only matches on the standard rules count toward rank. The host is whoever joined the room first.
+The host of an online room can change the rules in the lobby: game type, match time (1, 2, 3, 5 minutes or no limit), K.O.s to win, garbage strength (×0.5 to ×2), fall speed, chained bombs, hold on/off, bot difficulty and match size. Everyone in the room sees the rules live, and they apply to every player. Only matches on the standard rules count toward rank. The host is whoever joined the room first.
 
 ## Coins and the shop
 
