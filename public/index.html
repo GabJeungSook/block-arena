@@ -162,7 +162,6 @@ select{width:auto}
   .homewrap{grid-template-columns:1fr;gap:22px}
   .hbtns{grid-template-columns:1fr 1fr;width:100%}
   .play.huge{width:100%}
-  .hbtn:last-child{grid-column:1/-1}
 }
 .touch{display:none;width:100%;max-width:520px;grid-template-columns:repeat(4,1fr);gap:8px;user-select:none;-webkit-user-select:none}
 .touch button{height:56px;font-size:16px;border-radius:3px;touch-action:none;box-shadow:3px 3px 0 var(--ink)}
@@ -180,7 +179,7 @@ select{width:auto}
 .brand{gap:0}
 .card{border:3px solid var(--line);box-shadow:8px 8px 0 var(--ink)}
 .overlay{background:rgba(2,3,8,.86)}
-.home{background:rgba(2,3,8,.8)}
+.home{background:rgba(2,3,8,.74)}
 button{border-color:var(--line)}
 button:hover{border-color:var(--blue)}
 button[aria-pressed="true"]{border-color:var(--accent)}
@@ -244,7 +243,7 @@ input:not([type]),input[type=text],select{background:var(--navy);border-color:va
 /* home: one centered column, logo and buttons first, profile and tip in a row underneath */
 .homewrap{display:flex;flex-direction:column;align-items:center;gap:20px;width:min(760px,100%);padding-block:4px}
 .hl{align-items:center;text-align:center;gap:12px}
-.hlogo{width:min(440px,100%);margin:0 auto}
+.hlogo{width:min(400px,100%);margin:0 auto}
 .htag{max-width:46ch;text-align:center}
 .hbtns{grid-template-columns:repeat(3,minmax(0,1fr));width:min(460px,100%);margin-top:4px}
 .play.huge{width:100%}
@@ -305,6 +304,40 @@ input:not([type]),input[type=text],select{background:var(--navy);border-color:va
 .tierlist{display:flex;gap:10px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:13px}
 .tierlist span{display:flex;align-items:center;gap:6px}
 .danger{border-color:var(--red)!important;color:var(--red)}
+/* ---- home v3: corners + centered stage + a little glow ---- */
+.home{justify-content:flex-start}
+.htop{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;width:min(1000px,100%);margin:0 auto;padding-inline:4px;box-sizing:border-box}
+.hright{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.hchip{display:flex;align-items:center;gap:12px;background:rgba(13,19,48,.92);border:3px solid var(--line);padding:8px 12px;text-align:left;font-weight:400;box-shadow:5px 5px 0 var(--ink)}
+.hchip:hover{border-color:var(--blue)}
+.hchip .lvl{width:38px;height:38px;font-size:16px}
+.cinfo{display:flex;flex-direction:column;min-width:0;width:150px}
+.cinfo.r{text-align:right}
+.cinfo b{font-family:var(--display);font-size:11px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.cinfo small{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.cinfo .bar{display:block;height:6px;margin-top:5px}
+.rankchip{--rc:#c98b5a}
+.rankchip:hover{border-color:var(--rc)}
+.rankchip .bar i{background:var(--rc)}
+.rankchip .rbadge{filter:drop-shadow(0 0 8px color-mix(in srgb, var(--rc) 55%, transparent))}
+.fbbtn.sm{padding:5px 10px;font-size:12px;box-shadow:0 0 0 2px var(--fg),3px 3px 0 2px var(--ink)}
+.homewrap{margin-block:auto}
+.hlogo{filter:drop-shadow(0 0 22px rgba(30,139,255,.28)) drop-shadow(0 0 30px rgba(255,43,59,.18))}
+.play.huge{box-shadow:0 0 0 3px var(--fg),8px 9px 0 3px var(--ink),0 0 34px 4px rgba(255,210,26,.28)}
+.play.huge:hover{box-shadow:0 0 0 3px var(--fg),8px 9px 0 3px var(--ink),0 0 44px 8px rgba(255,210,26,.38)}
+.htip{background:none;border:0;box-shadow:none;color:var(--muted);font-weight:400;font-size:13px;max-width:52ch;padding:2px 6px;text-align:center;cursor:pointer}
+.htip:hover{color:var(--fg)}
+.htip .lab{color:var(--accent);margin-right:4px}
+.statlvl{display:flex;align-items:center;gap:12px}
+.statlvl .cinfo{flex:1;width:auto}
+#ovStats .hstats{grid-template-columns:repeat(3,minmax(0,1fr))}
+#ovStats .hstats div{padding:10px 12px 10px 0;border-right:0;border-bottom:1px solid var(--line)}
+@media (max-width:560px){
+  .cinfo{width:96px}
+  .hchip{padding:6px 8px;gap:8px}
+  .rankchip .rbadge{width:34px;height:38px;font-size:10px}
+  #ovStats .hstats{grid-template-columns:1fr 1fr}
+}
 @media (pointer:coarse){.touch.show{display:grid}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -324,6 +357,19 @@ input:not([type]),input[type=text],select{background:var(--navy);border-color:va
     <canvas id="cv" aria-label="Game board"></canvas>
 
     <div class="overlay home" id="ovHome">
+      <div class="htop">
+        <button type="button" class="hchip lvlchip" id="hLevelChip" aria-label="Your level and stats">
+          <span class="lvl" id="hLvl">1</span>
+          <span class="cinfo"><b id="hTitle">Level 1 · Rookie</b><small id="hXp">0 / 100 XP</small><span class="bar"><i id="hBar" style="width:0%"></i></span></span>
+        </button>
+        <div class="hright">
+          <button type="button" class="hchip rankchip" id="hRankRow" aria-label="Your rank and the rankings">
+            <span class="cinfo r"><b id="hRankName">Bronze III</b><small id="hRankRp">0 / 100 RP</small><span class="bar"><i id="hRankBar" style="width:0%"></i></span></span>
+            <i class="rbadge" id="hRankBadge"><span>B III</span></i>
+          </button>
+          <div id="hLoginMini"></div>
+        </div>
+      </div>
       <div class="homewrap">
         <section class="hl">
           <h1 class="vh">Block Arena</h1>
@@ -350,35 +396,8 @@ input:not([type]),input[type=text],select{background:var(--navy);border-color:va
           </div>
           <button type="button" class="again" id="hAgain" hidden><span class="lab">Play again</span><b id="hAgainName">1 vs 1</b><i aria-hidden="true">→</i></button>
           <p class="hint"><kbd>Enter</kbd> play &nbsp; <kbd>C</kbd> classic &nbsp; <kbd>H</kbd> how to play</p>
+          <button type="button" class="htip" id="hTipNext" title="Next tip"><span class="lab">Tip</span> <span id="hTip">Land a piece on a bomb to blow up its row.</span></button>
         </section>
-        <aside class="hr">
-          <div class="pcard">
-            <div class="pcard-top">
-              <div class="lvl" id="hLvl">1</div>
-              <div class="pinfo"><b id="hTitle">Level 1 · Rookie</b><small id="hXp">0 / 100 XP</small><div class="bar"><i id="hBar" style="width:0%"></i></div></div>
-            </div>
-            <div class="rankrow" id="hRankRow">
-              <div class="rbadge" id="hRankBadge"><span>B III</span></div>
-              <div><b id="hRankName">Bronze III</b><small id="hRankRp">0 / 100 RP</small><div class="bar"><i id="hRankBar" style="width:0%"></i></div></div>
-              <button type="button" class="ghostbtn sm" id="hRankings">Rankings</button>
-            </div>
-            <div class="acct" id="hAcct">
-              <p class="loginnote" id="hLoginNote">Sign in to save your rank and progress to your account.</p>
-              <button type="button" class="fbbtn" id="hLogin">Continue with Facebook</button>
-            </div>
-            <dl class="hstats">
-              <div><dt>Wins</dt><dd id="hWins">0</dd></div>
-              <div><dt>Matches</dt><dd id="hGames">0</dd></div>
-              <div><dt>Combo</dt><dd id="hCombo">—</dd></div>
-              <div><dt>Classic best</dt><dd id="hSprint">—</dd></div>
-            </dl>
-          </div>
-          <div class="tipcard">
-            <span class="lab">Tip</span>
-            <p id="hTip">Land a piece on a bomb to blow up its row. It keeps your combo alive.</p>
-            <button type="button" class="ghostbtn sm" id="hTipNext">Next tip</button>
-          </div>
-        </aside>
       </div>
       <footer class="hfoot"><span class="livedot" aria-hidden="true"></span><span id="hDemo">Live demo · Nova vs Rex</span><a class="plink" href="privacy.html" target="_blank" rel="noopener">Privacy</a></footer>
     </div>
@@ -527,6 +546,23 @@ input:not([type]),input[type=text],select{background:var(--navy);border-color:va
           <label class="tog" for="sShake"><input type="checkbox" id="sShake"> Screen shake</label>
         </div>
         <div class="row"><button class="play" type="button" id="btnSetDone">Done</button><button class="ghostbtn" type="button" id="btnSetReset">Reset to defaults</button></div>
+      </div>
+    </div>
+
+    <div class="overlay" id="ovStats" hidden>
+      <div class="card result">
+        <div class="menuhead"><button type="button" class="ghostbtn sm" data-back>← Back</button><h2>Your stats</h2></div>
+        <div class="acct" id="hAcct"></div>
+        <div class="statlvl"><span class="lvl" id="sLvl">1</span><span class="cinfo"><b id="sTitle">Level 1 · Rookie</b><small id="sXp">0 / 100 XP</small><span class="bar"><i id="sBar" style="width:0%"></i></span></span></div>
+        <dl class="hstats">
+          <div><dt>Wins</dt><dd id="hWins">0</dd></div>
+          <div><dt>Matches</dt><dd id="hGames">0</dd></div>
+          <div><dt>Best combo</dt><dd id="hCombo">—</dd></div>
+          <div><dt>Classic best</dt><dd id="hSprint">—</dd></div>
+          <div><dt>Sprint 40</dt><dd id="hSprint40">—</dd></div>
+          <div><dt>Rank</dt><dd id="hRankStat">—</dd></div>
+        </dl>
+        <div class="row"><button class="play" type="button" id="hRankings">Rankings</button><button class="ghostbtn" type="button" data-back>Close</button></div>
       </div>
     </div>
 
@@ -1242,6 +1278,11 @@ function renderRank() {
   $('hRankRp').textContent = r.need ? `${r.into} / ${r.need} RP` : `${rp} RP`;
   $('hRankBar').style.width = (r.need ? r.into / r.need * 100 : 100) + '%';
   $('hRankRow').style.setProperty('--rc', r.color);
+  $('hRankStat').textContent = r.name;
+  const mini = $('hLoginMini');
+  mini.innerHTML = LIVE && !account.user && account.fb ? '<button type="button" class="fbbtn sm" id="hLoginTop">Continue with Facebook</button>' : '';
+  $('hLoginTop')?.addEventListener('click', () => { location.href = '/auth/facebook'; });
+  if (LIVE && account.user && account.user.pic) mini.innerHTML = '';
   const acct = $('hAcct');
   if (!LIVE) {
     acct.innerHTML = '<p class="loginnote">Preview: your rank is saved in this browser. Facebook sign-in works on the live site.</p>';
@@ -1256,6 +1297,8 @@ function renderRank() {
 }
 function renderProfile() {
   try { renderRank(); } catch (e) {}
+  const lc = $('hLevelChip');
+  if (LIVE && account.user) { lc.classList.add('signed'); lc.querySelector('.cinfo b').dataset.name = account.user.name.split(' ')[0]; }
   const pr = store.get('profile', { xp: 0, wins: 0, games: 0 });
   const L = levelOf(pr.xp);
   $('pLvl').textContent = L.lvl;
@@ -1266,6 +1309,8 @@ function renderProfile() {
   const best = store.get('sprint', null);
   $('bestTxt').textContent = best ? 'Your best: ' + fmtPrecise(best) : 'Clear 40 lines as fast as you can.';
   $('hLvl').textContent = L.lvl; $('hTitle').textContent = $('pTitle').textContent; $('hXp').textContent = $('pXp').textContent; $('hBar').style.width = $('pBar').style.width;
+  $('sLvl').textContent = L.lvl; $('sTitle').textContent = $('pTitle').textContent; $('sXp').textContent = $('pXp').textContent; $('sBar').style.width = $('pBar').style.width;
+  $('hSprint40').textContent = best ? fmtPrecise(best) : '—';
   $('hWins').textContent = pr.wins; $('hGames').textContent = pr.games || 0;
   $('hCombo').textContent = pr.bestCombo ? '×' + pr.bestCombo : '—';
   const cb = store.get('classic', 0); $('hSprint').textContent = cb ? cb.toLocaleString('en-US') : '—';
@@ -1667,8 +1712,8 @@ const row = (k, v) => `<span class="k">${k}</span><span></span><span class="v">$
 const row2 = (k, a, b) => `<span class="k">${k}</span><span class="v">${a}</span><span class="v">${b}</span>`;
 
 function show(id) {
-  ['ovHome', 'ovHow', 'ovMenu', 'ovPause', 'ovResult', 'ovSettings', 'ovLobby', 'ovRank'].forEach(o => $(o).hidden = o !== id);
-  if (id && id !== 'ovHow' && id !== 'ovRank') lastScreen = id;
+  ['ovHome', 'ovHow', 'ovMenu', 'ovPause', 'ovResult', 'ovSettings', 'ovLobby', 'ovRank', 'ovStats'].forEach(o => $(o).hidden = o !== id);
+  if (id && id !== 'ovHow' && id !== 'ovRank' && id !== 'ovStats') lastScreen = id;
   if ((id === 'ovHome' || id === 'ovMenu' || id === 'ovLobby' || id === 'ovHow' || (id === 'ovSettings' && !inMatch())) && audio.ctx) musicStart('menu');
   if ((id === 'ovHome' || id === 'ovMenu') && !inMatch() && game.mode !== 'demo' && !demoBusy) startDemo();
   if (id === 'ovHome') renderProfile();
@@ -1735,7 +1780,7 @@ function homeKeys(e) {
     else if (e.code === 'KeyH') show('ovHow');
     else if (e.code === 'KeyC') start('classic');
   } else if (e.code === 'Escape') {
-    if (!$('ovHow').hidden || !$('ovRank').hidden) { show(lastScreen); }
+    if (!$('ovHow').hidden || !$('ovRank').hidden || !$('ovStats').hidden) { show(lastScreen); }
     else if (!$('ovMenu').hidden) show('ovHome');
     else if (!$('ovSettings').hidden) $('btnSetDone').click();
   }
@@ -1782,6 +1827,8 @@ const TIPS = [
 ];
 let tipI = Math.random() * TIPS.length | 0;
 const showTip = () => { $('hTip').textContent = TIPS[tipI % TIPS.length]; };
+$('hLevelChip').onclick = () => show('ovStats');
+$('hRankRow').onclick = () => openRankings();
 $('hTipNext').onclick = () => { tipI++; showTip(); };
 showTip();
 $('btnAgain').onclick = () => start(game.mode);
@@ -1864,7 +1911,7 @@ let L = { W: 600, H: 540, s: 1, dpr: 1 };
 const FULLW = 460, TOP = 56;
 function layout() {
   const st = $('stage');
-  const W = game.mode === 'local' ? FULLW * 2 + 40 : game.mode === 'sprint' || game.mode === 'classic' ? FULLW : isArena() ? FULLW + 24 + (game.players.length <= 4 ? 3 * 166 : 3 * 132) : 624;
+  const W = game.mode === 'local' || game.mode === 'demo' ? FULLW * 2 + 40 : game.mode === 'sprint' || game.mode === 'classic' ? FULLW : isArena() ? FULLW + 24 + (game.players.length <= 4 ? 3 * 166 : 3 * 132) : 624;
   const H = TOP + 20 * CELL + 10;
   const s = Math.max(0.3, Math.min(st.clientWidth / W, st.clientHeight / H));
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -2440,7 +2487,7 @@ if (LIVE) {
       if (!settings.nick) { settings.nick = cleanNick(d.user.name.split(' ')[0]); saveSettings(); $('nick').value = settings.nick; }
     }
     renderProfile();
-    if (/login=failed/.test(location.search)) $('hLoginNote') && ($('hLoginNote').textContent = 'Facebook sign-in didn\'t finish. Try again.');
+    if (/login=failed/.test(location.search)) { const n = document.querySelector('#hAcct .loginnote'); if (n) n.textContent = 'Facebook sign-in didn\'t finish. Try again.'; show('ovStats'); }
     if (/login=/.test(location.search)) history.replaceState(null, '', '/');
   }).catch(() => { account.ready = true; renderProfile(); });
 }
