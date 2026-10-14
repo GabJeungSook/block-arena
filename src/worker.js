@@ -26,6 +26,7 @@ export default {
       if (p === '/auth/facebook') return fbStart(req, env, url);
       if (p === '/auth/facebook/callback') return await fbCallback(req, env, url);
       if (p === '/auth/facebook/delete' && req.method === 'POST') return await fbDelete(req, env, url);
+      if (p === '/auth/facebook/delete') return deletionInstructions();
       if (p === '/auth/dev' && env.DEV_LOGIN === '1') return await devLogin(req, env, url);
       if (p === '/auth/logout') return await logout(req, env, url);
       if (p === '/deletion') return deletionStatus(env, url);
@@ -125,6 +126,10 @@ async function fbDelete(req, env, url) {
   const code = rand(8);
   await env.DB.prepare('INSERT INTO deletions (code, created_at) VALUES (?, ?)').bind(code, now()).run();
   return json({ url: `${url.origin}/deletion?code=${code}`, confirmation_code: code });
+}
+// what a person sees if they open the deletion address in a browser (Meta also checks this page exists)
+function deletionInstructions() {
+  return new Response(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Delete your Block Arena data</title><body style="font-family:system-ui;background:#04050b;color:#fff;padding:32px 16px;max-width:640px;margin:auto;line-height:1.6"><h1>Delete your Block Arena data</h1><p>Signed-in players can delete their account at any time:</p><ol><li>Open Block Arena and sign in.</li><li>Go to <b>Settings → Account → Delete my account</b>.</li><li>Confirm. Your rank, match history and saved progress are removed immediately.</li></ol><p>Or remove Block Arena in Facebook under <b>Settings → Apps and websites</b> and choose to delete your data; Facebook tells us and we delete your account automatically.</p><p><a style="color:#ffd21a" href="/">Back to Block Arena</a> · <a style="color:#ffd21a" href="/privacy">Privacy policy</a></p>`, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }
 async function deletionStatus(env, url) {
   const code = url.searchParams.get('code') || '';
