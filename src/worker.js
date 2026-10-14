@@ -16,6 +16,8 @@
 //   /api/chat*                → private chat between friends (history, send, mark read)
 //   /api/friends*             → in-game friends: friend codes, requests, list with who's online
 //   /hub                      → WebSocket to the Hub (online status, room invites, friend requests in real time)
+//   /api/track/ping|match POST → anonymous play stats (who's playing now, matches per mode), guests included
+//   /api/admin/stats          → numbers for the private stats page at /admin (administrators only)
 // Everything else is the game itself, served from /public.
 import { rankOf, rpDelta, applyDelta } from './rank.js';
 import { PRICES, SLOTS, DEFAULTS, MAX_PER_MATCH, MIN_GAP_MS, DAILY_CAP, ACH_COINS } from './shop.js';
@@ -26,6 +28,12 @@ const GRAPH = 'https://graph.facebook.com/v25.0';
 const DIALOG = 'https://www.facebook.com/v25.0/dialog/oauth';
 const SESSION_DAYS = 60;
 const MIN_MATCH_MS = 20000, MAX_MATCH_MS = 15 * 60000;
+// Administrators (the stats page). Google tells us the email at sign-in; we compare its SHA-256 here and never store it.
+// More admins: add their hash here, or list emails in an ADMIN_EMAILS variable (comma separated) in the dashboard.
+const ADMIN_EMAIL_HASHES = ['cde02621d81cbb0797099f0a55b3623f960cacf14e40dc21137f98fb1152040c'];
+// Stats days start at midnight in this time zone (minutes from UTC; Philippines = 480). Override with STATS_TZ_MINUTES.
+const tzMs = env => (Number.isFinite(+env.STATS_TZ_MINUTES) && env.STATS_TZ_MINUTES !== undefined ? +env.STATS_TZ_MINUTES : 480) * 60000;
+const dayOf = (env, t) => Math.floor((t + tzMs(env)) / 864e5);
 const ACHIEVEMENTS = ['first_win', 'combo5', 'combo10', 'quad', 'tspin', 'pc', 'bomber', 'ko3', 'arena6', 'expert', 'classic100k', 'sprint60', 'gold', 'master', 'online'];
 
 // New tables are created on first use, so updates never need a manual database step.
@@ -42,6 +50,14 @@ async function ensureSchema(env) {
     env.DB.prepare('CREATE INDEX IF NOT EXISTS messages_pair ON messages (from_id, to_id, created_at)'),
     env.DB.prepare('CREATE INDEX IF NOT EXISTS messages_unseen ON messages (to_id, seen)'),
     env.DB.prepare('CREATE INDEX IF NOT EXISTS messages_age ON messages (created_at)'),
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS admins (user_id INTEGER PRIMARY KEY REFERENCES users (id) ON DELETE CASCADE)'),
+    // one row per visitor per day: vid is a random id the game makes fresh every day, uid is set when signed in
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS daily (day INTEGER NOT NULL, vid TEXT NOT NULL, uid INTEGER REFERENCES users (id) ON DELETE SET NULL, first_ts INTEGER NOT NULL, PRIMARY KEY (day, vid))'),
+    // one row per finished match in any mode
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS plays (id INTEGER PRIMARY KEY AUTOINCREMENT, day INTEGER NOT NULL, ts INTEGER NOT NULL, mode TEXT NOT NULL, size INTEGER NOT NULL, won INTEGER NOT NULL, ms INTEGER NOT NULL, vid TEXT NOT NULL, uid INTEGER REFERENCES users (id) ON DELETE SET NULL)'),
+    env.DB.prepare('CREATE INDEX IF NOT EXISTS plays_day ON plays (day)'),
+    env.DB.prepare('CREATE INDEX IF NOT EXISTS plays_vid ON plays (vid, ts)'),
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS counters (day INTEGER NOT NULL, key TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, key))'),
   ]);
   schemaReady = true;
 }
@@ -148,12 +164,13 @@ async function fbCallback(req, env, url) {
   return res;
 }
 // ---------- Google sign-in (OpenID Connect, server-side code flow) ----------
-// Only the basic "openid profile" scopes: name and picture. These need no Google app verification.
+// Only the basic scopes: name, picture and email. These need no Google app verification.
+// The email is used once, to recognise the game's administrator, and is never stored.
 // Accounts are stored with a "g:" prefix on the provider id, so they never collide with Facebook ids.
 function googleStart(req, env, url) {
   if (!env.GOOGLE_CLIENT_ID) return new Response('Google sign-in is not configured yet (GOOGLE_CLIENT_ID missing).', { status: 503 });
   const state = rand(16), back = safeBack(url, url.searchParams.get('back'));
-  const q = new URLSearchParams({ client_id: env.GOOGLE_CLIENT_ID, redirect_uri: `${url.origin}/auth/google/callback`, response_type: 'code', scope: 'openid profile', state, prompt: 'select_account' });
+  const q = new URLSearchParams({ client_id: env.GOOGLE_CLIENT_ID, redirect_uri: `${url.origin}/auth/google/callback`, response_type: 'code', scope: 'openid profile email', state, prompt: 'select_account' });
   const res = redirect(`https://accounts.google.com/o/oauth2/v2/auth?${q}`, { 'Set-Cookie': setCookie(url, 'ba_state', state, 600) });
   res.headers.append('Set-Cookie', setCookie(url, 'ba_back', back, 600));
   return res;
@@ -172,12 +189,20 @@ async function googleCallback(req, env, url) {
   const me = await mr.json().catch(() => ({}));
   if (!me.sub) return redirect('/?login=failed', { 'Set-Cookie': clear });
   const user = await upsertUser(env, 'g:' + me.sub, String(me.name || me.given_name || 'Player').slice(0, 40), me.picture ? String(me.picture).replace(/=s\d+-c$/, '=s128-c') : null);
+  if (me.email && me.email_verified !== false && await isAdminEmail(env, me.email)) await env.DB.prepare('INSERT OR IGNORE INTO admins (user_id) VALUES (?)').bind(user.id).run();
+  else if (me.email) await env.DB.prepare('DELETE FROM admins WHERE user_id = ?').bind(user.id).run();
   const back = safeBack(url, cookies(req).ba_back);
   const res = await startSession(env, url, user.id, back + (back.includes('?') ? '&' : '?') + 'login=ok');
   res.headers.append('Set-Cookie', clear);
   res.headers.append('Set-Cookie', setCookie(url, 'ba_back', '', 0));
   return res;
 }
+async function isAdminEmail(env, email) {
+  const e = String(email).trim().toLowerCase();
+  if (String(env.ADMIN_EMAILS || '').toLowerCase().split(',').map(x => x.trim()).filter(Boolean).includes(e)) return true;
+  return ADMIN_EMAIL_HASHES.includes(await sha256(e));
+}
+const isAdmin = async (env, u) => !!u && !!(await env.DB.prepare('SELECT 1 FROM admins WHERE user_id = ?').bind(u.id).first());
 // Friends who also play (only when the user granted "App friends"); stored both ways so either side sees it
 async function syncFriends(env, userId, token, proof) {
   let next = `${GRAPH}/me/friends?limit=500&access_token=${encodeURIComponent(token)}&appsecret_proof=${proof}`, ids = [];
@@ -203,6 +228,7 @@ async function syncFriends(env, userId, token, proof) {
 async function devLogin(req, env, url) {
   const name = (url.searchParams.get('name') || 'Tester').slice(0, 40);
   const user = await upsertUser(env, 'dev-' + name.toLowerCase(), name, null);
+  if (url.searchParams.get('admin') === '1') await env.DB.prepare('INSERT OR IGNORE INTO admins (user_id) VALUES (?)').bind(user.id).run();
   const friend = url.searchParams.get('friend');
   if (friend) { const f = await env.DB.prepare('SELECT id FROM users WHERE fb_id = ?').bind('dev-' + friend.toLowerCase()).first(); if (f) await env.DB.batch([env.DB.prepare('INSERT OR IGNORE INTO friendships VALUES (?, ?)').bind(user.id, f.id), env.DB.prepare('INSERT OR IGNORE INTO friendships VALUES (?, ?)').bind(f.id, user.id)]); }
   return startSession(env, url, user.id, '/?login=ok');
@@ -265,11 +291,14 @@ async function api(req, env, url, p) {
   if (m !== 'GET' && req.headers.get('X-BA') !== '1') return json({ error: 'forbidden' }, 403); // forces a CORS preflight, so other sites can't post here
   if (p === '/api/leaderboard' && m === 'GET') return leaderboard(req, env, url);
   const u = await currentUser(req, env);
+  if (p === '/api/track/ping' && m === 'POST') return trackPing(req, env, u);
+  if (p === '/api/track/match' && m === 'POST') return trackMatch(req, env, u);
+  if (p === '/api/admin/stats' && m === 'GET') return (await isAdmin(env, u)) ? adminStats(env) : json({ error: 'forbidden' }, 403);
   if (p === '/api/me' && m === 'GET') {
     const login = env.GOOGLE_CLIENT_ID ? 'google' : env.FB_APP_ID ? 'facebook' : null;
     if (!u) return json({ user: null, fbConfigured: !!login, login, appId: env.FB_APP_ID || null, friendsEnabled: env.FB_FRIENDS === '1' });
     const fc = await env.DB.prepare('SELECT COUNT(*) AS c FROM friendships WHERE user_id = ?').bind(u.id).first();
-    return json({ user: { ...publicUser(u), via: String(u.fb_id).startsWith('g:') ? 'Google' : String(u.fb_id).startsWith('dev-') ? 'test login' : 'Facebook', friends: fc?.c || 0 }, profile: JSON.parse(u.profile || '{}'), fbConfigured: true, login, appId: env.FB_APP_ID, friendsEnabled: env.FB_FRIENDS === '1' });
+    return json({ user: { ...publicUser(u), admin: await isAdmin(env, u), via: String(u.fb_id).startsWith('g:') ? 'Google' : String(u.fb_id).startsWith('dev-') ? 'test login' : 'Facebook', friends: fc?.c || 0 }, profile: JSON.parse(u.profile || '{}'), fbConfigured: true, login, appId: env.FB_APP_ID, friendsEnabled: env.FB_FRIENDS === '1' });
   }
   if (!u) return json({ error: 'not_signed_in' }, 401);
   if (p === '/api/profile' && m === 'PUT') return saveProfile(req, env, u);
@@ -340,6 +369,7 @@ async function coinsEarn(req, env, u) {
         WHERE id = ? AND COALESCE(json_extract(profile, '$.earn.t'), 0) = ? AND COALESCE(json_extract(profile, '$.earn.n'), 0) = ?`)
       .bind(amt, JSON.stringify(earn), t, u.id, pr.earn?.t || 0, pr.earn?.n || 0).run();
     if (!r.meta.changes) amt = 0;          // another payout landed first
+    else await bump(env, 'coins', amt);
   }
   return json({ added: amt, capped: amt < Math.floor(+b.amount || 0), ...wallet(await freshProfile(env, u)) });
 }
@@ -372,6 +402,7 @@ async function shopBuy(req, env, u) {
         AND NOT EXISTS (SELECT 1 FROM json_each(COALESCE(json_extract(users.profile, '$.owned'), json('[]'))) WHERE value = ?)`)
     .bind(PRICES[id], id, id.split(':')[0], id, now(), u.id, PRICES[id], id).run();
   const w2 = wallet(await freshProfile(env, u));
+  if (r.meta.changes) { await bump(env, 'buys', 1); await bump(env, 'spent', PRICES[id]); }
   return r.meta.changes ? json(w2) : json({ error: 'not_enough', ...w2 }, 400);
 }
 async function shopEquip(req, env, u) {
@@ -575,4 +606,79 @@ async function leaderboard(req, env, url) {
   }
   if (friends && me) me.position = results.findIndex(r => r.id === u.id) + 1 || null;
   return json({ scope: friends ? 'friends' : 'global', top: results.map((r, i) => ({ position: i + 1, id: r.id, name: r.name, pic: r.pic, rp: r.rp, rank: rankOf(r.rp).name, tier: rankOf(r.rp).tier, games: r.ranked_games, wins: r.ranked_wins })), me });
+}
+
+// ---------- play stats ----------
+// Every open game (guest or signed in) pings about once a minute while it's on screen, and reports each finished
+// match. Nothing here identifies a guest: their id is random and the game replaces it every day.
+const VID = /^[a-z0-9]{8,32}$/;
+const TRACK_MODES = ['cpu', 'arena', 'survival', 'powerup', 'sprint', 'classic', 'local', 'online', 'quick'];
+const bump = (env, key, n) => env.DB.prepare('INSERT INTO counters (day, key, n) VALUES (?, ?, ?) ON CONFLICT (day, key) DO UPDATE SET n = n + excluded.n').bind(dayOf(env, now()), key, n).run().catch(() => {});
+async function trackPing(req, env, u) {
+  const b = await body(req), vid = String(b.vid || '');
+  if (!VID.test(vid)) return json({ error: 'bad_request' }, 400);
+  const st = ['menu', 'room', 'match'].includes(b.st) ? b.st : 'menu';
+  await hubCall(env, '/ping', { key: 'v' + vid, st, uid: u ? u.id : 0 });
+  // first ping of the day adds the visitor; signing in later that day attaches the account to the same row
+  await env.DB.prepare(`INSERT INTO daily (day, vid, uid, first_ts) VALUES (?, ?, ?, ?)
+      ON CONFLICT (day, vid) DO UPDATE SET uid = excluded.uid WHERE daily.uid IS NULL AND excluded.uid IS NOT NULL`).bind(dayOf(env, now()), vid, u ? u.id : null, now()).run();
+  return json({ ok: true });
+}
+async function trackMatch(req, env, u) {
+  const b = await body(req), vid = String(b.vid || '');
+  if (!VID.test(vid) || !TRACK_MODES.includes(b.mode)) return json({ error: 'bad_request' }, 400);
+  const t = now(), day = dayOf(env, t);
+  // no more than one match every 8 s and 400 a day from the same game
+  const last = await env.DB.prepare('SELECT ts, (SELECT COUNT(*) FROM plays WHERE vid = ?1 AND day = ?2) AS n FROM plays WHERE vid = ?1 ORDER BY ts DESC LIMIT 1').bind(vid, day).first();
+  if (last && (t - last.ts < 8000 || last.n >= 400)) return json({ ok: true, skipped: true });
+  const size = Math.max(1, Math.min(6, Math.floor(+b.size || 1))), ms = Math.max(0, Math.min(36e5, Math.floor(+b.ms || 0)));
+  await env.DB.prepare('INSERT INTO plays (day, ts, mode, size, won, ms, vid, uid) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').bind(day, t, b.mode, size, b.won ? 1 : 0, ms, vid, u ? u.id : null).run();
+  if (Math.random() < .02) {           // keep about a year of history
+    const old = day - 400;
+    await env.DB.batch(['plays', 'daily', 'counters'].map(tb => env.DB.prepare(`DELETE FROM ${tb} WHERE day < ?`).bind(old)));
+  }
+  return json({ ok: true });
+}
+async function adminStats(env) {
+  const t = now(), today = dayOf(env, t), off = tzMs(env), q = (sql, ...a) => env.DB.prepare(sql).bind(...a);
+  const win = n => today - n + 1;
+  const [live, rows] = await Promise.all([
+    hubCall(env, '/stats', {}),
+    env.DB.batch([
+      q('SELECT COUNT(*) AS n FROM users'),
+      q('SELECT COUNT(*) AS n FROM plays'),
+      ...[1, 7, 30].flatMap(n => [
+        q('SELECT COUNT(DISTINCT uid) AS signed, SUM(uid IS NULL) AS guests FROM daily WHERE day >= ?', win(n)),
+        q('SELECT COUNT(*) AS n FROM users WHERE created_at >= ?', (win(n) * 864e5) - off),
+        q('SELECT COUNT(*) AS n, COALESCE(SUM(ms), 0) AS ms FROM plays WHERE day >= ?', win(n)),
+      ]),
+      q('SELECT mode, COUNT(*) AS n FROM plays WHERE day >= ? GROUP BY mode ORDER BY n DESC', win(7)),
+      q('SELECT day, COUNT(*) AS n, SUM(uid IS NOT NULL) AS signed FROM daily WHERE day >= ? GROUP BY day', win(30)),
+      q('SELECT day, COUNT(*) AS n FROM plays WHERE day >= ? GROUP BY day', win(30)),
+      q('SELECT CAST((created_at + ?) / 86400000 AS INTEGER) AS day, COUNT(*) AS n FROM users WHERE created_at >= ? GROUP BY day', off, (win(30) * 864e5) - off),
+      q('SELECT key, SUM(n) AS n FROM counters WHERE day >= ? GROUP BY key', win(7)),
+      q('SELECT COUNT(*) AS n FROM messages WHERE created_at >= ?', t - 7 * 864e5),
+      q('SELECT name, pic, rp, ranked_games AS games FROM users WHERE ranked_games > 0 ORDER BY rp DESC LIMIT 10'),
+      q('SELECT name, pic, created_at FROM users ORDER BY created_at DESC LIMIT 8'),
+      q('SELECT u.name, u.pic, COUNT(*) AS n FROM plays p JOIN users u ON u.id = p.uid WHERE p.day >= ? GROUP BY p.uid ORDER BY n DESC LIMIT 8', win(7)),
+    ]),
+  ]);
+  const r = rows.map(x => x.results), one = i => r[i][0] || {};
+  const windows = {};
+  ['today', 'week', 'month'].forEach((k, i) => {
+    const a = one(2 + i * 3), s2 = one(3 + i * 3), m = one(4 + i * 3);
+    windows[k] = { signedIn: a.signed || 0, guestVisits: a.guests || 0, newPlayers: s2.n || 0, matches: m.n || 0, minutes: Math.round((m.ms || 0) / 6e4) };
+  });
+  const by = (list, key = 'n') => Object.fromEntries(list.map(x => [x.day, x[key]]));
+  const vis = by(r[12]), vSigned = by(r[12], 'signed'), mat = by(r[13]), sig = by(r[14]);
+  const days = Array.from({ length: 30 }, (_, i) => { const d = win(30) + i; return { date: new Date(d * 864e5).toISOString().slice(0, 10), visitors: vis[d] || 0, signedIn: vSigned[d] || 0, matches: mat[d] || 0, signups: sig[d] || 0 }; });
+  const cnt = Object.fromEntries(r[15].map(x => [x.key, x.n]));
+  return json({
+    at: t, tzMinutes: off / 60000,
+    live: { online: 0, signedIn: 0, guests: 0, menu: 0, room: 0, match: 0, rooms: 0, quick: 0, ...live },
+    totals: { players: one(0).n || 0, matches: one(1).n || 0 },
+    windows, modes: r[11], days,
+    economy: { coinsEarned: cnt.coins || 0, itemsBought: cnt.buys || 0, coinsSpent: cnt.spent || 0, chatMessages: one(16).n || 0 },
+    top: r[17].map(x => ({ ...x, rank: rankOf(x.rp).name })), newest: r[18], busiest: r[19],
+  });
 }

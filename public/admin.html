@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Block Arena Stats</title>
+<link rel="icon" href="/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{--bg:#04050b;--panel:#0d1330;--panel2:#16204a;--navy:#0a0f24;--line:#27356f;--fg:#ffffff;--muted:#93a0cf;--accent:#ffd21a;--blue:#1e8bff;--good:#3fd62a;--red:#ff2b3b;--ink:#010207;
+  --display:Unbounded,"Arial Black",Impact,sans-serif;--body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45}
+a{color:var(--accent)}
+.wrap{max-width:1120px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-bottom:2px solid var(--line);padding-bottom:14px;margin-bottom:20px}
+header h1{font-family:var(--display);font-size:20px;margin:0;letter-spacing:.02em}
+header h1 span{color:var(--accent)}
+header .sp{flex:1}
+.upd{font-family:var(--mono);font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--good);box-shadow:0 0 8px var(--good)}
+.dot.off{background:var(--red);box-shadow:none}
+.btn{display:inline-flex;align-items:center;gap:6px;font:700 13px var(--body);color:var(--fg);background:var(--panel);border:2px solid var(--line);padding:7px 12px;text-decoration:none;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--navy);border-color:var(--accent)}
+h2{font-family:var(--display);font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 12px}
+section{background:var(--panel);border:2px solid var(--line);padding:16px;min-width:0}
+.grid{display:grid;gap:16px}
+.live{display:grid;grid-template-columns:minmax(200px,260px) 1fr;gap:16px;margin-bottom:16px}
+.hero{display:flex;flex-direction:column;justify-content:center}
+.hero b{font-family:var(--mono);font-size:64px;line-height:1;font-weight:600}
+.hero small{color:var(--muted);margin-top:6px}
+.chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.chip{background:var(--navy);border:2px solid var(--line);padding:10px 12px}
+.chip small{display:block;color:var(--muted);font-size:12px}
+.chip b{font-family:var(--mono);font-size:24px;font-weight:600}
+.rangebar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:24px 0 12px}
+.seg{display:flex;border:2px solid var(--line)}
+.seg button{font:700 13px var(--body);color:var(--muted);background:transparent;border:0;padding:7px 14px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--navy)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px}
+.tile{background:var(--panel);border:2px solid var(--line);padding:14px}
+.tile small{display:block;color:var(--muted);font-size:13px}
+.tile b{font-family:var(--mono);font-size:32px;font-weight:600;line-height:1.2}
+.tile i{display:block;font-style:normal;color:var(--muted);font-size:12px;margin-top:2px}
+.charts{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart .sum{font-family:var(--mono);font-size:13px;color:var(--muted);margin:-6px 0 8px}
+.tip{position:absolute;pointer-events:none;background:var(--navy);border:2px solid var(--fg);padding:6px 9px;font-size:13px;white-space:nowrap;transform:translate(-50%,-100%);z-index:2;box-shadow:3px 3px 0 var(--ink)}
+.tip b{font-family:var(--mono)}
+.tip[hidden]{display:none}
+.two{grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin-top:16px}
+.three{grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-top:16px}
+.hbar{display:grid;grid-template-columns:130px 1fr 44px;align-items:center;gap:10px;margin:7px 0;font-size:14px}
+.hbar .track{height:14px;background:var(--navy);position:relative}
+.hbar .fill{position:absolute;inset:0 auto 0 0;background:var(--blue);border-radius:0 4px 4px 0;min-width:2px}
+.hbar b{font-family:var(--mono);text-align:right}
+.ppl{list-style:none;margin:0;padding:0}
+.ppl li{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
+.ppl li:last-child{border-bottom:0}
+.ppl .n{font-family:var(--mono);color:var(--muted);width:20px;text-align:right;font-size:13px}
+.ava{width:28px;height:28px;flex:none;object-fit:cover;background:var(--panel2);display:grid;place-items:center;font:700 12px var(--display);border:2px solid var(--line)}
+.ppl .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.ppl .v{font-family:var(--mono);font-size:13px;color:var(--muted);text-align:right}
+.empty{color:var(--muted);font-size:14px}
+details{margin-top:16px;background:var(--panel);border:2px solid var(--line);padding:12px 16px}
+summary{cursor:pointer;font-weight:700}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+th,td{padding:5px 8px;text-align:right;border-bottom:1px solid var(--line);font-family:var(--mono)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:500}
+.note{color:var(--muted);font-size:13px;margin-top:20px}
+.gate{max-width:520px;margin:12vh auto;text-align:center;background:var(--panel);border:2px solid var(--line);padding:28px 22px}
+.gate h1{font-family:var(--display);font-size:20px;margin:0 0 10px}
+.gate p{color:var(--muted)}
+.gate .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+@media (max-width:640px){.live{grid-template-columns:1fr}.hero b{font-size:52px}.hbar{grid-template-columns:100px 1fr 40px}.tile b{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <p class="empty" id="loading">Loading…</p>
+</div>
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const fmt = n => (+n || 0).toLocaleString('en-US');
+const MODES = { cpu: '1 vs 1 (CPU)', arena: 'Arena', survival: 'Last one standing', powerup: 'Power-ups', sprint: 'Sprint 40', classic: 'Classic', local: 'Local 2P', online: 'Online room', quick: 'Quick Match' };
+let data = null, range = 'today', timer = null;
+try { range = localStorage.getItem('ba.adminRange') || 'today'; } catch (e) {}
+const ago = t => { const s = Math.max(0, (Date.now() - t) / 1000); return s < 90 ? 'just now' : s < 3600 ? Math.round(s / 60) + ' min ago' : s < 86400 ? Math.round(s / 3600) + ' h ago' : Math.round(s / 86400) + ' d ago'; };
+const ava = p => p.pic ? `<img class="ava" alt="" src="${esc(p.pic)}" referrerpolicy="no-referrer">` : `<span class="ava">${esc((p.name || '?')[0].toUpperCase())}</span>`;
+
+function gate(title, text, signIn) {
+  $('app').innerHTML = `<div class="gate"><h1>${title}</h1><p>${text}</p><div class="row">${signIn ? '<a class="btn primary" href="/auth/google?back=/admin">Sign in with Google</a>' : '<a class="btn" href="/auth/logout">Sign out</a>'}<a class="btn" href="/">Back to the game</a></div></div>`;
+}
+async function load() {
+  let r;
+  try { r = await fetch('/api/admin/stats', { credentials: 'same-origin', cache: 'no-store' }); }
+  catch (e) { $('liveDot')?.classList.add('off'); return; }
+  if (r.status === 401 || r.status === 403) {
+    const me = await fetch('/api/me', { credentials: 'same-origin' }).then(x => x.json()).catch(() => ({}));
+    clearInterval(timer);
+    if (!me.user) gate('Game stats', 'This page is only for the game\'s administrator. Sign in with your Google account to continue.', true);
+    else gate('Not an administrator', `You're signed in as ${esc(me.user.name)}, which isn't an administrator account. If this is the owner's account, sign out and sign in again with Google so the game can check it.`, false);
+    return;
+  }
+  if (!r.ok) { $('liveDot')?.classList.add('off'); return; }
+  data = await r.json();
+  render();
+}
+
+function render() {
+  const d = data, L = d.live;
+  if (!$('live')) $('app').innerHTML = shell();
+  $('liveDot').classList.remove('off');
+  $('upd').textContent = 'Updated ' + new Date(d.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' });
+  $('onNow').textContent = fmt(L.online);
+  $('onSub').textContent = `${fmt(L.signedIn)} signed in · ${fmt(L.guests)} guest${L.guests === 1 ? '' : 's'}`;
+  $('liveChips').innerHTML = [['In a match', L.match], ['In a lobby', L.room], ['On the menu', L.menu], ['Open rooms', L.rooms], ['In Quick Match queue', L.quick]]
+    .map(([k, v]) => `<div class="chip"><small>${k}</small><b>${fmt(v)}</b></div>`).join('');
+  renderRange();
+  bars('chPlayers', d.days.map(x => ({ label: x.date, v: x.visitors, extra: `${fmt(x.signedIn)} signed in` })), 'players', '#ffd21a');
+  bars('chMatches', d.days.map(x => ({ label: x.date, v: x.matches })), 'matches', '#1e8bff');
+  bars('chSignups', d.days.map(x => ({ label: x.date, v: x.signups })), 'new players', '#3fd62a');
+  const mx = Math.max(1, ...d.modes.map(m => m.n));
+  $('modes').innerHTML = d.modes.length ? d.modes.map(m => `<div class="hbar"><span>${esc(MODES[m.mode] || m.mode)}</span><span class="track"><span class="fill" style="width:${m.n / mx * 100}%"></span></span><b>${fmt(m.n)}</b></div>`).join('') : '<p class="empty">No matches in the last 7 days yet.</p>';
+  const e = d.economy;
+  $('econ').innerHTML = [['Coins earned', e.coinsEarned], ['Items bought', e.itemsBought], ['Coins spent', e.coinsSpent], ['Chat messages', e.chatMessages]]
+    .map(([k, v]) => `<div class="chip"><small>${k}</small><b>${fmt(v)}</b></div>`).join('');
+  const list = (arr, val) => arr.length ? arr.map((p, i) => `<li><span class="n">${i + 1}</span>${ava(p)}<span class="nm">${esc(p.name)}</span><span class="v">${val(p)}</span></li>`).join('') : '<li class="empty">Nobody yet.</li>';
+  $('top').innerHTML = list(d.top, p => `${esc(p.rank)} · ${fmt(p.rp)} RP`);
+  $('busy').innerHTML = list(d.busiest, p => `${fmt(p.n)} match${p.n === 1 ? '' : 'es'}`);
+  $('newest').innerHTML = list(d.newest, p => ago(p.created_at));
+  $('dayTable').innerHTML = '<tr><th>Date</th><th>Players</th><th>Signed in</th><th>Matches</th><th>New players</th></tr>' +
+    d.days.slice().reverse().map(x => `<tr><td>${x.date}</td><td>${fmt(x.visitors)}</td><td>${fmt(x.signedIn)}</td><td>${fmt(x.matches)}</td><td>${fmt(x.signups)}</td></tr>`).join('');
+}
+function renderRange() {
+  const w = data.windows[range], lbl = { today: 'today', week: 'in the last 7 days', month: 'in the last 30 days' }[range];
+  document.querySelectorAll('#range button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.r === range)));
+  $('tiles').innerHTML = [
+    ['Signed-in players', w.signedIn, 'different accounts that played ' + lbl],
+    ['Guest visits', w.guestVisits, 'guests who played without signing in'],
+    ['New players', w.newPlayers, 'accounts created ' + lbl],
+    ['Matches played', w.matches, 'every mode, guests included'],
+    ['Time played', w.minutes < 120 ? w.minutes + ' min' : (w.minutes / 60).toFixed(1) + ' h', 'total match time'],
+  ].map(([k, v, i]) => `<div class="tile"><small>${k}</small><b>${typeof v === 'string' ? v : fmt(v)}</b><i>${i}</i></div>`).join('');
+}
+function shell() {
+  return `<header><h1>BLOCK ARENA <span>STATS</span></h1><span class="sp"></span><span class="upd"><i class="dot" id="liveDot"></i><span id="upd"></span></span><button class="btn" id="refresh" type="button">Refresh</button><a class="btn" href="/">Back to the game</a></header>
+  <h2>Right now</h2>
+  <div class="live" id="live"><section class="hero"><small>Playing right now</small><b id="onNow">0</b><small id="onSub"></small></section><section><div class="chips" id="liveChips"></div></section></div>
+  <div class="rangebar"><div class="seg" id="range" role="group" aria-label="Time range"><button type="button" data-r="today">Today</button><button type="button" data-r="week">7 days</button><button type="button" data-r="month">30 days</button></div></div>
+  <div class="tiles" id="tiles"></div>
+  <div class="grid charts">
+    <section class="chart"><h2>Players per day</h2><p class="sum" id="chPlayersSum"></p><div id="chPlayers"></div></section>
+    <section class="chart"><h2>Matches per day</h2><p class="sum" id="chMatchesSum"></p><div id="chMatches"></div></section>
+    <section class="chart"><h2>New players per day</h2><p class="sum" id="chSignupsSum"></p><div id="chSignups"></div></section>
+  </div>
+  <div class="grid two">
+    <section><h2>Matches by mode · last 7 days</h2><div id="modes"></div></section>
+    <section><h2>Coins, shop and chat · last 7 days</h2><div class="chips" id="econ"></div><p class="note" style="margin-top:10px">Coins and purchases count signed-in players only; guests keep theirs in their own browser.</p></section>
+  </div>
+  <div class="grid three">
+    <section><h2>Top ranked</h2><ul class="ppl" id="top"></ul></section>
+    <section><h2>Most active · 7 days</h2><ul class="ppl" id="busy"></ul></section>
+    <section><h2>Newest players</h2><ul class="ppl" id="newest"></ul></section>
+  </div>
+  <details><summary>Daily numbers as a table (30 days)</summary><table id="dayTable"></table></details>
+  <p class="note">"Playing right now" counts every open game on screen in the last 2½ minutes, guests included. Guests get a random ID that resets every day, so a guest who plays on three different days counts as three guest visits. Days run midnight to midnight, Philippine time. This page refreshes every 20 seconds.</p>`;
+}
+// single-series bar chart: one bar per day, rounded tops anchored to the baseline, hover/tap for the value
+function bars(id, rows, unit, color) {
+  const el = $(id), W = 520, H = 170, padL = 30, padB = 22, padT = 8, n = rows.length;
+  const max = Math.max(1, ...rows.map(r => r.v)), step = niceStep(max), top = Math.ceil(max / step) * step;
+  const bw = (W - padL) / n, y = v => padT + (H - padT - padB) * (1 - v / top);
+  const total = rows.reduce((a, r) => a + r.v, 0);
+  $(id + 'Sum').textContent = `${fmt(total)} ${unit} in 30 days · busiest day ${fmt(Math.max(0, ...rows.map(r => r.v)))}`;
+  let g = '';
+  for (let v = 0; v <= top; v += step) g += `<line x1="${padL}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="#27356f" stroke-width="1"/><text x="${padL - 6}" y="${y(v) + 4}" text-anchor="end" fill="#93a0cf" font-size="10" font-family="IBM Plex Mono, monospace">${v}</text>`;
+  rows.forEach((r, i) => {
+    const x = padL + i * bw + 1, w = Math.max(2, bw - 2), h = H - padB - y(r.v), yy = y(r.v);
+    if (r.v > 0) g += `<path d="${roundTop(x, yy, w, h, Math.min(4, w / 2, h))}" fill="${color}"/>`;
+    g += `<rect x="${padL + i * bw}" y="${padT}" width="${bw}" height="${H - padT - padB}" fill="transparent" data-i="${i}"/>`;
+    if (i % 5 === 0 || i === n - 1) g += `<text x="${x + w / 2}" y="${H - 6}" text-anchor="middle" fill="#93a0cf" font-size="10" font-family="IBM Plex Mono, monospace">${short(r.label)}</text>`;
+  });
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(unit)} per day for the last 30 days">${g}</svg><div class="tip" hidden></div>`;
+  const tip = el.querySelector('.tip'), svg = el.querySelector('svg');
+  const show = e => {
+    const t = e.target.closest('[data-i]'); if (!t) { tip.hidden = true; return; }
+    const r = rows[+t.dataset.i], b = svg.getBoundingClientRect(), k = b.width / W, pb = el.getBoundingClientRect();
+    tip.innerHTML = `${new Date(r.label + 'T00:00:00').toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}<br><b>${fmt(r.v)}</b> ${unit}${r.extra ? `<br><small>${r.extra}</small>` : ''}`;
+    tip.style.left = (b.left - pb.left + (+t.getAttribute('x') + bw / 2) * k) + 'px'; tip.style.top = (b.top - pb.top + y(r.v) * k - 6) + 'px'; tip.hidden = false;
+  };
+  svg.addEventListener('pointermove', show); svg.addEventListener('pointerdown', show); svg.addEventListener('pointerleave', () => tip.hidden = true);
+}
+const roundTop = (x, y, w, h, r) => `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
+const niceStep = m => { const raw = m / 4, p = Math.pow(10, Math.floor(Math.log10(raw))); for (const k of [1, 2, 5, 10]) if (k * p >= raw) return Math.max(1, k * p); return Math.max(1, 10 * p); };
+const short = d => { const t = new Date(d + 'T00:00:00'); return t.toLocaleDateString([], { month: 'short', day: 'numeric' }); };
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('#range button'); if (b && data) { range = b.dataset.r; try { localStorage.setItem('ba.adminRange', range); } catch (er) {} renderRange(); }
+  if (e.target.closest('#refresh')) load();
+});
+load(); timer = setInterval(() => { if (document.visibilityState === 'visible') load(); }, 20000);
+})();
+</script>
+</body>
+</html>

@@ -37,3 +37,5 @@ new_sqlite_classes = ["Hub"]
 FB_APP_ID = "2129199354388278"   # Meta app ID (public): Facebook sharing. Facebook sign-in stays off while Google sign-in is configured
 # Google sign-in: GOOGLE_CLIENT_ID goes here or in the dashboard (it's public); the secret goes in a Secret:
 # npx wrangler secret put GOOGLE_CLIENT_SECRET   (or Cloudflare dashboard → Settings → Variables and Secrets → type Secret)
+# Admin stats page (/admin): the owner's account is built in. To add more admins, set ADMIN_EMAILS (comma separated) here or in the dashboard.
+# Stats days start at local midnight; STATS_TZ_MINUTES sets the time zone (default 480 = Philippines).

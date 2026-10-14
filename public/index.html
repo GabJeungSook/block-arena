@@ -121,6 +121,7 @@ kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-b
 .settings label{display:flex;justify-content:space-between;font-weight:700}
 .settings output{color:var(--muted);font-family:var(--mono);font-size:13px;font-weight:500}
 .settings .tog{justify-content:flex-start;gap:10px;align-items:center;cursor:pointer}
+.adminlink{text-decoration:none;display:inline-flex;align-items:center}
 .settings .shelp{margin:-4px 0 4px;font-size:12px;line-height:1.35}
 .settings .sens button{flex:1}
 #sSensTxt{font-size:12px;margin-top:-2px}
@@ -1045,7 +1046,7 @@ body{background:var(--bg)}
           <label class="tog" for="sShake"><input type="checkbox" id="sShake"> Screen shake</label>
           <div id="setAcct" hidden>
             <h3>Account</h3>
-            <div class="row"><button type="button" id="btnLogout">Log out</button><button type="button" class="danger" id="btnDelAcct">Delete my account</button></div>
+            <div class="row"><a class="ghostbtn adminlink" id="btnAdmin" href="/admin" hidden>📊 Game stats</a><button type="button" id="btnLogout">Log out</button><button type="button" class="danger" id="btnDelAcct">Delete my account</button></div>
             <p class="muted" id="delConfirm" hidden>This permanently deletes your rank and saved progress. <button type="button" class="danger sm" id="btnDelYes">Yes, delete everything</button></p>
           </div>
         </div>
@@ -1294,6 +1295,25 @@ const api = {
   },
 };
 const account = { user: null, ready: !LIVE, fb: false };
+// ---- anonymous play stats: a random id that changes every day, a heartbeat while the game is on screen,
+// and one line per finished match. No names, nothing that follows a guest from one day to the next.
+const stats = {
+  vid() {
+    const day = new Date().toDateString(); let v = store.get('vid', null);
+    if (!v || v.day !== day || !/^[a-z0-9]{8,32}$/.test(v.id)) { v = { id: Array.from(crypto.getRandomValues(new Uint8Array(12)), b => (b % 36).toString(36)).join(''), day }; store.set('vid', v); }
+    return v.id;
+  },
+  ping() {
+    if (!LIVE || document.visibilityState !== 'visible') return;
+    const st = inMatch() ? 'match' : net.code ? 'room' : 'menu';     // runs only after the page has set up
+    api.call('/api/track/ping', 'POST', { vid: stats.vid(), st }).catch(() => {});
+  },
+  match(d) { if (LIVE) api.call('/api/track/match', 'POST', { vid: stats.vid(), ...d }).catch(() => {}); },
+};
+if (LIVE) {
+  setTimeout(() => stats.ping(), 4000); setInterval(() => stats.ping(), 60000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') stats.ping(); });
+}
 
 // ================= constants =================
 const COLS = 10, ROWS = 24, HIDDEN = 4, CELL = 24, TAU = Math.PI * 2;
@@ -2144,7 +2164,7 @@ function renderRank() {
     acct.innerHTML = `<p class="loginnote">${account.ready ? (account.fb ? 'Sign in to get ranked. Your rank and progress save to your account.' : 'Sign-in isn\'t set up on this server yet.') : 'Checking your account…'}</p>` + (account.fb ? `<button type="button" class="gbtn" id="hLogin">${G_SVG}Continue with Google</button>` : '');
     $('hLogin')?.addEventListener('click', () => signIn());
   }
-  $('setAcct').hidden = !(LIVE && account.user);
+  $('setAcct').hidden = !(LIVE && account.user); $('btnAdmin').hidden = !account.user?.admin;
 }
 function renderProfile() {
   try { renderRank(); } catch (e) {}
@@ -3925,6 +3945,7 @@ function end() {
     if (game.mode === 'arena' || (game.mode === 'online' && (game.players.length > 2 || gtype() !== 'battle'))) place = rankPlayers().indexOf(a) + 1;
     else if (b) draw = !won && a.ko === b.ko && a.sent === b.sent && !(game.mode === 'online' && gtype() !== 'battle');
     trackEnd(a, won, place);
+    if (game.mode !== 'demo') stats.match({ mode: game.mode === 'online' ? (net.quick ? 'quick' : 'online') : ['survival', 'powerup'].includes(game.asked) ? game.asked : game.mode, size: game.players.length, won: !!won, ms: Math.round(game.elapsed || 0) });
     payMatch({ mode: game.mode, won, place, size: game.players.length, level: game.level, score: a.score || 0, lines: a.lines, done: a.lines >= 40, best: game.mode === 'sprint' && a.lines >= 40 && store.get('sprint', 0) === game.elapsed, ms: game.elapsed });
     if (game.ranked) rankedFinish(place, draw);
     else if (LIVE && !account.user && (RANKED_MODES.includes(game.mode) || game.mode === 'online')) { const bx = $('resRank'); bx.hidden = false; bx.innerHTML = `<b>Unranked</b><span class="delta">—</span><p class="muted" style="grid-column:1/-1">Sign in to play ranked and earn rank points.</p>`; }

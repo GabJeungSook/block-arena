@@ -8,6 +8,7 @@ const ST = ['menu', 'room', 'match'];
 export class Hub {
   constructor(ctx, env) {
     this.ctx = ctx; this.env = env;
+    this.pings = new Map();      // "who's playing" heartbeats from every open game, guests included (memory only)
     // keep-alive pings are answered without waking the object up
     try { ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('ping', 'pong')); } catch (e) {}
   }
@@ -55,6 +56,14 @@ export class Hub {
       for (const id of (b.ids || []).slice(0, 500)) { const s = this.statusOf(id); if (s) out[id] = s; }
       return Response.json(out);
     }
+    if (url.pathname === '/ping') {
+      // a heartbeat about once a minute from each open game tab; anyone silent for 150 s is gone
+      const key = String(b.key || '').slice(0, 40), st = ST.includes(b.st) ? b.st : 'menu';
+      if (key) this.pings.set(key, { t: Date.now(), st, uid: +b.uid || 0 });
+      if (this.pings.size > 5000 || Math.random() < .05) this.prunePings();
+      return Response.json({ ok: true });
+    }
+    if (url.pathname === '/stats') return Response.json(this.stats());
     if (url.pathname === '/notify') {
       // friend request / acceptance / removal
       const { to, msg } = b;
@@ -100,6 +109,23 @@ export class Hub {
     } else if (m.t === 'qgo') {
       ws.serializeAttachment(a); if (a.q) this.matchmake(a.q.size, true);
     } else ws.serializeAttachment(a);
+  }
+  prunePings() { const old = Date.now() - 150000; for (const [k, v] of this.pings) if (v.t < old) this.pings.delete(k); }
+  // live numbers for the admin stats page: one entry per person (signed-in players are counted once however many tabs)
+  stats() {
+    this.prunePings();
+    const people = new Map(), rooms = new Set(); let quick = 0;
+    for (const [k, v] of this.pings) people.set(v.uid ? 'u' + v.uid : k, { st: v.st, signed: !!v.uid });
+    for (const ws of this.ctx.getWebSockets()) {
+      const a = ws.deserializeAttachment() || {}; if (!a.uid) continue;
+      const cur = people.get('u' + a.uid), st = a.st || 'menu';
+      if (!cur || ST.indexOf(st) > ST.indexOf(cur.st)) people.set('u' + a.uid, { st, signed: true });
+      if (a.st === 'room' && a.room) rooms.add(a.room);
+      if (a.q) quick++;
+    }
+    const out = { online: people.size, signedIn: 0, guests: 0, menu: 0, room: 0, match: 0, rooms: rooms.size, quick };
+    for (const v of people.values()) { out[v.signed ? 'signedIn' : 'guests']++; out[v.st]++; }
+    return out;
   }
   // ---- quick match ----
   // Players waiting for a quick match carry { q: { size, at } } on their socket, so the queue survives the
