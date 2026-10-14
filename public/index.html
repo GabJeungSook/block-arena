@@ -539,6 +539,15 @@ body{background:var(--bg)}
 .earnfoot p{margin:0}
 .earnfoot b{color:var(--fg)}
 @media (max-width:640px){.earngrid{grid-template-columns:1fr}.earnbtn{font-size:0;gap:0;padding:6px 8px}.earnbtn .coin{width:18px;height:18px}.modal{padding:16px}}
+/* small phones: the top bar's four buttons fit on one line */
+@media (max-width:480px){
+  .topbar{gap:6px}
+  .brand{font-size:12px;gap:6px}
+  .tb-actions{display:flex;gap:4px;flex-wrap:nowrap}
+  .tb-actions button{padding:5px 7px;font-size:11px;white-space:nowrap}
+  .brand .wm2{display:none}
+  .brand{flex:0 1 auto;min-width:0}
+}
 /* quick match */
 .qmsec .lab .chip{margin-left:8px;vertical-align:1px}
 .qmbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -1770,7 +1779,7 @@ class CPU {
     let cur = plan(p.piece.t, p.queue[0]);
     if (p.canHold) {
       const alt = plan(p.hold || p.queue[0], p.hold ? p.queue[0] : p.queue[1]);
-      if (alt[0] && cur[0] && alt[0].score > cur[0].score + 0.8) { p.holdPiece(); if (!p.piece) return null; cur = alt; }
+      if (rules().hold && p.canHold && alt[0] && cur[0] && alt[0].score > cur[0].score + 0.8) { const was = p.piece.t; p.holdPiece(); if (!p.piece) return null; if (p.piece.t !== was) cur = alt; }
     }
     let pick = cur[0];
     if (this.L.sloppy && Math.random() < this.L.sloppy) pick = cur[Math.min(cur.length - 1, 1 + (Math.random() * 3 | 0))];
@@ -1910,14 +1919,15 @@ const RANKERS = {
   race: (a, b) => (a.fin || 1e12) - (b.fin || 1e12) || b.lines - a.lines || a.stackHeight() - b.stackHeight(),
   survival: (a, b) => (a.out ? 1 : 0) - (b.out ? 1 : 0) || (b.lives ?? LIVES) - (a.lives ?? LIVES) || (b.outT || 0) - (a.outT || 0) || b.ko - a.ko || b.sent - a.sent,
 };
-const rankPlayers = () => game.players.map((p, i) => [p, i]).sort((x, y) => (RANKERS[gtype()] || RANKERS.battle)(x[0], y[0]) || x[1] - y[1]).map(x => x[0]);
-function leader(p) { return rankPlayers().find(q => q !== p && !q.out); }
+const rankPlayers = () => game.players.map((p, i) => [p, i]).sort((x, y) => (x[0].gone ? 1 : 0) - (y[0].gone ? 1 : 0) || (RANKERS[gtype()] || RANKERS.battle)(x[0], y[0]) || x[1] - y[1]).map(x => x[0]);
+const alive = q => !q.out && !q.gone;
+function leader(p) { return rankPlayers().find(q => q !== p && alive(q)); }
 function pickTarget(p) {
-  const opps = game.players.filter(q => q !== p && !q.out);
+  const opps = game.players.filter(q => q !== p && alive(q));
   if (opps.length <= 1) return opps[0] || null;
   if (p.human) return p.autoTarget ? leader(p) : (opps.includes(p.target) ? p.target : leader(p));
   const r = Math.random();
-  if (p.lastHitBy && r < .45) return p.lastHitBy;
+  if (p.lastHitBy && alive(p.lastHitBy) && r < .45) return p.lastHitBy;
   if (r < .65) return leader(p);
   return opps[Math.random() * opps.length | 0];
 }
@@ -1954,7 +1964,8 @@ class RemotePlayer {
     const nb = decBoard(s.b);
     if (typeof s.ln === 'number' && s.ln > this.lines) this.pulse = 1;
     this.board = nb; this.lines = +s.ln || 0; this.pieces = +s.pcs || 0;
-    this.piece = Array.isArray(s.pc) && SHAPES[s.pc[0]] ? { t: s.pc[0], r: s.pc[1] & 3, x: +s.pc[2] | 0, y: +s.pc[3] | 0 } : null;
+    const cx = +s.pc?.[2] | 0, cy = +s.pc?.[3] | 0;
+    this.piece = Array.isArray(s.pc) && SHAPES[s.pc[0]] && cx >= -3 && cx < COLS + 3 && cy >= -4 && cy < ROWS ? { t: s.pc[0], r: s.pc[1] & 3, x: cx, y: cy } : null;
     this.hold = SHAPES[s.h] ? s.h : null; this.queue = SHAPES[s.q] ? [s.q] : [];
     this.pend = Math.max(0, +s.pend | 0);
     this.sentTo = (s.sentTo && typeof s.sentTo === 'object') ? s.sentTo : {}; this.kod = (s.kod && typeof s.kod === 'object') ? s.kod : {};
@@ -1992,7 +2003,12 @@ $('btnRankLogin').onclick = () => signIn('/?menu=1');
 $('btnOnlineLogin').onclick = () => { const c = $('roomCode').value.toLowerCase().replace(/[^a-z0-9]/g, ''); signIn(c ? '/?room=' + c : '/?online=1'); };
 function randomCode() { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; let c = ''; for (let i = 0; i < 5; i++) c += a[Math.random() * a.length | 0]; return c; }
 async function netJoin(code) {
-  if (!net.room) return;
+  if (!net.room || net.joining) return;            // a second tap while connecting would make a hidden duplicate player
+  net.joining = true;
+  try { await netJoinInner(code); } finally { net.joining = false; }
+}
+async function netJoinInner(code) {
+  if (net.nr) await netLeave(false);
   if (needSignIn()) { signIn('/?room=' + encodeURIComponent(String(code || ''))); return; }
   code = String(code || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12);
   if (!code) { $('onlineMsg').textContent = 'Enter a room code or create a room.'; return; }
@@ -2010,12 +2026,12 @@ async function netJoin(code) {
   clearInterval(net.qTimer); if (net.quick) net.qTimer = setInterval(() => { if (net.nr && !game.running && !$('ovLobby').hidden) renderLobby(); }, 1000);
 }
 function lobbyErr(e) { $('lobbyMsg').textContent = 'Room ended: ' + (e?.code || 'error') + '. Leave and join again.'; }
-async function netLeave() {
+async function netLeave(nav = true) {
   net.unsub.forEach(u => { try { u(); } catch (e) {} }); net.unsub = [];
   try { await net.nr?.leave(); } catch (e) {}
   net.nr = null; net.code = null; net.mid = null; net.quick = null; clearInterval(net.qTimer);
   if (game.mode === 'online') { game.running = false; musicStop(); }
-  openOnline();
+  if (nav) openOnline();
 }
 // the host is whoever joined the room first (join time in presence), ties broken by peer id
 const byJoin = (a, b) => ((+a.presence?.jt || 9e15) - (+b.presence?.jt || 9e15)) || (a.peer < b.peer ? -1 : 1);
@@ -2050,7 +2066,7 @@ function renderLobby() {
 const escapeHtml = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 async function netHostStart() {
   if (!net.nr || !net.host) return;
-  const ps = lobbyPeers().slice().sort(byJoin);
+  const ps = lobbyPeers().slice().sort(byJoin).slice(0, 6);
   const want = net.quick ? net.quick.size : Math.max(+($('lobbySize').value || 2), 2);
   const size = Math.max(want, ps.length);
   const tints = [C.accent2, '#3fd62a', '#ffd21a', '#a338ff', '#ff8f1a', '#22b8ff'];
@@ -2064,7 +2080,7 @@ function onNetStart(m) {
   const d = m.data; if (!d || typeof d !== 'object' || !Array.isArray(d.humans) || !d.humans.some(h => h.peer === net.myPeer)) return;
   if (m.peer !== net.hostPeer) return;             // only the host starts matches
   if (game.running && game.mode === 'online' && net.mid === d.mid) return;
-  net.mid = d.mid; net.host = d.host === net.myPeer; net.recv = {};
+  net.mid = d.mid; net.host = d.host === net.myPeer; net.recv = {}; net.matchHost = d.host;
   startOnline(d);
 }
 function startOnline(d) {
@@ -2127,7 +2143,9 @@ function netTick(now) {
     if (rp && (s.st === 'play' || s.st === 'done') && s.mid === net.mid) rp.apply(s);     // 'done' carries a player's final state (eliminated, finished)
     if (pr.peer === net.hostPeer && s.bots && typeof s.bots === 'object') for (const id in s.bots) { const bp = game.players.find(p => p.remote && p.id === id); if (bp) bp.apply(s.bots[id]); }
   }
-  for (const p of game.players) if (p.remote) p.gone = !peers.some(pr => pr.peer === p.id) && !(net.hostPeer && peers.some(pr => pr.peer === net.hostPeer) && /^b\d$/.test(p.id));
+  // a player who left is gone; the bots run on the match host's device, so they go when it goes
+  const here = id => peers.some(pr => pr.peer === id);
+  for (const p of game.players) if (p.remote) p.gone = /^b\d$/.test(p.id) ? !here(net.matchHost) : !here(p.id);
   netReconcile(); netTally();
   if (now - net.lastPub >= 100) {
     net.lastPub = now;
@@ -2145,8 +2163,9 @@ const canRank = () => LIVE && !!account.user;     // ranked play only for player
 function rankedBegin(kind, size, level) {
   game.ranked = { kind, size, level, id: null, t0: Date.now(), pending: null };
   if (LIVE && account.user) {
-    game.ranked.pending = api.call('/api/match/start', 'POST', { kind, size, level })
-      .then(r => { if (game.ranked && game.ranked.kind === kind) game.ranked.id = r.id; if (account.user) account.user.rp = r.rp; return r; })
+    const rk = game.ranked;
+    rk.pending = api.call('/api/match/start', 'POST', { kind, size, level })
+      .then(r => { rk.id = r.id; if (account.user) account.user.rp = r.rp; return r; })
       .catch(() => null);
   }
 }
@@ -2229,8 +2248,9 @@ function unlock(id) {
   const pr = store.get('profile', { xp: 0, wins: 0, games: 0 }), have = new Set(pr.ach || []);
   if (have.has(id) || !achById(id)) return;
   have.add(id); pr.ach = [...have]; store.set('profile', pr);
-  if (LIVE && account.user) api.call('/api/profile', 'PUT', { ach: pr.ach }).catch(() => {});
-  achCoins();
+  // +50 coins: the server pays signed-in players (shown when it confirms); guests get them here
+  if (LIVE && account.user) api.call('/api/profile', 'PUT', { ach: pr.ach }).then(r => { if (r?.coinsAdded) { const w = wallet(); w.coins += r.coinsAdded; setWallet(w); renderCoins(true); } }).catch(() => {});
+  else achCoins();
   achToast(achById(id));
 }
 let toastQ = [], toastOn = false;
@@ -2552,9 +2572,9 @@ function onHub(m) {
     showInvite({ ...m.from, room: m.room });
   } else if (m.t === 'invsent') {
     const f = find(m.to); setFrMsg(`Invite sent to ${f ? f.name : 'your friend'}.`); shareMsg(`Invite sent to ${f ? f.name : 'your friend'}`);
-    const b = document.querySelector(`#frList [data-id="${+m.to}"] [data-fr="invite"]`); if (b) { b.textContent = 'Invited'; b.disabled = true; }
+    document.querySelectorAll(`#frList [data-id="${+m.to}"] [data-fr="invite"], #onFriends [data-id="${+m.to}"] [data-fr="invite"]`).forEach(b => { b.textContent = 'Invited'; b.disabled = true; });
   } else if (m.t === 'invfail') {
-    setFrMsg(m.why === 'offline' ? 'They just went offline.' : 'You can only invite friends.', true); renderFriends();
+    setFrMsg(m.why === 'offline' ? 'They just went offline.' : 'You can only invite friends.', true); shareMsg(m.why === 'offline' ? 'They just went offline' : 'You can only invite friends'); renderFriends(); renderOnlineFriends();
   } else if (m.t === 'req') {
     friends.requests++; renderFriendChip(); loadFriends();
     shareMsg(`${m.from?.name || 'Someone'} sent you a friend request`); sfx.lvl?.();
@@ -2563,6 +2583,7 @@ function onHub(m) {
   } else if (m.t === 'unfriend') loadFriends();
   else if (m.t === 'qn') { qm.n = Math.max(1, m.n | 0); }
   else if (m.t === 'match') quickMatched(m);
+  else if (m.t === 'qdone') quickStop(false);
 }
 // ---- quick match: the hub queues players who press Quick match and puts them in a room together ----
 const qm = { size: 0, t0: 0, timer: null, went: false, n: 1 };
@@ -2958,6 +2979,7 @@ function previewBoard(id, c) {
   const rowsDef = ['        ', '      T ', 'J    TTT', 'JJJ ZZOO', 'GGBGGGGG'];
   const skin = id.startsWith('block:') ? id.split(':')[1] : cos.block;
   const keep = cos.block; cos.block = skin;
+  try {
   withCtx(g, () => {
     rowsDef.forEach((r, y) => [...r].forEach((ch, x) => { if (ch === ' ') return; const v = ch; cellDraw(ox + x * s, oy + y * s, s, COLORS[v]); if (v === 'B') bombDraw(ox + x * s, oy + y * s, s, false); }));
     // a falling S and its ghost
@@ -2965,7 +2987,7 @@ function previewBoard(id, c) {
     if (id.startsWith('ghost:')) for (const [cx, cy] of CELLS.S[0]) ghostDraw(ox + (px + cx) * s, oy + (gy + cy) * s, s, COLORS.S, id.split(':')[1]);
     for (const [cx, cy] of CELLS.S[0]) cellDraw(ox + (px + cx) * s, 16 + cy * s, s, COLORS.S);
   });
-  cos.block = keep;
+  } finally { cos.block = keep; }
 }
 function drawShopPreviews(now, first) {
   for (const p of shopPreviews) {
@@ -3282,6 +3304,7 @@ function previewText(p, now) {
   const cyc = (now / 1700) % 3, k = cyc % 1, which = Math.floor(cyc);
   g.clearRect(0, 0, W, H); g.fillStyle = C.well; g.fillRect(40, 8, 160, H - 8);
   const keep = cos.text; cos.text = st;
+  try {
   withCtx(g, () => {
     ['JJJ ZZOO', 'GGBGGGGG'].forEach((row, y) => [...row].forEach((ch, x) => { if (ch !== ' ') cellDraw(40 + x * 20, H - 40 + y * 20, 20, COLORS[ch]); }));
     const a = k < .08 ? k / .08 : k > .8 ? 1 - (k - .8) / .2 : 1, pop = k < .1 ? 1.35 - k / .1 * .35 : 1;
@@ -3291,7 +3314,7 @@ function previewText(p, now) {
     else { if (st === 'classic') { ctx.globalAlpha = a * .92; ctx.fillStyle = C.fg; ctx.fillRect(-80, -30, 160, 60); ctx.fillStyle = C.warn; ctx.fillRect(-80, -26, 160, 52); ctx.globalAlpha = a; textOn('K.O.', 0, 2, 34, C.fg, null, 0); } else calloutKO(0, 0, 160, a, false, k); }
     ctx.restore();
   });
-  cos.text = keep;
+  } finally { cos.text = keep; }
 }
 function previewBoom(p, now) {
   const g = p.c.getContext('2d'), W = p.c.width, H = p.c.height, st = p.id.split(':')[1], s = 20, ox = 40, ry = H - 60;
@@ -3315,7 +3338,7 @@ async function equipItem(id) {
 
 function start(mode) {
   initAudio();
-  const asked = mode;
+  const asked = mode; game.asked = mode;
   if (mode === 'survival') { game.pendingRules = SURVIVAL_RULES; mode = 'arena'; game.size = 6; }
   if (RANKED_MODES.includes(mode) && canRank()) rankedBegin(mode, mode === 'arena' ? game.size : 2, game.level); else game.ranked = null;
   if (mode !== 'online') store.set('last', { mode: asked, size: game.size });
@@ -3339,7 +3362,7 @@ function launch(mode, ps, size) {
   ps.forEach(p => {
     if (p.remote) return;
     p.onAttack = n => {
-      const o = p.target && ps.includes(p.target) ? p.target : pickTarget(p); if (!o) return null;
+      const o = p.target && ps.includes(p.target) && alive(p.target) ? p.target : pickTarget(p); if (!o) return null;
       if (rules().garbage !== 1) n = Math.max(1, Math.round(n * rules().garbage));
       deliver(p, o, n);
       p.target = pickTarget(p);
@@ -3367,7 +3390,7 @@ function launch(mode, ps, size) {
   game.inputs = ps.filter(p => p.human && !p.remote).map(p => new Input(p));
   game.cpus = ps.filter(p => !p.human && !p.remote).map(p => new CPU(p, game.level));
   game.running = true;
-  document.activeElement?.blur?.();
+  if (mode !== 'demo') document.activeElement?.blur?.();
   show(null);
   $('touch').classList.toggle('show', mode !== 'local');
   game.myLevel = levelOf(store.get('profile', { xp: 0 }).xp).lvl;
@@ -3430,7 +3453,7 @@ function end() {
   {
     let place = won ? 1 : 2, draw = false;
     if (game.mode === 'arena' || (game.mode === 'online' && (game.players.length > 2 || gtype() !== 'battle'))) place = rankPlayers().indexOf(a) + 1;
-    else if (b) draw = a.ko === b.ko && a.sent === b.sent && !won && a.stackHeight() === b.stackHeight();
+    else if (b) draw = !won && a.ko === b.ko && a.sent === b.sent && !(game.mode === 'online' && gtype() !== 'battle');
     trackEnd(a, won, place);
     payMatch({ mode: game.mode, won, place, size: game.players.length, level: game.level, score: a.score || 0, lines: a.lines, done: a.lines >= 40, best: game.mode === 'sprint' && a.lines >= 40 && store.get('sprint', 0) === game.elapsed, ms: game.elapsed });
     if (game.ranked) rankedFinish(place, draw);
@@ -3480,7 +3503,7 @@ let lastScreen = 'ovHome', demoBusy = false;
 function startDemo() {
   // attract mode: two bots play a silent match behind the home screen and menu
   demoBusy = true;
-  const keep = ['ovHome', 'ovMenu', 'ovOnline', 'ovHow', 'ovSettings', 'ovLobby', 'ovResult'].find(id => !$(id).hidden) || 'ovHome';
+  const keep = [...document.querySelectorAll('.overlay')].find(o => !o.hidden)?.id || 'ovHome';
   const pair = [RIVALS[0], RIVALS[1 + (Math.random() * 4 | 0)]];
   const ps = pair.map((r, i) => { const q = new Player({ name: r.name, human: false, mode: 'demo', versus: true }); q.id = 'd' + i; q.tint = r.tint; q.sentTo = {}; q.kod = {}; return q; });
   const lvl = game.level; game.level = 'hard';
@@ -3562,7 +3585,7 @@ document.querySelectorAll('#diff button').forEach(b => b.addEventListener('click
 }));
 $('btnPause').onclick = () => pause($('ovPause').hidden);
 $('btnResume').onclick = () => { if (game.mode === 'online') { show(null); } else pause(false); };
-const quitTo = where => () => { if (inMatch()) { game.running = false; game.paused = false; musicStop(); game.inputs.forEach(i => i.clear()); } if (net.nr) netLeave(); show(where); };
+const quitTo = where => () => { if (inMatch()) { game.running = false; game.paused = false; musicStop(); game.inputs.forEach(i => i.clear()); } if (net.nr) netLeave(false); show(where); };
 $('btnQuit').onclick = $('btnBack').onclick = quitTo('ovMenu');
 $('btnMenu').onclick = quitTo('ovHome');
 document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => show(b.dataset.go)));
@@ -3594,7 +3617,7 @@ $('hLevelChip').onclick = () => show('ovStats');
 $('hRankRow').onclick = () => openRankings();
 $('hTipNext').onclick = () => { tipI++; showTip(); };
 showTip();
-$('btnAgain').onclick = () => start(game.mode);
+$('btnAgain').onclick = () => start(game.asked || game.mode);
 $('btnLobby').onclick = () => {
   if (net.quick) { const size = net.quick.size; game.running = false; game.mode = 'online-idle'; musicStop(); netLeave().then(() => quickStart(size)); return; } game.running = false; game.mode = 'online-idle'; musicStop(); if (net.nr) { net.nr.presence({ st: 'lobby', mid: null, bots: null, b: null }).catch(() => {}); show('ovLobby'); renderLobby(); } else show('ovMenu'); };
 $('btnCreate').onclick = () => { $('roomCode').value = randomCode(); netJoin($('roomCode').value); };
@@ -4201,7 +4224,7 @@ cv.addEventListener('pointerdown', e => {
   if (!inMatch() || game.paused || !isArena()) return;
   const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) / L.s, y = (e.clientY - r.top) / L.s;
   const me = game.players[0];
-  const hit = game.players.slice(1).find(p => p.seat && x >= p.seat.x && x <= p.seat.x + p.seat.w && y >= p.seat.y && y <= p.seat.y + p.seat.h);
+  const hit = game.players.slice(1).find(p => p.seat && alive(p) && x >= p.seat.x && x <= p.seat.x + p.seat.w && y >= p.seat.y && y <= p.seat.y + p.seat.h);
   if (hit) { if (me.target === hit && !me.autoTarget) { me.autoTarget = true; me.target = leader(me); } else { me.autoTarget = false; me.target = hit; } sfx.target(); }
 });
 function drawDanger() {
@@ -4358,10 +4381,10 @@ function frame(now) {
       const me0 = game.players[0]; if (me0 && me0.autoTarget && isArena()) me0.target = leader(me0);
       if (game.mode === 'online') {
         netTick(now);
-        const t = gtype();
+        const t = gtype(), active = game.players.filter(p => !p.out && !p.gone);
         if (t === 'battle' && game.players.some(p => p.ko >= koCap())) end();
         else if (t === 'race' && game.players.some(p => p.fin)) end();
-        else if (t === 'survival' && game.players.filter(p => !p.out).length <= 1) end();
+        else if (game.players.length > 1 && active.length <= 1) end();          // everyone else is out or left: the last one wins
       }
       game.players.forEach(p => p.update(dt));
       if (game.mode === 'online') game.players.forEach(p => { if (p.remote && p.gone && !p.goneShown) { p.goneShown = true; p.fx.push({ t: 'LEFT', c: C.muted, age: 0 }); } });
@@ -4378,7 +4401,12 @@ function frame(now) {
   }
   if (!game.paused) stepFx(dt);
   render(now);
-  requestAnimationFrame(frame);
+  requestAnimationFrame(safeFrame);
+}
+let frameErrs = 0;
+function safeFrame(now) {
+  // keep the loop alive if anything throws, so one bad frame can't freeze the game
+  try { frame(now); } catch (e) { if (frameErrs++ < 5) console.error(e); try { ctx.restore(); } catch (e2) {} ctx.globalAlpha = 1; requestAnimationFrame(safeFrame); }
 }
 
 // idle preview behind the menu
@@ -4441,6 +4469,6 @@ if (LIVE) {
   }).catch(() => { account.ready = true; renderProfile(); syncSocialUI(); renderFriendChip(); });
 }
 (document.fonts?.ready || Promise.resolve()).then(() => layout());
-requestAnimationFrame(frame);
+requestAnimationFrame(safeFrame);
 })();
 </script>

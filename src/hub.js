@@ -78,6 +78,7 @@ export class Hub {
     if (now - a.t > 10000) { a.t = now; a.n = 0; }
     if (++a.n > RATE) { ws.serializeAttachment(a); return; }
     let m; try { m = JSON.parse(raw); } catch (e) { ws.serializeAttachment(a); return; }
+    if (!m || typeof m !== 'object') { ws.serializeAttachment(a); return; }
     if (m.t === 'st' && ST.includes(m.st)) {
       const room = m.st === 'room' ? String(m.room || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12) || null : null;
       const changed = a.st !== m.st || a.room !== room;
@@ -119,7 +120,7 @@ export class Hub {
     const msg = JSON.stringify({ t: 'match', room, size, n: group.length });
     for (const [ws, a] of group) {
       // the same player in another tab stops searching too
-      for (const w2 of this.socketsOf(a.uid)) { const b = w2.deserializeAttachment() || {}; if (b.q) { b.q = null; w2.serializeAttachment(b); } }
+      for (const w2 of this.socketsOf(a.uid)) { const b = w2.deserializeAttachment() || {}; if (b.q) { b.q = null; w2.serializeAttachment(b); if (w2 !== ws) try { w2.send(JSON.stringify({ t: 'qdone' })); } catch (e) {} } }
       try { ws.send(msg); } catch (e) {}
     }
   }

@@ -70,6 +70,7 @@ const now = () => Date.now();
 const rand = (n = 32) => [...crypto.getRandomValues(new Uint8Array(n))].map(b => b.toString(16).padStart(2, '0')).join('');
 const enc = new TextEncoder();
 async function sha256(s) { const h = await crypto.subtle.digest('SHA-256', enc.encode(s)); return [...new Uint8Array(h)].map(b => b.toString(16).padStart(2, '0')).join(''); }
+function timingSafeEq(a, b) { let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; }
 async function hmacHex(key, msg) {
   const k = await crypto.subtle.importKey('raw', enc.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   return [...new Uint8Array(await crypto.subtle.sign('HMAC', k, enc.encode(msg)))].map(b => b.toString(16).padStart(2, '0')).join('');
@@ -77,6 +78,11 @@ async function hmacHex(key, msg) {
 function cookies(req) { const out = {}; for (const part of (req.headers.get('Cookie') || '').split(';')) { const i = part.indexOf('='); if (i > 0) out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim()); } return out; }
 const secure = url => url.protocol === 'https:' ? '; Secure' : '';
 const setCookie = (url, name, val, maxAge) => `${name}=${encodeURIComponent(val)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure(url)}`;
+// "back to" paths after sign-in: anything that doesn't resolve to this site becomes "/"
+function safeBack(url, v) {
+  if (!v || typeof v !== 'string' || v[0] !== '/') return '/';
+  try { const t = new URL(v, url.origin); return t.origin === url.origin ? t.pathname + t.search : '/'; } catch (e) { return '/'; }
+}
 const redirect = (to, headers = {}) => new Response(null, { status: 302, headers: { Location: to, ...headers } });
 
 async function currentUser(req, env) {
@@ -107,7 +113,7 @@ function fbStart(req, env, url) {
   const state = rand(16);
   // "App friends" (user_friends) needs Meta App Review before it works for the public; turn it on with FB_FRIENDS=1
   const scope = env.FB_FRIENDS === '1' ? 'public_profile,user_friends' : 'public_profile';
-  const back = /^\/[^/]/.test(url.searchParams.get('back') || '') ? url.searchParams.get('back') : '/';
+  const back = safeBack(url, url.searchParams.get('back'));
   const q = new URLSearchParams({ client_id: env.FB_APP_ID, redirect_uri: `${url.origin}/auth/facebook/callback`, state, scope, response_type: 'code' });
   const res = redirect(`${DIALOG}?${q}`, { 'Set-Cookie': setCookie(url, 'ba_state', state, 600) });
   res.headers.append('Set-Cookie', setCookie(url, 'ba_back', back, 600));
@@ -127,7 +133,7 @@ async function fbCallback(req, env, url) {
   if (!me.id) return redirect('/?login=failed', { 'Set-Cookie': clear });
   const user = await upsertUser(env, me.id, String(me.name || 'Player').slice(0, 40), me.picture?.data?.url || null);
   await syncFriends(env, user.id, tok.access_token, proof).catch(() => {});
-  const back = cookies(req).ba_back || '/';
+  const back = safeBack(url, cookies(req).ba_back);
   const res = await startSession(env, url, user.id, back + (back.includes('?') ? '&' : '?') + 'login=ok');
   res.headers.append('Set-Cookie', clear);
   res.headers.append('Set-Cookie', setCookie(url, 'ba_back', '', 0));
@@ -174,9 +180,10 @@ async function fbDelete(req, env, url) {
   if (!sig || !payload) return json({ error: 'bad_request' }, 400);
   const b64 = s => atob(s.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(s.length / 4) * 4, '='));
   const expect = await hmacHex(env.FB_APP_SECRET, payload);
-  const got = [...b64(sig)].map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
-  if (got !== expect) return json({ error: 'bad_signature' }, 400);
-  const data = JSON.parse(b64(payload));
+  let got, data;
+  try { got = [...b64(sig)].map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(''); } catch (e) { return json({ error: 'bad_request' }, 400); }
+  if (got.length !== expect.length || !timingSafeEq(got, expect)) return json({ error: 'bad_signature' }, 400);
+  try { data = JSON.parse(b64(payload)); } catch (e) { return json({ error: 'bad_request' }, 400); }
   await env.DB.prepare('DELETE FROM users WHERE fb_id = ?').bind(String(data.user_id)).run();
   const code = rand(8);
   await env.DB.prepare('INSERT INTO deletions (code, created_at) VALUES (?, ?)').bind(code, now()).run();
@@ -195,7 +202,7 @@ async function deletionStatus(env, url) {
 
 // ---------- rooms ----------
 async function room(req, env, p) {
-  const name = decodeURIComponent(p.slice(6));
+  let name; try { name = decodeURIComponent(p.slice(6)); } catch (e) { return new Response('Bad room name', { status: 400 }); }
   if (!/^[a-z0-9][a-z0-9_.-]{0,47}$/.test(name)) return new Response('Bad room name', { status: 400 });
   const u = await currentUser(req, env);
   if (!u) return new Response('Sign in with Facebook to play online', { status: 401 });
@@ -243,7 +250,9 @@ async function api(req, env, url, p) {
   }
   return json({ error: 'not_found' }, 404);
 }
-async function body(req, max = 4096) { try { const t = await req.text(); return t.length > max ? {} : JSON.parse(t); } catch (e) { return {}; } }
+async function body(req, max = 4096) {
+  try { const t = await req.text(); if (t.length > max) return {}; const v = JSON.parse(t); return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; } catch (e) { return {}; }
+}
 
 async function saveProfile(req, env, u) {
   const b = await body(req), cur = JSON.parse(u.profile || '{}');
@@ -261,10 +270,13 @@ async function saveProfile(req, env, u) {
   };
   // only the fields this call manages are written, and coins are added in the same statement, so a
   // coin payout or purchase landing at the same moment is never overwritten
-  const bonus = [...new Set(newAch)].length * ACH_COINS;
-  await env.DB.prepare(`UPDATE users SET profile = json_set(COALESCE(profile, '{}'), '$.xp', ?, '$.wins', ?, '$.games', ?, '$.bestCombo', ?, '$.classic', ?, '$.sprint', ?, '$.ach', json(?),
-      '$.coins', COALESCE(json_extract(profile, '$.coins'), 0) + ?), updated_at = ? WHERE id = ?`)
-    .bind(next.xp, next.wins, next.games, next.bestCombo, next.classic, next.sprint, JSON.stringify(next.ach), bonus, now(), u.id).run();
+  let bonus = [...new Set(newAch)].length * ACH_COINS;
+  const sql = `UPDATE users SET profile = json_set(COALESCE(profile, '{}'), '$.xp', ?, '$.wins', ?, '$.games', ?, '$.bestCombo', ?, '$.classic', ?, '$.sprint', ?, '$.ach', json(?),
+      '$.coins', COALESCE(json_extract(profile, '$.coins'), 0) + ?), updated_at = ? WHERE id = ?`;
+  const args = [next.xp, next.wins, next.games, next.bestCombo, next.classic, next.sprint, JSON.stringify(next.ach)];
+  // the coin bonus is paid only if nobody else saved achievements in the meantime (two saves can't both pay)
+  const r1 = await env.DB.prepare(sql + ` AND json(COALESCE(json_extract(profile, '$.ach'), '[]')) = json(?)`).bind(...args, bonus, now(), u.id, JSON.stringify(Array.isArray(cur.ach) ? cur.ach : [])).run();
+  if (!r1.meta.changes) { bonus = 0; await env.DB.prepare(sql).bind(...args, 0, now(), u.id).run(); }
   return json({ profile: next, coinsAdded: bonus });
 }
 
@@ -280,16 +292,23 @@ async function coinsEarn(req, env, u) {
   if (t - (e.t || 0) < MIN_GAP_MS) amt = 0;
   amt = Math.min(amt, Math.max(0, DAILY_CAP - e.n));
   const earn = { day, n: e.n + amt, t: amt ? t : e.t };
-  await env.DB.prepare(`UPDATE users SET profile = json_set(COALESCE(profile, '{}'), '$.coins', COALESCE(json_extract(profile, '$.coins'), 0) + ?, '$.earn', json(?)), updated_at = ? WHERE id = ?`)
-    .bind(amt, JSON.stringify(earn), t, u.id).run();
+  if (amt) {
+    const r = await env.DB.prepare(`UPDATE users SET profile = json_set(COALESCE(profile, '{}'), '$.coins', COALESCE(json_extract(profile, '$.coins'), 0) + ?, '$.earn', json(?)), updated_at = ?
+        WHERE id = ? AND COALESCE(json_extract(profile, '$.earn.t'), 0) = ? AND COALESCE(json_extract(profile, '$.earn.n'), 0) = ?`)
+      .bind(amt, JSON.stringify(earn), t, u.id, pr.earn?.t || 0, pr.earn?.n || 0).run();
+    if (!r.meta.changes) amt = 0;          // another payout landed first
+  }
   return json({ added: amt, capped: amt < Math.floor(+b.amount || 0), ...wallet(await freshProfile(env, u)) });
 }
 // a guest's coins and items move to their account the first time they sign in (once, capped)
 async function coinsImport(req, env, u) {
   const b = await body(req), pr = await freshProfile(env, u);
-  if (pr.imported) return json({ ...wallet(pr), imported: false });
-  const add = Math.max(0, Math.min(3000, Math.floor(+b.coins || 0)));
-  const owned = [...new Set([...(pr.owned || []), ...(Array.isArray(b.owned) ? b.owned : []).filter(id => id in PRICES && PRICES[id] > 0)])];
+  if (pr.imported || now() - (u.created_at || 0) > 30 * 60000) return json({ ...wallet(pr), imported: false });   // only right after the account is made
+  let budget = 3000; const items = [];
+  const wanted = [...new Set((Array.isArray(b.owned) ? b.owned : []).filter(id => id in PRICES && PRICES[id] > 0 && !(pr.owned || []).includes(id)))].sort((x, y) => PRICES[x] - PRICES[y]);
+  for (const id of wanted) if (PRICES[id] <= budget) { items.push(id); budget -= PRICES[id]; }
+  const add = Math.max(0, Math.min(budget, Math.floor(+b.coins || 0)));
+  const owned = [...(pr.owned || []), ...items];
   const r = await env.DB.prepare(`UPDATE users SET profile = json_set(COALESCE(profile, '{}'), '$.imported', json('true'), '$.coins', COALESCE(json_extract(profile, '$.coins'), 0) + ?, '$.owned', json(?)), updated_at = ?
       WHERE id = ? AND json_extract(profile, '$.imported') IS NULL`).bind(add, JSON.stringify(owned), now(), u.id).run();
   return json({ ...wallet(await freshProfile(env, u)), imported: r.meta.changes > 0 });
@@ -301,9 +320,14 @@ async function shopBuy(req, env, u) {
   if (PRICES[id] === 0 || w.owned.includes(id)) return json({ ...w, already: true });
   if (w.coins < PRICES[id]) return json({ error: 'not_enough', ...w }, 400);
   // the balance check happens inside the update, so two quick taps can't spend the same coins twice
-  const r = await env.DB.prepare(`UPDATE users SET profile = json_set(COALESCE(profile, '{}'), '$.coins', COALESCE(json_extract(profile, '$.coins'), 0) - ?, '$.owned', json(?), '$.eq', json(?)), updated_at = ?
-      WHERE id = ? AND COALESCE(json_extract(profile, '$.coins'), 0) >= ?`)
-    .bind(PRICES[id], JSON.stringify([...w.owned, id]), JSON.stringify({ ...w.eq, [id.split(':')[0]]: id }), now(), u.id, PRICES[id]).run();   // buying equips it
+  // one statement: enough coins, not already owned, add the item, equip it
+  const r = await env.DB.prepare(`UPDATE users SET profile = json_set(COALESCE(profile, '{}'),
+        '$.coins', COALESCE(json_extract(profile, '$.coins'), 0) - ?,
+        '$.owned', json_insert(COALESCE(json_extract(profile, '$.owned'), json('[]')), '$[#]', ?),
+        '$.eq', json_patch(COALESCE(json_extract(profile, '$.eq'), json('{}')), json_object(?, ?))), updated_at = ?
+      WHERE id = ? AND COALESCE(json_extract(profile, '$.coins'), 0) >= ?
+        AND NOT EXISTS (SELECT 1 FROM json_each(COALESCE(json_extract(users.profile, '$.owned'), json('[]'))) WHERE value = ?)`)
+    .bind(PRICES[id], id, id.split(':')[0], id, now(), u.id, PRICES[id], id).run();
   const w2 = wallet(await freshProfile(env, u));
   return r.meta.changes ? json(w2) : json({ error: 'not_enough', ...w2 }, 400);
 }
@@ -312,7 +336,7 @@ async function shopEquip(req, env, u) {
   if (!(id in PRICES) || !SLOTS.includes(slot)) return json({ error: 'unknown_item' }, 400);
   const w = wallet(pr);
   if (PRICES[id] > 0 && !w.owned.includes(id)) return json({ error: 'not_owned' }, 400);
-  await env.DB.prepare(`UPDATE users SET profile = json_set(COALESCE(profile, '{}'), '$.eq', json(?)), updated_at = ? WHERE id = ?`).bind(JSON.stringify({ ...w.eq, [slot]: id }), now(), u.id).run();
+  await env.DB.prepare(`UPDATE users SET profile = json_set(COALESCE(profile, '{}'), '$.eq', json_patch(COALESCE(json_extract(profile, '$.eq'), json('{}')), json_object(?, ?))), updated_at = ? WHERE id = ?`).bind(slot, id, now(), u.id).run();
   return json(wallet(await freshProfile(env, u)));
 }
 
@@ -343,15 +367,17 @@ async function matchFinish(req, env, u) {
   const mt = await env.DB.prepare('SELECT * FROM matches WHERE id = ? AND user_id = ?').bind(String(b.id || ''), u.id).first();
   if (!mt || mt.finished_at) return json({ error: 'unknown_match' }, 404);
   const age = now() - mt.started_at;
-  if (age < MIN_MATCH_MS || age > MAX_MATCH_MS) return json({ error: 'bad_timing' }, 400);
+  if (age < MIN_MATCH_MS || age > MAX_MATCH_MS) {
+    await env.DB.prepare('UPDATE matches SET finished_at = ?, place = 0, delta = 0 WHERE id = ? AND finished_at IS NULL').bind(now(), mt.id).run();
+    return json({ error: 'bad_timing' }, 400);
+  }
   const place = Math.max(1, Math.min(mt.size, Math.floor(+b.place || mt.size)));
   const draw = !!b.draw && mt.size === 2;
   const d = rpDelta({ kind: mt.kind, level: mt.level || 'normal', size: mt.size, place, draw }, u.rp);
   const rp = applyDelta(u.rp, d), real = rp - u.rp, win = place === 1 && !draw ? 1 : 0;
-  await env.DB.batch([
-    env.DB.prepare('UPDATE matches SET finished_at = ?, place = ?, delta = ? WHERE id = ?').bind(now(), place, real, mt.id),
-    env.DB.prepare('UPDATE users SET rp = ?, peak_rp = MAX(peak_rp, ?), ranked_games = ranked_games + 1, ranked_wins = ranked_wins + ?, updated_at = ? WHERE id = ?').bind(rp, rp, win, now(), u.id),
-  ]);
+  const claim = await env.DB.prepare('UPDATE matches SET finished_at = ?, place = ?, delta = ? WHERE id = ? AND finished_at IS NULL').bind(now(), place, real, mt.id).run();
+  if (!claim.meta.changes) return json({ error: 'unknown_match' }, 404);       // the same result sent twice counts once
+  await env.DB.prepare('UPDATE users SET rp = ?, peak_rp = MAX(peak_rp, ?), ranked_games = ranked_games + 1, ranked_wins = ranked_wins + ?, updated_at = ? WHERE id = ?').bind(rp, rp, win, now(), u.id).run();
   const before = rankOf(u.rp), after = rankOf(rp);
   return json({ delta: real, rp, before: before.name, after: after.name, promoted: rp > u.rp && after.name !== before.name, demoted: rp < u.rp && after.name !== before.name });
 }
@@ -363,10 +389,12 @@ async function createShare(req, env, url, u) {
   const kind = ['rank', 'match', 'achievement'].includes(b.kind) ? b.kind : null;
   const m = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/.exec(String(b.png || ''));
   if (!kind || !m) return json({ error: 'bad_request' }, 400);
-  const bytes = Uint8Array.from(atob(m[1]), c => c.charCodeAt(0));
+  let bytes; try { bytes = Uint8Array.from(atob(m[1]), c => c.charCodeAt(0)); } catch (e) { return json({ error: 'bad_image' }, 400); }
   if (bytes.length > 650000 || bytes[0] !== 0x89 || bytes[1] !== 0x50) return json({ error: 'bad_image' }, 400);
   const recent = await env.DB.prepare('SELECT COUNT(*) AS c FROM shares WHERE user_id = ? AND created_at > ?').bind(u.id, now() - 864e5).first();
-  if ((recent?.c || 0) >= 30) return json({ error: 'too_many' }, 429);
+  if ((recent?.c || 0) >= 12) return json({ error: 'too_many' }, 429);
+  // cards older than 60 days are removed so the free database never fills up (Facebook has cached them by then)
+  await env.DB.prepare('DELETE FROM shares WHERE created_at < ?').bind(now() - 60 * 864e5).run();
   const id = rand(8), clean = (t, n) => String(t || '').replace(/[<>"&]/g, '').slice(0, n);
   await env.DB.prepare('INSERT INTO shares (id, user_id, kind, title, description, png, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
     .bind(id, u.id, kind, clean(b.title, 90) || 'Block Arena', clean(b.description, 200) || 'Play Block Arena with me', bytes, now()).run();

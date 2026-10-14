@@ -1,7 +1,7 @@
 // Room: one Durable Object per room name. It relays live match traffic between the players in it.
 // Each player keeps one presence object (board snapshot, nickname, scores); the room merges patches
 // and forwards the whole object to everyone else. Topic messages (`start`) go to everyone, sender included.
-const MAX_PRESENCE = 4096, MAX_MSG = 8192, MAX_PEERS = 8, RATE = 60; // messages per second per player
+const MAX_PRESENCE = 4096, MAX_MSG = 8192, MAX_PEERS = 6, RATE = 20; // matches are up to 6 players; normal play sends ~10 messages/s
 
 export class Room {
   constructor(ctx, env) {
@@ -43,6 +43,7 @@ export class Room {
       this.presence.set(a.peer, cur);
       // a small copy survives hibernation, so late joiners still see names in the lobby
       a.lite = { nick: cur.nick, st: cur.st, mid: cur.mid, jt: cur.jt, rules: cur.rules, rbots: cur.rbots, size: cur.size };
+      if (JSON.stringify(a.lite).length > 1200) a.lite = { nick: String(cur.nick || '').slice(0, 20), st: cur.st, mid: cur.mid, jt: cur.jt };   // attachments must stay small
       ws.serializeAttachment(a);
       this.broadcast({ t: 'p', peer: a.peer, d: cur }, ws);
     } else if (m && m.t === 'e' && typeof m.topic === 'string' && /^[a-z][a-z0-9_.-]{0,47}$/.test(m.topic)) {
