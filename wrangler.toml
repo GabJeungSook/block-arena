@@ -11,7 +11,7 @@ run_worker_first = ["/api/*", "/auth/*", "/room/*", "/deletion"]
 [[d1_databases]]
 binding = "DB"
 database_name = "block-arena"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "f707928b-e00e-415c-815d-98ba49cfe628"
 migrations_dir = "migrations"
 
 [[durable_objects.bindings]]
