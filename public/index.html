@@ -2027,13 +2027,11 @@ function renderAchGrid() {
 const canShare = () => LIVE && !!account.user;
 const gameUrl = (q = '') => `${location.origin}/${q}`;
 const isMobile = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-function fbShareUrl(link, hashtag = '#BlockArena') {
-  if (account.appId) return `https://www.facebook.com/dialog/share?${new URLSearchParams({ app_id: account.appId, display: isMobile() ? 'touch' : 'popup', href: link, hashtag, redirect_uri: gameUrl('?shared=1') })}`;
-  return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`;
-}
+// sharer.php works for any public page and needs no app settings; Facebook reads the card from the link's preview tags
+function fbShareUrl(link) { return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`; }
 function messengerUrl(link) {
   if (isMobile()) return `fb-messenger://share/?link=${encodeURIComponent(link)}`;
-  return `https://www.facebook.com/dialog/send?${new URLSearchParams({ app_id: account.appId || '', link, redirect_uri: gameUrl('?shared=1') })}`;
+  return `https://www.facebook.com/dialog/send?${new URLSearchParams({ app_id: account.appId || '', link, redirect_uri: location.origin + '/' })}`;
 }
 function openPopup() { try { return window.open('', 'fbshare', 'width=640,height=640'); } catch (e) { return null; } }
 function go(w, url) { if (w && !w.closed) w.location.href = url; else location.href = url; }
