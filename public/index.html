@@ -338,6 +338,71 @@ input:not([type]),input[type=text],select{background:var(--navy);border-color:va
   .rankchip .rbadge{width:34px;height:38px;font-size:10px}
   #ovStats .hstats{grid-template-columns:1fr 1fr}
 }
+/* ---- rank emblems + rankings page ---- */
+.remb{display:inline-block;line-height:0;flex:none}
+.remb svg{display:block;overflow:visible}
+.rankchip .remb{filter:drop-shadow(0 0 7px color-mix(in srgb, var(--rc) 50%, transparent))}
+.rankpage{width:min(780px,100%);gap:18px}
+.myrank{--rc:#c98b5a;display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;background:var(--navy);border:3px solid var(--rc);padding:16px 20px;box-shadow:6px 6px 0 var(--ink),0 0 36px -6px color-mix(in srgb, var(--rc) 45%, transparent)}
+.myrank .big{filter:drop-shadow(0 0 16px color-mix(in srgb, var(--rc) 55%, transparent))}
+.myrank .lab{color:var(--rc)}
+.myrank h3{font-family:var(--display);font-weight:900;font-size:26px;text-transform:uppercase;margin:2px 0 4px;letter-spacing:.01em;line-height:1.05}
+.myrank .pos{font-family:var(--mono);color:var(--muted);font-size:13px}
+.myrank .pos b{color:var(--fg);font-size:15px}
+.myrank .bar{height:10px;margin-top:10px}
+.myrank .bar i{background:var(--rc)}
+.myrank .togo{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:6px}
+.myrank .next{display:flex;flex-direction:column;align-items:center;gap:4px;opacity:.9}
+.myrank .next small{font-family:var(--display);font-size:8px;letter-spacing:.14em;color:var(--muted)}
+.ladder{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;position:relative}
+.ladder::before{content:"";position:absolute;left:8%;right:8%;top:24px;height:3px;background:var(--line)}
+.rung{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 2px 8px;text-align:center}
+.rung b{font-family:var(--display);font-size:10px;letter-spacing:.06em;text-transform:uppercase}
+.rung small{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.rung.locked .remb{opacity:.32;filter:grayscale(.8)}
+.rung.locked b{color:var(--muted)}
+.rung.cur{background:var(--navy);box-shadow:inset 0 -3px 0 var(--rc)}
+.rung.cur b{color:var(--rc)}
+.lbhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-bottom:3px solid var(--line);padding-bottom:6px;flex-wrap:wrap}
+.lbhead small{color:var(--muted);font-size:13px}
+.podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:end}
+.podium:empty{display:none}
+.pod{--mc:#ffd21a;display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--navy);border:3px solid var(--mc);padding:14px 8px 12px;text-align:center;min-width:0;box-shadow:5px 5px 0 var(--ink)}
+.pod.p1{--mc:#ffd21a;padding-block:30px 24px;box-shadow:5px 5px 0 var(--ink),0 0 28px -6px rgba(255,210,26,.5)}
+.pod.p2{--mc:#cfd6e6}
+.pod.p3{--mc:#c98b5a;padding-block:8px}
+.pod .medal{margin:0;width:26px;height:26px;background:var(--mc);border-color:var(--mc);color:var(--navy);font-size:12px}
+.pod .ava{width:52px;height:52px}
+.pod.p1 .ava{width:64px;height:64px}
+.pod .nm{font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pod .rk{display:flex;align-items:center;gap:6px;font-family:var(--display);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.pod .rp{font-family:var(--mono);font-weight:600}
+.ava{width:34px;height:34px;object-fit:cover;background:var(--panel-2);border:2px solid var(--fg);display:grid;place-items:center;font-family:var(--display);font-weight:900;font-size:13px;color:var(--fg);flex:none}
+.lb{border-top:0;max-height:min(40vh,380px)}
+.lb li{grid-template-columns:34px 38px minmax(0,1fr) auto 72px;padding:8px 6px}
+.lb .rk{display:flex;align-items:center;gap:6px;font-family:var(--display);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.lb .empty{display:block;padding:18px 6px;color:var(--muted);text-align:center;grid-column:1/-1}
+.lbme{margin:0;font-family:var(--mono);font-size:13px;color:var(--muted)}
+.lbme b{color:var(--fg)}
+.rphow summary{font-family:var(--display);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.rptable{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:0 16px;margin:10px 0;font-size:13px}
+.rptable span{padding:6px 0;border-bottom:1px solid var(--line)}
+.rptable .h{font-family:var(--display);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.rptable .up{color:var(--good);font-family:var(--mono);text-align:right}
+.rptable .down{color:var(--red);font-family:var(--mono);text-align:right}
+.rpres .remb{grid-row:1/3}
+@media (max-width:560px){
+  .myrank{grid-template-columns:auto 1fr;padding:14px}
+  .myrank .next{display:none}
+  .myrank h3{font-size:20px}
+  .ladder{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .ladder::before{display:none}
+  .lb li{grid-template-columns:28px 34px minmax(0,1fr) 64px}
+  .lb .rk span{display:none}
+  .rptable{grid-template-columns:1fr;gap:0}
+  .rptable .h:not(:first-child){display:none}
+  .rptable .up,.rptable .down{text-align:left;border-bottom:0;padding:0}
+}
 @media (pointer:coarse){.touch.show{display:grid}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -365,7 +430,7 @@ input:not([type]),input[type=text],select{background:var(--navy);border-color:va
         <div class="hright">
           <button type="button" class="hchip rankchip" id="hRankRow" aria-label="Your rank and the rankings">
             <span class="cinfo r"><b id="hRankName">Bronze III</b><small id="hRankRp">0 / 100 RP</small><span class="bar"><i id="hRankBar" style="width:0%"></i></span></span>
-            <i class="rbadge" id="hRankBadge"><span>B III</span></i>
+            <span class="remb" id="hRankBadge"></span>
           </button>
           <div id="hLoginMini"></div>
         </div>
@@ -567,13 +632,25 @@ input:not([type]),input[type=text],select{background:var(--navy);border-color:va
     </div>
 
     <div class="overlay" id="ovRank" hidden>
-      <div class="card result">
+      <div class="card rankpage">
         <div class="menuhead"><button type="button" class="ghostbtn sm" data-back>← Back</button><h2>Rankings</h2></div>
-        <p class="sub" id="lbNote">Top players by rank points.</p>
+        <section class="myrank" id="myRank"></section>
+        <div class="ladder" id="tierList"></div>
+        <div class="lbhead"><span class="lab">Top players</span><small id="lbNote"></small></div>
+        <div class="podium" id="podium"></div>
         <ol class="lb" id="lbList"></ol>
-        <p class="sub" id="lbMe"></p>
-        <div class="tierlist" id="tierList"></div>
-        <p class="muted">Win 1 vs 1 and arena matches against CPUs or real players to earn rank points (RP). Harder CPUs give more. Every 100 RP is a division; once you reach a new tier you can't drop out of it. Quitting a ranked match counts as a loss.</p>
+        <p class="lbme" id="lbMe"></p>
+        <details class="rphow">
+          <summary>How rank points work</summary>
+          <div class="rptable">
+            <span class="h">Match</span><span class="h">Win</span><span class="h">Loss</span>
+            <span>1 vs 1 CPU · Easy / Normal / Hard / Expert</span><span class="up">+5 / +10 / +15 / +20</span><span class="down">−12 / −10 / −8 / −6</span>
+            <span>Arena vs CPUs · 1st / 2nd place</span><span class="up">up to +32</span><span class="down">lower places lose up to −12</span>
+            <span>Online · 1 vs 1</span><span class="up">+20</span><span class="down">−16</span>
+            <span>Online · 6 players, 1st to 6th</span><span class="up">+30 / +16 / +5</span><span class="down">−5 / −12 / −18</span>
+          </div>
+          <p class="muted">Every 100 RP is a division (III → II → I). Once you reach a tier you can't drop out of it. Losses in Bronze are halved. Quitting a ranked match counts as a loss, and matches under 20 seconds don't count.</p>
+        </details>
       </div>
     </div>
 
@@ -1283,8 +1360,44 @@ class CPU {
 const need = lvl => 100 + (lvl - 1) * 60;
 function levelOf(xp) { let l = 1; while (xp >= need(l)) { xp -= need(l); l++; } return { lvl: l, into: xp, need: need(l) }; }
 const TITLES = ['Rookie', 'Rookie', 'Stacker', 'Stacker', 'Digger', 'Digger', 'Bomber', 'Bomber', 'Ace', 'Ace', 'Master'];
+// ---- rank emblems: flat SVG, one shape per tier, white sticker outline + hard shadow like the logo ----
+const ROMAN = ['', 'I', 'II', 'III'];
+function rankIcon(tier, div = 0, size = 44) {
+  tier = Math.max(0, Math.min(5, tier | 0));
+  const c = TIERS[tier].color, d = shade(c, -.5), l = shade(c, .5), n = '#0a0f24', W = '#ffffff', ink = '#010207';
+  const SHIELD = 'M32 4 L57 13 V35 C57 51 46 61 32 67 C18 61 7 51 7 35 V13 Z';
+  const INNER = 'M32 12 L50 18.5 V35 C50 47 42 54.5 32 59 C22 54.5 14 47 14 35 V18.5 Z';
+  const GEM = 'M17 8 H47 L60 26 L32 64 L4 26 Z';
+  const CROWN = 'M7 54 L4 16 L20 30 L32 6 L44 30 L60 16 L57 54 Z';
+  const star = (cx, cy, R, r) => 'M' + Array.from({ length: 10 }, (_, i) => { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r : R; return `${(cx + Math.cos(a) * rr).toFixed(1)} ${(cy + Math.sin(a) * rr).toFixed(1)}`; }).join(' L') + ' Z';
+  const chev = y => `<path d="M20 ${y + 9} L32 ${y} L44 ${y + 9}" fill="none" stroke="${l}" stroke-width="5.5" stroke-linejoin="miter" stroke-linecap="square"/><path d="M20 ${y + 9} L32 ${y} L44 ${y + 9}" fill="none" stroke="${n}" stroke-width="1.5" stroke-linejoin="miter" transform="translate(0 4.5)" opacity=".5"/>`;
+  const sil = tier === 4 ? GEM : tier === 5 ? CROWN : SHIELD;
+  let back = '', body = '', sym = '';
+  if (tier === 3) {
+    // Platinum: wings behind the shield
+    const wing = 'M10 18 L-6 12 L-2 22 L-9 24 L-1 31 L-7 35 L5 40 L9 34 Z';
+    back = [wing, wing].map((w, i) => `<g transform="${i ? 'translate(64 0) scale(-1 1)' : ''}"><path d="${w}" fill="${ink}" transform="translate(3 4)"/><path d="${w}" fill="${W}" stroke="${W}" stroke-width="5" stroke-linejoin="round"/><path d="${w}" fill="${l}" stroke="${n}" stroke-width="2.5" stroke-linejoin="round"/></g>`).join('');
+  }
+  if (tier <= 3) {
+    body = `<path d="${SHIELD}" fill="${c}" stroke="${n}" stroke-width="3" stroke-linejoin="round"/><path d="${INNER}" fill="${d}"/>`;
+    if (tier === 0) sym = chev(29);
+    if (tier === 1) sym = chev(23) + chev(35);
+    if (tier === 2) sym = `<path d="${star(32, 36, 13, 5.6)}" fill="${l}" stroke="${n}" stroke-width="2" stroke-linejoin="round"/>`;
+    if (tier === 3) sym = `<path d="M32 22 L42 35 L32 50 L22 35 Z" fill="${l}" stroke="${n}" stroke-width="2" stroke-linejoin="round"/><path d="M22 35 H42 M32 22 V50" stroke="${c}" stroke-width="1.5"/>`;
+  } else if (tier === 4) {
+    body = `<path d="${GEM}" fill="${c}" stroke="${n}" stroke-width="3" stroke-linejoin="round"/><path d="M17 8 H47 L41 26 H23 Z" fill="${l}"/><path d="M4 26 L23 26 L32 64 Z" fill="${d}"/><path d="M4 26 H60 M23 26 L32 64 L41 26 M17 8 L23 26 M47 8 L41 26 M32 8 L23 26 M32 8 L41 26" fill="none" stroke="${n}" stroke-width="1.6" stroke-linejoin="round"/>`;
+  } else {
+    body = `<path d="${CROWN}" fill="${c}" stroke="${n}" stroke-width="3" stroke-linejoin="round"/><path d="M7 54 L5.5 38 H58.5 L57 54 Z" fill="${d}"/><rect x="5" y="54" width="54" height="9" fill="${l}" stroke="${n}" stroke-width="3"/>` +
+      [[4, 16], [32, 6], [60, 16]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="4.6" fill="${W}" stroke="${n}" stroke-width="2.5"/>`).join('') +
+      `<path d="M32 40 L37 46 L32 52 L27 46 Z" fill="${W}" stroke="${n}" stroke-width="2"/>`;
+  }
+  const ribbon = div ? `<g><path d="M16 60 H48 L45 66 L48 72 H16 L19 66 Z" fill="${ink}" transform="translate(2 3)"/><path d="M16 60 H48 L45 66 L48 72 H16 L19 66 Z" fill="${n}" stroke="${W}" stroke-width="2" stroke-linejoin="round"/><text x="32" y="69.4" text-anchor="middle" font-family="Unbounded, 'Arial Black', sans-serif" font-weight="900" font-size="8.5" fill="${c}">${ROMAN[div]}</text></g>` : '';
+  const h = Math.round(size * 84 / 84);
+  return `<svg viewBox="-10 -4 84 84" width="${size}" height="${h}" role="img" aria-label="${TIERS[tier].name}${div ? ' ' + ROMAN[div] : ''}">${back}<path d="${sil}" fill="${ink}" transform="translate(3 4)"/><path d="${sil}" fill="${W}" stroke="${W}" stroke-width="7" stroke-linejoin="round"/>${body}${sym}${ribbon}</svg>`;
+}
+const rankIconFor = (rp, size) => { const r = rankOf(rp); return rankIcon(r.tier, r.div, size); };
 function rankBadge(el, rp) {
-  const r = rankOf(rp); el.style.setProperty('--rc', r.color); el.querySelector('span').textContent = r.short; el.title = r.name;
+  const r = rankOf(rp); el.innerHTML = rankIconFor(rp, 46); el.title = r.name; el.closest('.rankchip')?.style.setProperty('--rc', r.color);
 }
 function localRp() { return store.get('rp', 0); }
 function myRp() { return LIVE ? (account.user ? account.user.rp : 0) : localRp(); }
@@ -1595,7 +1708,7 @@ function showRankResult(before, res) {
   box.hidden = false;
   box.style.setProperty('--rc', r1.color);
   const pct = r => r.need ? r.into / r.need * 100 : 100;
-  box.innerHTML = `<i class="rbadge" style="--rc:${r1.color}"><span>${r1.short}</span></i><div><b>${r1.name}</b><br><small class="muted" style="font-family:var(--mono)">${r1.need ? `${r1.into} / ${r1.need} RP` : `${res.rp} RP`}</small></div>` +
+  box.innerHTML = `<span class="remb">${rankIconFor(res.rp, 52)}</span><div><b>${r1.name}</b><br><small class="muted" style="font-family:var(--mono)">${r1.need ? `${r1.into} / ${r1.need} RP` : `${res.rp} RP`}</small></div>` +
     `<span class="delta ${res.delta > 0 ? 'up' : res.delta < 0 ? 'down' : ''}">${res.delta > 0 ? '+' : ''}${res.delta} RP</span>` +
     `<div class="bar"><i style="width:${r0.name === r1.name ? pct(r0) : (res.delta > 0 ? 0 : 100)}%"></i></div>` +
     (res.promoted ? `<div class="banner up">Promoted to ${r1.name}</div>` : res.demoted ? `<div class="banner down">Dropped to ${r1.name}</div>` : '');
@@ -1898,27 +2011,44 @@ $('btnLogout').onclick = () => { location.href = '/auth/logout'; };
 $('btnDelAcct').onclick = () => { $('delConfirm').hidden = false; };
 $('btnDelYes').onclick = async () => { try { await api.call('/api/account', 'DELETE'); } catch (e) {} account.user = null; location.href = '/'; };
 $('hRankings').onclick = () => openRankings();
+function renderMyRank(position, total) {
+  const rp = myRp(), r = rankOf(rp), box = $('myRank');
+  box.style.setProperty('--rc', r.color);
+  const nextRp = r.need ? rp - r.into + r.need : null, nr = nextRp != null ? rankOf(nextRp) : null;
+  const where = !LIVE ? 'Saved in this browser (preview)' : !account.user ? 'Sign in to get ranked' : position ? `<b>#${position}</b>${total ? ` of ${total}` : ''} on the leaderboard` : 'Play a ranked match to get placed';
+  box.innerHTML = `<span class="remb big">${rankIconFor(rp, 96)}</span>
+    <div><span class="lab">Your rank</span><h3>${r.name}</h3><div class="pos">${where}</div>
+      <div class="bar"><i style="width:${r.need ? r.into / r.need * 100 : 100}%"></i></div>
+      <div class="togo">${r.need ? `${r.into} / ${r.need} RP · ${r.need - r.into} to ${nr.name}` : `${rp} RP · top tier`}</div></div>
+    ${nr ? `<div class="next"><span class="remb">${rankIcon(nr.tier, nr.div, 44)}</span><small>NEXT</small></div>` : ''}`;
+  const cur = r.tier;
+  $('tierList').innerHTML = TIERS.map((t, i) => `<div class="rung${i < cur ? ' done' : i === cur ? ' cur' : ' locked'}" style="--rc:${t.color}"><span class="remb">${rankIcon(i, 0, 46)}</span><b>${t.name}</b><small>${i < 5 ? i * 300 : MASTER_RP}+ RP</small></div>`).join('');
+}
+const avatar = (p, cls = 'ava') => p.pic ? `<img class="${cls}" alt="" src="${escapeHtml(p.pic)}" referrerpolicy="no-referrer">` : `<span class="${cls}">${escapeHtml((p.name || '?')[0].toUpperCase())}</span>`;
 async function openRankings() {
   show('ovRank');
-  $('tierList').innerHTML = TIERS.map((t, i) => `<span><i class="rbadge sm" style="--rc:${t.color}"><span>${t.name[0]}</span></i>${t.name}${i < 5 ? ` ${i * 300}` : ` ${MASTER_RP}+`}</span>`).join('');
-  const list = $('lbList');
+  renderMyRank(null, null);
+  const list = $('lbList'), pod = $('podium');
+  pod.innerHTML = ''; $('lbMe').innerHTML = '';
   if (!LIVE) {
-    const r = rankOf(localRp());
-    list.innerHTML = `<li class="me"><span class="pos">—</span><span class="av">YOU</span><span class="nm">You (this browser)</span><i class="rbadge sm" style="--rc:${r.color}"><span>${r.short}</span></i><span class="rp">${localRp()} RP</span></li>`;
-    $('lbNote').textContent = 'The global leaderboard goes live once the game is deployed with accounts.';
-    $('lbMe').textContent = '';
+    $('lbNote').textContent = 'Goes live once the game is deployed';
+    list.innerHTML = '<li><span class="empty">The global leaderboard appears here on the live site, where players sign in with Facebook.</span></li>';
     return;
   }
-  list.innerHTML = '<li><span></span><span></span><span class="nm">Loading…</span></li>';
+  $('lbNote').textContent = 'Loading…';
+  list.innerHTML = '';
   try {
     const d = await api.call('/api/leaderboard?limit=100');
-    list.innerHTML = d.top.length ? d.top.map(p => {
-      const r = rankOf(p.rp), me = account.user && p.id === account.user.id;
-      return `<li class="${me ? 'me' : ''}"><span class="pos">${p.position}</span>${p.pic ? `<img alt="" src="${escapeHtml(p.pic)}" referrerpolicy="no-referrer">` : `<span class="av">${escapeHtml(p.name[0] || '?')}</span>`}<span class="nm">${escapeHtml(p.name)}</span><i class="rbadge sm" style="--rc:${r.color}" title="${r.name}"><span>${r.short}</span></i><span class="rp">${p.rp} RP</span></li>`;
-    }).join('') : '<li><span></span><span></span><span class="nm">No ranked players yet. Win a ranked match to be first.</span></li>';
-    $('lbNote').textContent = 'Top 100 players by rank points.';
-    $('lbMe').textContent = d.me ? (d.me.position ? `You are #${d.me.position} · ${d.me.rank} · ${d.me.rp} RP` : 'Play a ranked match to get on the board.') : 'Sign in with Facebook to appear on the leaderboard.';
-  } catch (e) { list.innerHTML = '<li><span></span><span></span><span class="nm">Couldn\'t load the leaderboard. Check your connection and try again.</span></li>'; }
+    renderMyRank(d.me?.position || null, null);
+    $('lbNote').textContent = d.top.length ? `${d.top.length} ranked player${d.top.length === 1 ? '' : 's'}` : '';
+    const isMe = p => account.user && p.id === account.user.id;
+    const top3 = d.top.slice(0, 3), order = [1, 0, 2].filter(i => top3[i]);
+    pod.innerHTML = order.map(i => { const p = top3[i], r = rankOf(p.rp); return `<div class="pod p${i + 1}${isMe(p) ? ' me' : ''}"><i class="medal m${i + 1}">${i + 1}</i>${avatar(p)}<span class="nm">${escapeHtml(p.name)}${isMe(p) ? ' (you)' : ''}</span><span class="rk"><span class="remb">${rankIconFor(p.rp, 26)}</span>${r.name}</span><span class="rp">${p.rp} RP</span></div>`; }).join('');
+    const rest = d.top.slice(3);
+    list.innerHTML = d.top.length === 0 ? '<li><span class="empty">No ranked players yet. Win a ranked match to claim #1.</span></li>'
+      : rest.map(p => { const r = rankOf(p.rp); return `<li class="${isMe(p) ? 'me' : ''}"><span class="pos">${p.position}</span>${avatar(p)}<span class="nm">${escapeHtml(p.name)}</span><span class="rk"><span class="remb">${rankIconFor(p.rp, 24)}</span><span>${r.name}</span></span><span class="rp">${p.rp} RP</span></li>`; }).join('');
+    $('lbMe').innerHTML = !account.user ? 'Sign in with Facebook to appear on the leaderboard.' : d.me?.position ? (d.me.position > 100 ? `You're <b>#${d.me.position}</b> · ${d.me.rp} RP. Reach the top 100 to show up here.` : '') : 'Win a ranked match to get on the board.';
+  } catch (e) { $('lbNote').textContent = ''; list.innerHTML = '<li><span class="empty">Couldn\'t load the leaderboard. Check your connection and try again.</span></li>'; }
 }
 $('btnSetReset').onclick = () => { const m = settings.muted; Object.assign(settings, DEFAULTS, { muted: m }); saveSettings(); syncSettingsUI(); };
 
