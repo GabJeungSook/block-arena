@@ -121,6 +121,9 @@ kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-b
 .settings label{display:flex;justify-content:space-between;font-weight:700}
 .settings output{color:var(--muted);font-family:var(--mono);font-size:13px;font-weight:500}
 .settings .tog{justify-content:flex-start;gap:10px;align-items:center;cursor:pointer}
+.settings .shelp{margin:-4px 0 4px;font-size:12px;line-height:1.35}
+.settings .sens button{flex:1}
+#sSensTxt{font-size:12px;margin-top:-2px}
 input[type=range]{width:100%;accent-color:var(--accent);height:22px}
 input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent)}
 .muted{color:var(--muted);margin:0;font-size:14px}
@@ -182,6 +185,7 @@ select{width:auto}
 .touch button{height:56px;font-size:16px;border-radius:3px;touch-action:none;box-shadow:3px 3px 0 var(--ink)}
 .touch button.on{background:var(--panel-2);border-color:var(--fg);box-shadow:none;transform:translate(3px,3px)}
 .touch .drop{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.touch .pwbtn{grid-column:1/-1;height:40px;font-size:14px;background:#2a1450;border-color:#b04dff;color:#fff}
 .tb-actions button{white-space:nowrap}
 @media (max-width:560px){
   .brand{font-size:0;gap:0}
@@ -229,6 +233,9 @@ button[aria-pressed="true"]{border-color:var(--accent)}
 .mode[data-mode="classic"]{--mc:var(--accent)}
 .modes.two{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media (max-width:560px){.modes.two{grid-template-columns:1fr}}
+.mode.pwmode{--mc:#b04dff;border-color:#5b2a8a}
+.mode.pwmode .ico{color:#ffd21a}
+.chip.new{background:#b04dff;color:#fff;border-color:#b04dff}
 .mode.slim{flex-direction:column;align-items:flex-start;gap:6px}
 .mode.slim small{flex:0 0 auto}
 .hbtns{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
@@ -510,6 +517,17 @@ body{background:var(--bg)}
 .sitem.prem .sinfo b{color:var(--gold)}
 .premtag{position:absolute;top:8px;left:8px;z-index:1;font-family:var(--display);font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink);background:var(--gold);padding:3px 7px;border:2px solid var(--navy);box-shadow:2px 2px 0 var(--ink)}
 #shopMsg.bad{color:var(--red)}
+.shoptoast{position:fixed;left:50%;top:18px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:12px;padding:12px 18px 12px 14px;background:var(--panel);border:3px solid var(--good);box-shadow:0 0 0 2px var(--navy),5px 5px 0 2px var(--ink);max-width:calc(100vw - 32px);animation:toastIn .28s cubic-bezier(.2,1.4,.4,1)}
+.shoptoast svg{width:30px;height:30px;flex:none;color:var(--navy);background:var(--good);padding:4px}
+.shoptoast span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.shoptoast b{font-family:var(--display);font-size:15px;color:var(--good)}
+.shoptoast small{color:var(--fg);font-size:13px}
+.shoptoast.bad{border-color:var(--red)}.shoptoast.bad svg{background:var(--red)}.shoptoast.bad b{color:var(--red)}
+@keyframes toastIn{from{transform:translate(-50%,-18px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+.sitem.justbought{outline:3px solid var(--good);outline-offset:-3px;animation:boughtPop .5s ease-out}
+.sitem .boughttag{position:absolute;top:8px;right:8px;z-index:1;font-family:var(--display);font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--navy);background:var(--good);padding:3px 7px;border:2px solid var(--navy)}
+@keyframes boughtPop{0%{transform:scale(.96)}60%{transform:scale(1.02)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.shoptoast,.sitem.justbought{animation:none}}
 #shopNote{margin:0}
 @media (max-width:560px){.shopgrid{grid-template-columns:1fr 1fr;gap:8px}.sinfo small{display:none}.coinchip .lab{display:none}}
 /* "How to earn coins" pop-up */
@@ -815,6 +833,7 @@ body{background:var(--bg)}
           <li><b>Blow up bombs to dig out.</b> Garbage rows carry a bomb. Land any piece on it and that row explodes.</li>
           <li><b>Top out, give a K.O.</b> If your stack reaches the top, your rival scores a K.O. and you keep playing.</li>
           <li><b>Win the clock.</b> After 2:00 the most K.O.s wins. Ties go to lines sent.</li>
+          <li><b>Power-ups</b> (Power-up Battle, and rooms that switch them on). Clear the line holding a glowing orb to collect one, then press <kbd>E</kbd> to use it. Shield, Clean Up, Bomb Piece and Power Surge help you; Ink Splat, Fog, Hold Lock and Speed Up hit your target. Never in ranked play.</li>
           <li><b>Classic is endless.</b> No rivals, no garbage. The speed rises every 10 lines; play until you top out and chase your high score.</li>
         </ol>
           <div class="keys">
@@ -825,6 +844,7 @@ body{background:var(--bg)}
               <dt><kbd>↑</kbd> <kbd>X</kbd></dt><dd>Rotate right</dd>
               <dt><kbd>Z</kbd> <kbd>Ctrl</kbd></dt><dd>Rotate left</dd>
               <dt><kbd>C</kbd> <kbd>Shift</kbd></dt><dd>Hold</dd>
+              <dt><kbd>E</kbd> <kbd>V</kbd></dt><dd>Use power-up</dd>
               <dt><kbd>P</kbd> <kbd>Esc</kbd></dt><dd>Pause</dd>
               <dt><kbd>T</kbd> <kbd>Tab</kbd></dt><dd>Switch target (arena). You can also tap a rival's board.</dd>
             </dl>
@@ -886,6 +906,10 @@ body{background:var(--bg)}
           <button class="mode pick" type="button" data-mode="survival" data-size="6">
             <span class="mhead"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-4.4-7-10.2C5 7.6 7.2 5.5 9.8 5.5c1 0 1.7.4 2.2 1 .5-.6 1.2-1 2.2-1 2.6 0 4.8 2.1 4.8 5.3C19 16.6 12 21 12 21z"/></svg><b>Last one standing</b><i class="chip">RANKED</i></span><small>6 players, 3 lives each. Outlast every CPU.</small>
             <span class="pips" aria-hidden="true"><i class="me"></i><i></i><i></i><i></i><i></i><i></i></span>
+          </button>
+          <button class="mode pick pwmode" type="button" data-mode="powerup">
+            <span class="mhead"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg><b>Power-ups</b><i class="chip new">NEW</i></span><small>4 players. Clear glowing orbs to grab power-ups. Unranked.</small>
+            <span class="pips" aria-hidden="true"><i class="me"></i><i></i><i></i><i></i></span>
           </button>
         </div>
         <div class="ranknote" id="rankNote" hidden><span id="rankNoteTxt">Ranked play needs you to sign in. You can still play every mode unranked.</span><button type="button" class="gbtn sm" id="btnRankLogin"><svg class="gico" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.1C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.2 0-11.5-4.1-13.4-9.8l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>Sign in to play ranked</button></div>
@@ -954,6 +978,7 @@ body{background:var(--bg)}
         <div class="shopgrid" id="shopGrid"></div>
         <p class="sub" id="shopMsg" role="status"></p>
       </div>
+      <div class="shoptoast" id="shopToast" role="status" aria-live="polite" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"/></svg><span><b id="shopToastT">Purchased!</b><small id="shopToastS"></small></span></div>
     </div>
 
     <div class="overlay" id="ovLobby" hidden>
@@ -1009,18 +1034,20 @@ body{background:var(--bg)}
           <label for="sMaster">Master volume <output id="sMasterOut"></output></label><input type="range" id="sMaster" min="0" max="100">
           <label for="sMusic">Music <output id="sMusicOut"></output></label><input type="range" id="sMusic" min="0" max="100">
           <label for="sSfx">Effects <output id="sSfxOut"></output></label><input type="range" id="sSfx" min="0" max="100">
-          <h3>Handling</h3>
-          <label for="sDas">Auto-repeat delay <output id="sDasOut"></output></label><input type="range" id="sDas" min="50" max="300" step="5">
-          <label for="sArr">Auto-repeat speed <output id="sArrOut"></output></label><input type="range" id="sArr" min="0" max="80">
+          <h3>Controls sensitivity</h3>
+          <div class="seg sens" id="sSens" role="group" aria-label="Sensitivity preset"><button type="button" data-sens="relaxed">Relaxed</button><button type="button" data-sens="normal">Normal</button><button type="button" data-sens="fast">Fast</button><button type="button" data-sens="pro">Pro</button></div>
+          <small class="muted" id="sSensTxt"></small>
+          <label for="sDas">Hold delay <output id="sDasOut"></output></label><input type="range" id="sDas" min="50" max="300" step="5" aria-describedby="sDasHelp"><small class="muted shelp" id="sDasHelp">How long you hold left or right before the piece starts sliding. Lower reacts faster.</small>
+          <label for="sArr">Slide speed <output id="sArrOut"></output></label><input type="range" id="sArr" min="0" max="80" aria-describedby="sArrHelp"><small class="muted shelp" id="sArrHelp">How fast it slides once it starts. Lower is faster; 0 jumps straight to the wall.</small>
+          <label for="sSdf">Soft drop speed <output id="sSdfOut"></output></label><input type="range" id="sSdf" min="5" max="41" aria-describedby="sSdfHelp"><small class="muted shelp" id="sSdfHelp">How fast ↓ (or the ▼ button) pulls the piece down.</small>
           <h3>Display</h3>
           <label class="tog" for="sGhost"><input type="checkbox" id="sGhost"> Ghost piece</label>
+          <label class="tog" for="sShake"><input type="checkbox" id="sShake"> Screen shake</label>
           <div id="setAcct" hidden>
             <h3>Account</h3>
             <div class="row"><button type="button" id="btnLogout">Log out</button><button type="button" class="danger" id="btnDelAcct">Delete my account</button></div>
             <p class="muted" id="delConfirm" hidden>This permanently deletes your rank and saved progress. <button type="button" class="danger sm" id="btnDelYes">Yes, delete everything</button></p>
           </div>
-          <h3>Rules</h3>
-          <label class="tog" for="sShake"><input type="checkbox" id="sShake"> Screen shake</label>
         </div>
         <div class="row"><button class="play" type="button" id="btnSetDone">Done</button><button class="ghostbtn" type="button" id="btnSetReset">Reset to defaults</button></div>
       </div>
@@ -1137,6 +1164,7 @@ body{background:var(--bg)}
   <div id="inviteToast" role="alert" hidden></div>
   <div class="qchat" id="qchat" hidden aria-label="Quick chat"></div>
   <div class="touch" id="touch">
+    <button type="button" data-a="power" class="pwbtn" id="tPower" hidden>⚡ Use power-up</button>
     <button type="button" data-a="hold">Hold</button>
     <button type="button" data-a="ccw" aria-label="Rotate left">↺</button>
     <button type="button" data-a="cw" aria-label="Rotate right">↻</button>
@@ -1272,9 +1300,10 @@ const COLS = 10, ROWS = 24, HIDDEN = 4, CELL = 24, TAU = Math.PI * 2;
 const LOCK_DELAY = 500, MAX_RESETS = 15;
 const BATTLE_MS = 120000;
 // Match rules. Every mode plays the standard rules; an online host can change them for their room.
-const STD_RULES = { type: 'battle', time: 120000, ko: 0, garbage: 1, speed: 'normal', chain: false, hold: true };   // ko 0 = 5 in 2P, 10 in 4P/6P
+const STD_RULES = { type: 'battle', pw: false, time: 120000, ko: 0, garbage: 1, speed: 'normal', chain: false, hold: true };   // ko 0 = 5 in 2P, 10 in 4P/6P
 const RULE_OPTS = {
   type: [['battle', 'K.O. battle'], ['race', 'Sprint race (40 lines)'], ['survival', 'Last one standing']],
+  pw: [[false, 'Off'], [true, 'On']],
   time: [[60000, '1:00'], [120000, '2:00'], [180000, '3:00'], [300000, '5:00'], [0, 'No limit']],
   ko: [[0, 'Standard (5 / 10)'], [3, '3'], [5, '5'], [7, '7'], [10, '10'], [15, '15']],
   garbage: [[.5, '× 0.5 (gentle)'], [1, '× 1'], [1.5, '× 1.5'], [2, '× 2 (brutal)']],
@@ -1282,11 +1311,12 @@ const RULE_OPTS = {
   chain: [[false, 'One row per hit'], [true, 'Chain stacked bombs']],
   hold: [[true, 'On'], [false, 'Off']],
 };
-const RULE_LABEL = { type: 'Game type', time: 'Match time', ko: 'K.O.s to win', garbage: 'Garbage sent', speed: 'Fall speed', chain: 'Bombs', hold: 'Hold' };
+const RULE_LABEL = { type: 'Game type', pw: 'Power-ups', time: 'Match time', ko: 'K.O.s to win', garbage: 'Garbage sent', speed: 'Fall speed', chain: 'Bombs', hold: 'Hold' };
 function cleanRules(x) {
   const out = { ...STD_RULES };
   if (x && typeof x === 'object') for (const k in RULE_OPTS) { const v = RULE_OPTS[k].find(o => o[0] === x[k]); if (v) out[k] = v[0]; }
   if (!out.time && !out.ko) out.ko = 0;          // "no limit" still ends at the K.O. cap
+  if (out.type === 'race') out.pw = false;       // a race sends no garbage, so power-ups have nothing to work with
   return out;
 }
 const isStdRules = x => Object.keys(STD_RULES).every(k => x[k] === STD_RULES[k]);
@@ -1296,6 +1326,7 @@ const matchMs = () => rules().time;
 const gtype = () => rules().type || 'battle';
 const LIVES = 3;
 const SURVIVAL_RULES = { ...STD_RULES, type: 'survival', time: 0 };
+const PW_RULES = { ...STD_RULES, pw: true };     // Power-up Battle: 4P arena, unranked
 // the number a board is judged by in this game type: [label, shown value, value for bars]
 function statOf(p) {
   const t = gtype(), lv = p.lives ?? LIVES;
@@ -1367,7 +1398,7 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem('stackduel.' + k); if (v != null) return JSON.parse(v); } catch (e) {} return k in memStore ? JSON.parse(memStore[k]) : d; },
   set(k, v) { memStore[k] = JSON.stringify(v); try { localStorage.setItem('stackduel.' + k, memStore[k]); } catch (e) {} },
 };
-const DEFAULTS = { master: .8, music: .5, sfx: .8, das: 140, arr: 33, ghost: true, shake: true, muted: false, bombChain: false, nick: '' };
+const DEFAULTS = { master: .8, music: .5, sfx: .8, das: 140, arr: 33, sdf: 20, ghost: true, shake: true, muted: false, bombChain: false, nick: '' };
 const settings = Object.assign({}, DEFAULTS, store.get('settings', {}));
 
 // ================= audio =================
@@ -1609,6 +1640,61 @@ function musicStep(st, at, intense, s16) {
   if (phrase === 1 && s % 2 === 0) { const n = LEAD[bar][s / 2]; if (n) tone({ ...o, f: mf(n), dur: s16 * 1.8, type: 'square', vol: .04, cutoff: 3500, attack: .005, wet: .25, drive: true }); }
 }
 
+// ================= power-ups =================
+// Some pieces carry a glowing orb in one cell. Clear the line holding the orb and you collect a random
+// power-up (2 slots). Press E (or tap the power button) to use the first one. Self power-ups help you;
+// the rest hit whoever you're attacking. Shield blocks the next attack or power-up aimed at you.
+// Power-ups only appear in Power-up Battle and in online rooms that switch them on, never in ranked play.
+const PW = {
+  shield: { name: 'SHIELD',      self: true, col: '#22d3ff', ms: 10000, tip: 'Blocks the next attack or power-up aimed at you (10 s)' },
+  clean:  { name: 'CLEAN UP',    self: true, col: '#3fd62a',            tip: 'Removes your bottom 3 garbage rows' },
+  bomb:   { name: 'BOMB PIECE',  self: true, col: '#ffcc1a',            tip: 'Your next piece explodes where it lands and blasts 3 rows' },
+  surge:  { name: 'POWER SURGE', self: true, col: '#ff8f1a', ms: 10000, tip: 'Your attacks send 50% more garbage (10 s)' },
+  ink:    { name: 'INK SPLAT',   col: '#b04dff', ms: 5000,  hit: 'INKED!',      tip: 'Splats ink over your target\'s stack (5 s)' },
+  fog:    { name: 'FOG',         col: '#93a0cf', ms: 8000,  hit: 'FOGGED!',     tip: 'Hides your target\'s Next pieces (8 s)' },
+  lock:   { name: 'HOLD LOCK',   col: '#ff2b3b', ms: 10000, hit: 'HOLD LOCKED!', tip: 'Turns off your target\'s Hold (10 s)' },
+  speed:  { name: 'SPEED UP',    col: '#ffd21a', ms: 6000,  hit: 'SPEED UP!',   tip: 'Your target\'s pieces fall twice as fast (6 s)' },
+};
+const PW_KEYS = Object.keys(PW), PW_SLOTS = 2, ORB_CHANCE = 1 / 9;
+// o is the index of a mino in the spawn rotation; this finds where that same mino sits after r turns
+function orbCell(t, r, o) {
+  const n = SHAPES[t].length; let [x, y] = CELLS[t][0][o] || [0, 0];
+  for (let i = 0; i < r; i++) [x, y] = [n - 1 - y, x];
+  return [x, y];
+}
+const pwOn = () => !!rules().pw && game.mode !== 'demo';
+const rollOrb = p => pwOn() && p.versus && Math.random() < ORB_CHANCE ? (Math.random() * 4 | 0) : -1;
+function pwSfx(kind) {
+  if (kind === 'get') [0, 4, 7, 12].forEach((st, i) => tone({ f: mf(76 + st), dur: .12, type: 'square', vol: .05, cutoff: 6000, delay: i * .045, wet: .3 }));
+  else if (kind === 'use') { tone({ f: 300, to: 1800, dur: .2, type: 'sawtooth', vol: .08, cutoff: 6000, drive: true }); hiss({ f: 1000, to: 8000, type: 'bandpass', q: 2, dur: .2, vol: .2 }); }
+  else if (kind === 'hit') { tone({ f: 700, to: 160, dur: .35, type: 'sawtooth', vol: .09, cutoff: 3000, cutoffTo: 300, drive: true }); hiss({ f: 3000, to: 300, dur: .3, vol: .2 }); }
+  else if (kind === 'block') sfx.blocked();
+}
+function inkBlobs() {
+  // a few big splats over the middle and lower board, where the stack is
+  return Array.from({ length: 5 }, () => ({ x: 1 + Math.random() * 8, y: 8 + Math.random() * 11, r: 1.2 + Math.random() * 1.1, d: Array.from({ length: 6 }, () => Math.random()) }));
+}
+// a power-up aimed at a player on this device (or one of this device's bots)
+function hexIn(to, k, from) {
+  if (!to || to.remote || to.out || !PW[k] || PW[k].self) return;
+  if (to.eff.shield > 0) {
+    to.eff.shield = 0; to.fx.push({ t: 'SHIELD BLOCKED', c: PW.shield.col, big: true, age: 0 });
+    if (to.human) pwSfx('block');
+    return;
+  }
+  to.eff[k] = PW[k].ms; if (k === 'ink') to.ink = inkBlobs();
+  to.fx.push({ t: PW[k].hit, c: PW[k].col, big: true, age: 0 }); to.hexT = 1;
+  if (from) to.lastHexBy = from;
+  if (to.human) pwSfx('hit');
+}
+// incoming garbage meets a raised shield: the whole attack is absorbed
+function shieldGarbage(dst, n) {
+  if (!(dst.eff?.shield > 0)) return false;
+  dst.eff.shield = 0; dst.fx.push({ t: 'SHIELD BLOCKED ' + n, c: PW.shield.col, big: true, age: 0 });
+  if (dst.human) pwSfx('block');
+  return true;
+}
+
 // ================= player =================
 let uid = 0;
 class Player {
@@ -1617,17 +1703,18 @@ class Player {
     this.board = emptyBoard(); this.bag = []; this.queue = []; this.hold = null; this.canHold = true;
     this.pending = []; this.combo = -1; this.maxCombo = 0; this.b2b = false; this.lines = 0; this.sent = 0; this.ko = 0; this.score = 0; this.level = 1;
     this.pieces = 0; this.piece = null; this.stun = 0; this.fx = []; this.pulse = 0; this.boom = 0; this.koT = 0; this.soft = false; this.hit = 0;
+    this.qo = []; this.holdO = -1; this.orbs = []; this.pw = []; this.eff = {}; this.ink = null; this.bombArm = false; this.pwLog = []; this.pwN = 0;
     this.fillQueue(); this.spawn();
   }
   fillQueue() {
     while (this.queue.length < 7) {
       if (!this.bag.length) { this.bag = ['I','O','T','S','Z','J','L']; for (let i = 6; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [this.bag[i], this.bag[j]] = [this.bag[j], this.bag[i]]; } }
-      this.queue.push(this.bag.pop());
+      this.queue.push(this.bag.pop()); this.qo.push(rollOrb(this));
     }
   }
-  spawn(t) {
-    if (!t) { t = this.queue.shift(); this.fillQueue(); this.qn = (this.qn || 0) + 1; }
-    const p = { t, r: 0, x: t === 'O' ? 4 : 3, y: 2 };
+  spawn(t, o = -1) {
+    if (!t) { t = this.queue.shift(); o = this.qo.shift() ?? -1; this.fillQueue(); this.qn = (this.qn || 0) + 1; }
+    const p = { t, r: 0, x: t === 'O' ? 4 : 3, y: 2, o };
     if (collideB(this.board, p.t, p.r, p.x, p.y)) { this.piece = null; this.topOut(); return; }
     if (!collideB(this.board, p.t, p.r, p.x, p.y + 1)) p.y++;
     this.piece = p; this.pid = ++uid; this.fallT = 0; this.lockT = 0; this.resets = 0; this.lowest = p.y; this.lastRot = false; this.lastKick = 0;
@@ -1655,8 +1742,9 @@ class Player {
   }
   holdPiece() {
     const p = this.piece; if (!p || !this.canHold || this.stun > 0 || !rules().hold) return;
-    const prev = this.hold; this.hold = p.t; this.canHold = false;
-    this.spawn(prev || undefined); this.canHold = false;
+    if (this.eff.lock > 0) { if (this.human) sfx.comboBreak(); return; }
+    const prev = this.hold, prevO = this.holdO; this.hold = p.t; this.holdO = p.o ?? -1; this.canHold = false;
+    this.spawn(prev || undefined, prev ? prevO : -1); this.canHold = false;
     if (this.human) sfx.hold();
   }
   hardDrop() {
@@ -1686,13 +1774,16 @@ class Player {
     this.piece = null; this.pieces++;
     if (above) { this.topOut(); return; }
     this.ev.push({ type: 'lock', t: p.t, cells });
-    const pre = this.board;
+    if (p.o >= 0) { const [ocx, ocy] = orbCell(p.t, p.r, p.o); if (p.y + ocy >= 0) this.orbs.push([p.x + ocx, p.y + ocy]); }
+    if (this.bombArm) { this.bombArm = false; this.bombLock(cells); return; }
+    const pre = this.board, preOrbs = this.orbs.map(o => o.slice());
     const res = resolveClears(pre, cells, rules().chain);
     this.board = res.board;
+    if (this.orbs.length) this.moveOrbs(res.cleared.map(r => r.i));
     const nl = res.n, nb = res.nb, n = nl + nb;
     if (res.cleared.length) {
       this.ev.push({ type: 'clear', rows: res.cleared });
-      this.anim = { pre, rows: new Map(res.cleared.map(r => [r.i, r.bomb])), t: 0, dur: res.nb ? 300 : 230 };
+      this.anim = { pre, orbs: preOrbs, rows: new Map(res.cleared.map(r => [r.i, r.bomb])), t: 0, dur: res.nb ? 300 : 230 };
     }
 
     let atk = 0; const labels = [];
@@ -1726,6 +1817,7 @@ class Player {
       if (ts) labels.push({ t: (ts === 1 ? 'MINI ' : '') + 'T-SPIN', c: COLORS.T });
       if (this.human) sfx.lock();
     }
+    if (this.versus && atk > 0 && this.eff.surge > 0) atk = Math.ceil(atk * 1.5);
     if (this.versus && atk > 0) {
       let blocked = 0;
       while (atk > 0 && this.pending.length) { const m = Math.min(atk, this.pending[0]); this.pending[0] -= m; atk -= m; blocked += m; if (!this.pending[0]) this.pending.shift(); }
@@ -1756,6 +1848,74 @@ class Player {
       const col = Math.random() * COLS | 0;
       this.board.shift(); const row = new Array(COLS).fill('G'); row[col] = 'B'; this.board.push(row);
     }
+    if (this.orbs.length) this.orbs = this.orbs.map(([x, y]) => [x, y - k]).filter(o => o[1] >= 0);
+  }
+  // orbs ride along with the stack: rows removed below an orb drop it down; an orb in a removed row is collected
+  moveOrbs(removed) {
+    if (!removed.length) return;
+    const gone = new Set(removed), keep = [];
+    for (const [x, y] of this.orbs) {
+      if (gone.has(y)) { this.gainPower(); continue; }
+      keep.push([x, y + removed.filter(i => i > y).length]);
+    }
+    this.orbs = keep;
+  }
+  gainPower() {
+    if (this.pw.length >= PW_SLOTS) { this.fx.push({ t: 'SLOTS FULL', c: C.muted, age: 0 }); return; }
+    const k = PW_KEYS[Math.random() * PW_KEYS.length | 0];
+    this.pw.push(k); this.pwGot = 1;
+    this.fx.push({ t: '+ ' + PW[k].name, c: PW[k].col, big: true, age: 0 });
+    if (this.human) pwSfx('get');
+  }
+  usePower() {
+    if (!this.pw.length || this.out || !game.running || game.countdown > 0 || game.over) return false;
+    const k = this.pw[0];
+    if (!PW[k].self) {
+      const o = this.target && game.players.includes(this.target) && alive(this.target) && this.target !== this ? this.target : pickTarget(this);
+      if (!o) return false;
+      this.pw.shift();
+      this.ev.push({ type: 'hex', to: o, c: PW[k].col });
+      this.fx.push({ t: PW[k].name + ' →', c: PW[k].col, age: 0 });
+      if (o.remote) { this.pwLog.push([++this.pwN, o.id, k]); if (this.pwLog.length > 5) this.pwLog.shift(); }
+      else hexIn(o, k, this);
+    } else {
+      this.pw.shift();
+      if (k === 'clean') this.cleanUp();
+      else if (k === 'bomb') this.bombArm = true;
+      else this.eff[k] = PW[k].ms;
+      this.fx.push({ t: PW[k].name, c: PW[k].col, big: true, age: 0 });
+    }
+    this.pwUsed = (this.pwUsed || 0) + 1;
+    if (this.human) pwSfx('use');
+    return true;
+  }
+  cleanUp() {
+    // remove the 3 lowest garbage rows; if there are fewer, the rest cancels incoming garbage
+    const rows = [];
+    for (let y = ROWS - 1; y >= 0 && rows.length < 3; y--) if (this.board[y].some(v => v === 'G' || v === 'B')) rows.push(y);
+    let left = 3 - rows.length;
+    while (left > 0 && this.pending.length) { const m = Math.min(left, this.pending[0]); this.pending[0] -= m; left -= m; if (!this.pending[0]) this.pending.shift(); }
+    if (!rows.length) return;
+    this.removeRows(rows, false);
+    const pc = this.piece; while (pc && this.collide(pc.t, pc.r, pc.x, pc.y) && pc.y > -2) pc.y--;
+  }
+  bombLock(cells) {
+    // the bomb piece blasts 3 rows: its lowest row and the two under it (or above it, near the floor)
+    const low = Math.max(...cells.map(c => c[1])), filled = y => y >= 0 && y < ROWS && this.board[y].some(v => v);
+    const rows = [low, low + 1, low + 2, low - 1, low - 2].filter(filled).slice(0, 3);
+    this.removeRows(rows, true);
+    this.boom = 1; if (this.human) sfx.boom();
+    this.fx.push({ t: 'KA-BOOM!', c: BOMB_Y, big: true, age: 0 });
+    this.canHold = true;
+    if (this.anim) this.waitSpawn = true; else this.spawn();
+  }
+  removeRows(rows, bomb) {
+    const pre = this.board, preOrbs = this.orbs.map(o => o.slice()), set = new Set(rows);
+    const cleared = rows.map(i => ({ i, row: pre[i].slice(), bomb }));
+    const kept = pre.filter((_, i) => !set.has(i)); while (kept.length < ROWS) kept.unshift(emptyRow());
+    this.board = kept; this.moveOrbs(rows);
+    this.ev.push({ type: 'clear', rows: cleared, pw: true });
+    this.anim = { pre, orbs: preOrbs, rows: new Map(cleared.map(r => [r.i, bomb])), t: 0, dur: 300 };
   }
   topOut() { this.piece = null; this.onTopOut(this); }
   koReset() {
@@ -1765,6 +1925,7 @@ class Player {
       const y = this.board.findIndex(r => r.some(v => v));
       removed.push({ i: y, row: this.board[y].slice(), bomb: false });
       this.board.splice(y, 1); this.board.unshift(emptyRow());
+      this.orbs = this.orbs.filter(o => o[1] !== y).map(([x, oy]) => [x, oy < y ? oy + 1 : oy]);
     }
     if (removed.length) this.ev.push({ type: 'clear', rows: removed });
     this.pending = []; this.combo = -1; this.b2b = false; this.canHold = true;
@@ -1776,9 +1937,14 @@ class Player {
     if (this.mode === 'classic') { const l = Math.min(this.level, 20) - 1; return Math.max(16, 1000 * Math.pow(.8 - l * .007, l)); }
     const ms = matchMs(), left = ms ? game.timeLeft : Math.max(0, 120000 - game.elapsed);
     const base = left > 60000 ? 900 : left > 30000 ? 600 : 350;
-    return Math.max(30, base * ({ fast: .55, insane: .28 }[rules().speed] || 1));
+    return Math.max(30, base * ({ fast: .55, insane: .28 }[rules().speed] || 1) * (this.eff.speed > 0 ? .5 : 1));
+  }
+  tickEff(dt) {
+    for (const k in this.eff) if (this.eff[k] > 0) { this.eff[k] -= dt; if (this.eff[k] <= 0) delete this.eff[k]; }
+    this.pwGot = Math.max(0, (this.pwGot || 0) - dt / 600); this.hexT = Math.max(0, (this.hexT || 0) - dt / 500);
   }
   update(dt) {
+    this.tickEff(dt);
     if (this.out) { this.fx.forEach(f => f.age += dt); this.fx = this.fx.filter(f => f.age < 1300); this.koT = Math.max(0, (this.koT || 0) - dt / 1200); return; }
     curPan = this.pan || 0;
     this.fx.forEach(f => f.age += dt); this.fx = this.fx.filter(f => f.age < 1300);
@@ -1792,7 +1958,8 @@ class Player {
       return;
     }
     const p = this.piece; if (!p) return;
-    const g = this.soft ? Math.max(16, this.gravity() / 20) : this.gravity();
+    const sdf = this.human ? Math.max(5, Math.min(41, +settings.sdf || 20)) : 20;
+    const g = this.soft ? (sdf >= 41 ? 1 : Math.max(16, this.gravity() / sdf)) : this.gravity();
     this.fallT += dt;
     while (this.fallT >= g) {
       if (!this.collide(p.t, p.r, p.x, p.y + 1)) { p.y++; this.fallT -= g; this.lastRot = false; if (this.soft && this.mode === 'classic') this.score++; if (p.y > this.lowest) { this.lowest = p.y; this.resets = 0; } }
@@ -1818,6 +1985,7 @@ class Input {
     else if (a === 'cw') p.rotate(1);
     else if (a === 'ccw') p.rotate(-1);
     else if (a === 'hold') p.holdPiece();
+    else if (a === 'power') p.usePower();
   }
   release(a) {
     if (a in this.held) this.held[a] = false;
@@ -1892,6 +2060,11 @@ class CPU {
   }
   update(dt) {
     const p = this.p; if (!p.piece || p.stun > 0 || p.out) return;
+    if (p.pw.length) {
+      this.pwT = (this.pwT || 0) + dt; this.pwWait = this.pwWait || 1500 + Math.random() * 3500;
+      const k = p.pw[0], garbage = p.board.some(r => r.includes('G')) || p.pendingTotal() > 0;
+      if (this.pwT >= this.pwWait && (k !== 'clean' || garbage || this.pwT > 15000) && (k !== 'shield' || !p.eff.shield)) { if (p.usePower() || this.pwT > 20000) { this.pwT = 0; this.pwWait = 0; } }
+    }
     if (!this.plan || this.plan.id !== p.pid) { this.plan = this.think(); this.t = -this.L.think; if (!this.plan) return; }
     this.t += dt;
     while (this.t >= this.L.step && this.plan && p.piece) {
@@ -2002,7 +2175,7 @@ function renderProfile() {
   $('hCombo').textContent = pr.bestCombo ? '×' + pr.bestCombo : '—';
   const cb = store.get('classic', 0); $('hSprint').textContent = cb ? cb.toLocaleString('en-US') : '—';
   $('classicTxt').textContent = cb ? 'Endless. High score: ' + cb.toLocaleString('en-US') : 'Endless solo. Speeds up every 10 lines.';
-  const last = store.get('last', null), names = { cpu: '1 vs 1', sprint: 'Sprint 40', local: 'Local 2P', classic: 'Classic', survival: 'Last one standing' };
+  const last = store.get('last', null), names = { cpu: '1 vs 1', sprint: 'Sprint 40', local: 'Local 2P', classic: 'Classic', survival: 'Last one standing', powerup: 'Power-up Battle' };
   $('hAgain').hidden = !last;
   if (last) $('hAgainName').textContent = last.mode === 'arena' ? `${last.size}P Arena · ${game.level[0].toUpperCase() + game.level.slice(1)}` : (names[last.mode] || 'Last mode') + (last.mode === 'cpu' ? ' · ' + game.level[0].toUpperCase() + game.level.slice(1) : '');
 }
@@ -2059,7 +2232,7 @@ const cleanNick = n => String(n || '').replace(/[^\w\- ]/g, '').trim().slice(0, 
 class RemotePlayer {
   constructor(id, name, tint) {
     Object.assign(this, { id, name, tint, remote: true, human: false, board: emptyBoard(), piece: null, hold: null, queue: [], lines: 0, ko: 0, sent: 0, pieces: 0,
-      sentTo: {}, kod: {}, lives: LIVES, out: false, outT: 0, fin: 0, pend: 0, fx: [], ev: [], pulse: 0, boom: 0, koT: 0, hit: 0, pcT: 0, anim: null, stun: 0, lockT: 0, gone: false, lblN: 0, kodN: 0, maxCombo: 0, combo: -1, b2b: false });
+      sentTo: {}, kod: {}, lives: LIVES, out: false, outT: 0, fin: 0, pend: 0, fx: [], ev: [], orbs: [], pw: [], eff: {}, ink: null, pwLog: [], pulse: 0, boom: 0, koT: 0, hit: 0, pcT: 0, anim: null, stun: 0, lockT: 0, gone: false, lblN: 0, kodN: 0, maxCombo: 0, combo: -1, b2b: false });
   }
   grounded() { return false; }
   pendingTotal() { return this.pend; }
@@ -2070,7 +2243,14 @@ class RemotePlayer {
     if (typeof s.ln === 'number' && s.ln > this.lines) this.pulse = 1;
     this.board = nb; this.lines = +s.ln || 0; this.pieces = +s.pcs || 0;
     const cx = +s.pc?.[2] | 0, cy = +s.pc?.[3] | 0;
-    this.piece = Array.isArray(s.pc) && SHAPES[s.pc[0]] && cx >= -3 && cx < COLS + 3 && cy >= -4 && cy < ROWS ? { t: s.pc[0], r: s.pc[1] & 3, x: cx, y: cy } : null;
+    this.piece = Array.isArray(s.pc) && SHAPES[s.pc[0]] && cx >= -3 && cx < COLS + 3 && cy >= -4 && cy < ROWS ? { t: s.pc[0], r: s.pc[1] & 3, x: cx, y: cy, o: [0, 1, 2, 3].includes(s.pc[4]) ? s.pc[4] : -1 } : null;
+    this.orbs = Array.isArray(s.ob) ? s.ob.slice(0, 40).filter(o => Array.isArray(o) && o[0] >= 0 && o[0] < COLS && o[1] >= 0 && o[1] < ROWS).map(o => [o[0] | 0, o[1] | 0]) : [];
+    this.pw = typeof s.pu === 'string' ? s.pu.split(',').filter(k => PW[k]).slice(0, PW_SLOTS) : [];
+    const ef = typeof s.ef === 'string' ? s.ef.split(',').filter(k => PW[k]) : [];
+    for (const k of ef) { if (!this.eff[k]) { this.eff[k] = 1e9; if (k === 'ink') this.ink = inkBlobs(); if (!PW[k].self) this.fx.push({ t: PW[k].hit, c: PW[k].col, age: 0 }); } }
+    for (const k in this.eff) if (!ef.includes(k)) delete this.eff[k];
+    this.bombArm = !!s.bm;
+    this.pwLog = Array.isArray(s.pw) ? s.pw.slice(-5) : [];
     this.hold = SHAPES[s.h] ? s.h : null; this.queue = SHAPES[s.q] ? [s.q] : [];
     this.pend = Math.max(0, +s.pend | 0);
     this.sentTo = (s.sentTo && typeof s.sentTo === 'object') ? s.sentTo : {}; this.kod = (s.kod && typeof s.kod === 'object') ? s.kod : {};
@@ -2090,8 +2270,12 @@ class RemotePlayer {
 }
 
 const net = { room: null, nr: null, code: null, myPeer: null, host: false, hostPeer: null, recv: {}, lastPub: 0, lastJson: '', unsub: [], mid: null, pending: null, ready: false };
+const pwSnap = p => !pwOn() ? {} : {
+  ob: p.orbs, pu: p.pw.join(','), ef: Object.keys(p.eff).filter(k => p.eff[k] > 0).join(','), bm: p.bombArm ? 1 : 0, pw: p.pwLog,
+};
 const snapOf = p => ({
-  b: encBoard(p.board), pc: p.piece ? [p.piece.t, p.piece.r, p.piece.x, p.piece.y] : null, h: p.hold, q: p.queue[0] || null,
+  ...pwSnap(p),
+  b: encBoard(p.board), pc: p.piece ? (p.piece.o >= 0 && pwOn() ? [p.piece.t, p.piece.r, p.piece.x, p.piece.y, p.piece.o] : [p.piece.t, p.piece.r, p.piece.x, p.piece.y]) : null, h: p.hold, q: p.queue[0] || null,
   ln: p.lines, pcs: p.pieces, pend: p.pendingTotal(), sentTo: p.sentTo || {}, kod: p.kod || {}, cb: Math.max(0, p.combo), b2b: !!p.b2b,
   lbl: p.lastLbl || '', lblN: p.lblN || 0, pcT: p.pcT > .5 ? 1 : 0,
   lv: p.lives ?? LIVES, out: p.out ? 1 : 0, ot: p.outT || 0, fin: p.fin || 0,
@@ -2224,7 +2408,7 @@ function startOnline(d) {
 // delivery between local objects; remote targets only get their total bumped (presence carries it)
 function deliver(from, to, n) {
   from.sentTo = from.sentTo || {}; from.sentTo[to.id] = (from.sentTo[to.id] || 0) + n;
-  if (!to.remote) { to.pending.push(n); to.lastHitBy = from; if (to.human && to.pendingTotal() >= 4 && to.pendingTotal() - n < 4) sfx.alarm(); }
+  if (!to.remote) { to.lastHitBy = from; if (shieldGarbage(to, n)) return; to.pending.push(n); if (to.human && to.pendingTotal() >= 4 && to.pendingTotal() - n < 4) sfx.alarm(); }
 }
 function netReconcile() {
   // apply attacks that remote players' totals say we (or our bots) have not taken yet
@@ -2235,10 +2419,25 @@ function netReconcile() {
       const total = +src.sentTo?.[dst.id] || 0, key = src.id + '>' + dst.id, had = net.recv[key] || 0;
       if (total > had) {
         const n = total - had; net.recv[key] = total;
-        dst.pending.push(n); dst.lastHitBy = src;
+        dst.lastHitBy = src; if (shieldGarbage(dst, n)) continue;
+        dst.pending.push(n);
         if (dst.human) { if (dst.pendingTotal() >= 4 && dst.pendingTotal() - n < 4) sfx.alarm(); src.ev.push({ type: 'attack', n, to: dst }); }
       }
     }
+  }
+}
+function netPowers() {
+  // power-ups: each player publishes a short numbered log of [n, target, kind]; we apply new entries aimed at us or our bots
+  for (const src of game.players) {
+    if (!src.remote || !src.pwLog.length) continue;
+    const key = 'pw:' + src.id, had = net.recv[key] || 0; let top = had;
+    for (const e of src.pwLog) {
+      if (!Array.isArray(e) || !(+e[0] > had)) continue;
+      top = Math.max(top, +e[0]);
+      const dst = game.players.find(q => !q.remote && q.id === e[1]);
+      if (dst && PW[e[2]] && !PW[e[2]].self) { hexIn(dst, e[2], src); if (dst.human) src.ev.push({ type: 'hex', to: dst, c: PW[e[2]].col }); }
+    }
+    net.recv[key] = top;
   }
 }
 function netTally() {
@@ -2264,7 +2463,7 @@ function netTick(now) {
   // a player who left is gone; the bots run on the match host's device, so they go when it goes
   const here = id => peers.some(pr => pr.peer === id);
   for (const p of game.players) if (p.remote) p.gone = /^b\d$/.test(p.id) ? !here(net.matchHost) : !here(p.id);
-  netReconcile(); netTally();
+  netReconcile(); netPowers(); netTally();
   if (now - net.lastPub >= 100) {
     net.lastPub = now;
     const snap = { st: game.over ? 'done' : 'play', mid: net.mid, ...snapOf(me) };
@@ -3194,7 +3393,8 @@ function bgFrame(now) {
 addEventListener('resize', () => { bgDirty = true; });
 
 // ---- shop screen ----
-let shopTab = 'block', shopSub = 'fx', shopRaf = 0;
+let shopTab = 'block', shopSub = 'fx', shopRaf = 0, shopBusy = null;
+const shopJust = { id: null, t: 0 };
 const shopPreviews = [];
 function openShop(tab) { if (tab) shopTab = tab; show('ovShop'); renderShop(); }
 function renderShop() {
@@ -3211,8 +3411,9 @@ function renderShop() {
     const [name, desc] = ITEM_INFO[id], own = owns(id), on = w.eq[slot] === id, price = PRICES[id], short = price - w.coins;
     const btn = on ? '<button type="button" class="sbtn" disabled>Equipped</button>'
       : own ? `<button type="button" class="sbtn play" data-equip="${id}">Equip</button>`
-      : `<button type="button" class="sbtn buy" data-buy="${id}" ${short > 0 ? 'disabled' : ''}>${COIN_SVG}${fmtCoins(price)}</button>`;
-    return `<div class="sitem${on ? ' on' : ''}${own ? ' own' : ''}${isPremium(id) ? ' prem' : ''}">${isPremium(id) ? '<span class="premtag">Premium</span>' : ''}<canvas data-prev="${id}" width="240" height="140"></canvas>
+      : `<button type="button" class="sbtn buy" data-buy="${id}" ${short > 0 || shopBusy ? 'disabled' : ''}>${shopBusy === id ? 'Buying…' : COIN_SVG + fmtCoins(price)}</button>`;
+    const fresh = shopJust.id === id && Date.now() - shopJust.t < 2600;
+    return `<div class="sitem${on ? ' on' : ''}${own ? ' own' : ''}${isPremium(id) ? ' prem' : ''}${fresh ? ' justbought' : ''}">${isPremium(id) ? '<span class="premtag">Premium</span>' : ''}${fresh ? '<span class="boughttag">Purchased</span>' : ''}<canvas data-prev="${id}" width="240" height="140"></canvas>
       <div class="sinfo"><b>${name}</b><small>${desc}</small></div>
       <div class="sact">${btn}${!own && short > 0 ? `<small class="need">${fmtCoins(short)} more</small>` : on ? '<small class="eqtag">In use</small>' : own ? '<small class="eqtag owned">Owned</small>' : ''}</div></div>`;
   }).join('');
@@ -3272,15 +3473,31 @@ function drawShopPreviews(now, first) {
 }
 function shopLoop(now) { if ($('ovShop').hidden) return; drawShopPreviews(now, false); shopRaf = requestAnimationFrame(shopLoop); }
 function shopMsg(t, bad) { const el = $('shopMsg'); el.textContent = t || ''; el.classList.toggle('bad', !!bad); }
+// A clear "Purchased!" pop-up so nobody buys twice by mistake. While a purchase is on its way, every
+// buy button is locked; the server also refuses to charge twice for the same item.
+function shopToast(title, line, bad) {
+  const t = $('shopToast'); $('shopToastT').textContent = title; $('shopToastS').textContent = line || '';
+  t.classList.toggle('bad', !!bad); t.hidden = true; void t.offsetWidth; t.hidden = false;
+  clearTimeout(shopToast.t); shopToast.t = setTimeout(() => t.hidden = true, bad ? 3200 : 2800);
+}
 async function buyItem(id) {
+  if (shopBusy) return;
   const price = PRICES[id], [name] = ITEM_INFO[id];
+  if (owns(id)) { shopToast('Already yours', `You own ${name}. Tap Equip to use it.`); return; }
+  const done = already => {
+    shopJust.id = id; shopJust.t = Date.now(); shopMsg('');
+    shopToast(already ? 'Already yours' : 'Purchased!', already ? `You already own ${name}. No coins were taken.` : `${name} is unlocked and equipped. ${fmtCoins(wallet().coins)} coins left.`);
+    if (!already) sfx.lvl?.();
+    setTimeout(() => { if (!$('ovShop').hidden && shopJust.id === id) renderShop(); }, 2700);
+  };
   if (signedWallet()) {
-    shopMsg('Buying…');
-    try { setWallet(await api.call('/api/shop/buy', 'POST', { id })); shopMsg(`${name} unlocked and equipped.`); sfx.lvl?.(); }
-    catch (e) { shopMsg(e.message === 'not_enough' ? 'Not enough coins yet.' : 'Couldn\'t reach the server. Try again.', true); }
+    shopBusy = id; renderShop();
+    try { const w = await api.call('/api/shop/buy', 'POST', { id }); setWallet(w); done(!!w.already); }
+    catch (e) { shopToast('Not purchased', e.message === 'not_enough' ? 'Not enough coins yet.' : 'Couldn\'t reach the server. No coins were taken. Try again.', true); }
+    finally { shopBusy = null; }
   } else {
-    const w = wallet(); if (w.coins < price) { shopMsg('Not enough coins yet.', true); return; }
-    w.coins -= price; w.owned = [...new Set([...w.owned, id])]; w.eq[id.split(':')[0]] = id; setWallet(w); shopMsg(`${name} unlocked and equipped.`); sfx.lvl?.();
+    const w = wallet(); if (w.coins < price) { shopToast('Not purchased', 'Not enough coins yet.', true); return; }
+    w.coins -= price; w.owned = [...new Set([...w.owned, id])]; w.eq[id.split(':')[0]] = id; setWallet(w); done(false);
   }
   renderShop();
 }
@@ -3588,7 +3805,8 @@ function start(mode) {
   initAudio();
   const asked = mode; game.asked = mode;
   if (mode === 'survival') { game.pendingRules = SURVIVAL_RULES; mode = 'arena'; game.size = 6; }
-  if (RANKED_MODES.includes(mode) && canRank()) rankedBegin(mode, mode === 'arena' ? game.size : 2, game.level); else game.ranked = null;
+  if (mode === 'powerup') { game.pendingRules = PW_RULES; mode = 'arena'; game.size = 4; }
+  if (RANKED_MODES.includes(mode) && canRank() && !game.pendingRules?.pw) rankedBegin(mode, mode === 'arena' ? game.size : 2, game.level); else game.ranked = null;
   if (mode !== 'online') store.set('last', { mode: asked, size: game.size });
   const versus = mode !== 'sprint' && mode !== 'classic';
   const mk = (name, human) => new Player({ name, human, mode, versus });
@@ -3607,6 +3825,9 @@ function launch(mode, ps, size) {
   game.players = ps; game.size = size;
   ps[0].autoTarget = true;
   ps.forEach(p => { p.lives = LIVES; p.out = false; p.fin = 0; p.outT = 0; if (gtype() === 'race' && !p.remote) p.versus = false; });
+  // players are made before the match rules are set, so roll their queued orbs again now
+  ps.forEach(p => { if (p.remote) return; p.qo = p.queue.map(() => rollOrb(p)); if (p.piece) p.piece.o = -1; p.orbs = []; p.pw = []; p.eff = {}; p.bombArm = false; });
+  $('tPower').hidden = !pwOn(); $('touch').classList.toggle('pw', pwOn());
   ps.forEach(p => {
     if (p.remote) return;
     p.onAttack = n => {
@@ -3775,7 +3996,7 @@ const fmtPrecise = ms => { const s = ms / 1000; return (s / 60 | 0) + ':' + (s %
 
 // ================= keys & touch =================
 const KEYMAP = {
-  solo: { ArrowLeft:'left', ArrowRight:'right', ArrowDown:'soft', Space:'hard', ArrowUp:'cw', KeyX:'cw', KeyZ:'ccw', ControlLeft:'ccw', ControlRight:'ccw', KeyC:'hold', ShiftLeft:'hold', ShiftRight:'hold' },
+  solo: { ArrowLeft:'left', ArrowRight:'right', ArrowDown:'soft', Space:'hard', ArrowUp:'cw', KeyX:'cw', KeyZ:'ccw', ControlLeft:'ccw', ControlRight:'ccw', KeyC:'hold', ShiftLeft:'hold', ShiftRight:'hold', KeyE:'power', KeyV:'power' },
   p1: { KeyA:'left', KeyD:'right', KeyS:'soft', Space:'hard', KeyW:'cw', KeyQ:'ccw', KeyE:'hold' },
   p2: { ArrowLeft:'left', ArrowRight:'right', ArrowDown:'soft', Enter:'hard', NumpadEnter:'hard', ArrowUp:'cw', Slash:'ccw', Period:'hold' },
 };
@@ -3860,6 +4081,7 @@ const TIPS = [
   'Hold a long piece for a well you are building. Swapping costs nothing.',
   'A K.O. doesn\'t end your game. Keep stacking; the clock decides.',
   'Combos stack fast: six clears in a row sends three extra lines each time.',
+  'Power-up Battle: clear the line with the glowing orb, then press E. Save a Shield for when the garbage meter fills up.',
 ];
 let tipI = Math.random() * TIPS.length | 0;
 const showTip = () => { $('hTip').textContent = TIPS[tipI % TIPS.length]; };
@@ -3890,7 +4112,7 @@ function showRules() {
   $('ruleBots').value = bl; $('ruleBots').disabled = !net.host;
   if (!net.host && [2, 4, 6].includes(+hp.size)) $('lobbySize').value = String(hp.size);
   const std = isStdRules(ru), lab = (k, v) => (RULE_OPTS[k].find(o => o[0] === v) || [, ''])[1];
-  $('rulesSum').textContent = [lab('type', ru.type).replace(' (40 lines)', ''), ru.time ? lab('time', ru.time) : 'no time limit', `${$('lobbySize').value}P`, `${bl[0].toUpperCase() + bl.slice(1)} bots`].join(' · ');
+  $('rulesSum').textContent = [lab('type', ru.type).replace(' (40 lines)', ''), ru.time ? lab('time', ru.time) : 'no time limit', `${$('lobbySize').value}P`, `${bl[0].toUpperCase() + bl.slice(1)} bots`, ru.pw ? 'power-ups' : ''].filter(Boolean).join(' · ');
   $('rulesTag').textContent = std ? 'Standard · Ranked' : 'Custom · Unranked'; $('rulesTag').classList.toggle('custom', !std);
   $('rulesReset').hidden = !net.host || std;
   $('rulesNote').textContent = net.host ? (std ? 'You\'re the host: change any rule. Custom rules make the match unranked.' : 'Custom rules: this match won\'t count toward rank.') : 'Only the host can change the rules.';
@@ -3923,12 +4145,26 @@ const SLIDERS = [
   ['sSfx', 'sfx', v => v / 100, v => Math.round(v * 100), v => Math.round(v * 100) + '%'],
   ['sDas', 'das', v => +v, v => v, v => v + ' ms'],
   ['sArr', 'arr', v => +v, v => v, v => v === 0 ? 'Instant' : v + ' ms'],
+  ['sSdf', 'sdf', v => +v, v => v, v => v >= 41 ? 'Instant' : v + '×'],
 ];
+// one-tap presets for players who don't want to tune each slider
+const SENS = {
+  relaxed: { das: 200, arr: 50, sdf: 10, txt: 'Slower, steadier movement. Good for phones and new players.' },
+  normal:  { das: 140, arr: 33, sdf: 20, txt: 'The default feel.' },
+  fast:    { das: 110, arr: 16, sdf: 30, txt: 'Snappier movement for experienced players.' },
+  pro:     { das: 80,  arr: 0,  sdf: 41, txt: 'Pieces fly to the wall and drop instantly. For experts.' },
+};
+function syncSens() {
+  const cur = Object.keys(SENS).find(k => ['das', 'arr', 'sdf'].every(f => settings[f] === SENS[k][f]));
+  document.querySelectorAll('#sSens button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sens === cur)));
+  $('sSensTxt').textContent = cur ? SENS[cur].txt : 'Custom: set with the sliders below.';
+}
+document.querySelectorAll('#sSens button').forEach(b => b.addEventListener('click', () => { const v = SENS[b.dataset.sens]; settings.das = v.das; settings.arr = v.arr; settings.sdf = v.sdf; saveSettings(); syncSettingsUI(); }));
 function syncSettingsUI() {
   for (const [id, key, , toUI, label] of SLIDERS) { $(id).value = toUI(settings[key]); $(id + 'Out').textContent = label(settings[key]); }
-  $('sGhost').checked = settings.ghost; $('sShake').checked = settings.shake;
+  $('sGhost').checked = settings.ghost; $('sShake').checked = settings.shake; syncSens();
 }
-for (const [id, key, fromUI, , label] of SLIDERS) $(id).addEventListener('input', () => { settings[key] = fromUI($(id).value); $(id + 'Out').textContent = label(settings[key]); saveSettings(); });
+for (const [id, key, fromUI, , label] of SLIDERS) $(id).addEventListener('input', () => { settings[key] = fromUI($(id).value); $(id + 'Out').textContent = label(settings[key]); saveSettings(); syncSens(); });
 $('sMusic').addEventListener('change', () => { if (!music.on && audio.ctx && !inMatch()) musicStart('menu'); });
 $('sSfx').addEventListener('change', () => sfx.clear(2, 1));
 $('sGhost').onchange = () => { settings.ghost = $('sGhost').checked; saveSettings(); };
@@ -4046,11 +4282,40 @@ function bombDraw(x, y, s, live) {
   }
   ctx.beginPath(); ctx.arc(cx, cy, R * .18, 0, TAU); ctx.fill();
 }
-function miniPiece(t, cx, cy, s, alpha = 1) {
+// a power-up orb: soft white glow, a colour-cycling core and a highlight
+function orbDraw(x, y, s, small) {
+  const cx = x + s / 2, cy = y + s / 2, t = performance.now() / 1000, r = s * .3;
+  if (!small) { ctx.globalAlpha = .28 + .18 * Math.sin(t * 6); ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(cx, cy, r * 1.7, 0, TAU); ctx.fill(); }
+  ctx.globalAlpha = 1; ctx.fillStyle = C.navy; ctx.beginPath(); ctx.arc(cx, cy, r + Math.max(1, s * .07), 0, TAU); ctx.fill();
+  ctx.fillStyle = `hsl(${(t * 140) % 360},100%,62%)`; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(cx - r * .3, cy - r * .32, r * .34, 0, TAU); ctx.fill();
+}
+// power-up badge: a coloured tile with a simple glyph, drawn in a 24-unit box
+function pwIcon(k, cx, cy, size, alpha = 1) {
+  const d = PW[k]; if (!d) return;
+  const h = size / 2, u = size / 24;
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = C.ink; ctx.fillRect(cx - h + 2, cy - h + 2, size, size);
+  ctx.fillStyle = d.col; ctx.fillRect(cx - h, cy - h, size, size);
+  ctx.save(); ctx.translate(cx - h, cy - h); ctx.scale(u, u);
+  ctx.fillStyle = C.navy; ctx.strokeStyle = C.navy; ctx.lineWidth = 2.6; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.beginPath();
+  if (k === 'shield') { ctx.moveTo(12, 4); ctx.lineTo(19, 7); ctx.lineTo(18.5, 13); ctx.quadraticCurveTo(17, 18, 12, 20.5); ctx.quadraticCurveTo(7, 18, 5.5, 13); ctx.lineTo(5, 7); ctx.closePath(); ctx.fill(); }
+  else if (k === 'clean') { ctx.moveTo(12, 5); ctx.lineTo(12, 13); ctx.moveTo(8.5, 8.5); ctx.lineTo(12, 5); ctx.lineTo(15.5, 8.5); ctx.stroke(); ctx.fillRect(5, 15, 14, 2.4); ctx.fillRect(5, 18.6, 14, 2.4); }
+  else if (k === 'bomb') { ctx.arc(11, 14, 6, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.moveTo(14.5, 9); ctx.quadraticCurveTo(17, 5, 19.5, 6); ctx.stroke(); }
+  else if (k === 'surge') { ctx.moveTo(13.5, 3.5); ctx.lineTo(6.5, 13.5); ctx.lineTo(11.5, 13.5); ctx.lineTo(10.5, 20.5); ctx.lineTo(17.5, 10.5); ctx.lineTo(12.5, 10.5); ctx.closePath(); ctx.fill(); }
+  else if (k === 'ink') { ctx.arc(12, 13, 5.5, 0, TAU); ctx.fill(); [[5.5, 8, 1.8], [18.5, 8.5, 1.6], [18, 18.5, 1.9], [6, 18, 1.4], [12, 4.8, 1.3]].forEach(([x, y, r]) => { ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); }); }
+  else if (k === 'fog') { [[8.5, 13, 3.8], [13, 10.5, 4.6], [16.5, 13.5, 3.6]].forEach(([x, y, r]) => { ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); }); ctx.fillRect(5, 13.5, 14, 3.5); ctx.fillRect(4, 19, 16, 2.2); }
+  else if (k === 'lock') { ctx.fillRect(6, 11, 12, 9); ctx.beginPath(); ctx.arc(12, 10.5, 3.8, Math.PI, 0); ctx.moveTo(8.2, 10.5); ctx.lineTo(8.2, 11.5); ctx.moveTo(15.8, 10.5); ctx.lineTo(15.8, 11.5); ctx.stroke(); }
+  else if (k === 'speed') { ctx.moveTo(5, 7); ctx.lineTo(11, 12); ctx.lineTo(5, 17); ctx.moveTo(12, 7); ctx.lineTo(18, 12); ctx.lineTo(12, 17); ctx.lineWidth = 3.2; ctx.stroke(); }
+  ctx.restore(); ctx.globalAlpha = 1;
+}
+function miniPiece(t, cx, cy, s, alpha = 1, orb = -1) {
   const cells = CELLS[t][0]; const xs = cells.map(c => c[0]), ys = cells.map(c => c[1]);
   const w = Math.max(...xs) - Math.min(...xs) + 1, h = Math.max(...ys) - Math.min(...ys) + 1;
   const ox = cx - w * s / 2 - Math.min(...xs) * s, oy = cy - h * s / 2 - Math.min(...ys) * s;
   cells.forEach(([x, y]) => cellDraw(ox + x * s, oy + y * s, s, COLORS[t], alpha));
+  if (orb >= 0 && cells[orb]) orbDraw(ox + cells[orb][0] * s, oy + cells[orb][1] * s, s, s < 12);
 }
 function panel(x, y, w, h, label) {
   rr(x, y, w, h, 3); ctx.fillStyle = C.panel; ctx.fill(); ctx.strokeStyle = C.edge; ctx.lineWidth = 2; ctx.stroke();
@@ -4101,6 +4366,9 @@ function consume(p, bx, by, cell, small) {
         for (let k = 0; k < Math.min(e.n, 8); k++)
           fx.orbs.push({ x0: bx + COLS * cell / 2 + (Math.random() - .5) * 40, y0: by + 10 * cell, x1: o.geom.mx + o.geom.mw / 2, y1: o.geom.by + o.geom.h - 10, t: -k * .05, color: p.tint || C.accent, big: !small });
       }
+    } else if (e.type === 'hex') {
+      const o = e.to;
+      if (o && o.geom) fx.orbs.push({ x0: bx + COLS * cell / 2, y0: by + 10 * cell, x1: o.geom.bx + o.geom.w / 2, y1: o.geom.by + o.geom.h / 2, t: 0, color: e.c, big: true, pw: true });
     } else if (e.type === 'garbage') {
       if (!small) game.shake = Math.max(game.shake, Math.min(.8, .2 + e.n * .06));
     } else if (e.type === 'perfect') {
@@ -4146,6 +4414,11 @@ function drawFx() {
     const t = o.t, e = t * t * (3 - 2 * t);
     const x = o.x0 + (o.x1 - o.x0) * e, y = o.y0 + (o.y1 - o.y0) * e - Math.sin(t * Math.PI) * 90;
     // attacks travel as little garbage bricks
+    if (o.pw) {
+      ctx.globalAlpha = .35; ctx.fillStyle = o.color; ctx.beginPath(); ctx.arc(x, y, 14, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.fillStyle = C.fg; ctx.beginPath(); ctx.arc(x, y, 8, 0, TAU); ctx.fill(); ctx.fillStyle = o.color; ctx.beginPath(); ctx.arc(x, y, 6, 0, TAU); ctx.fill();
+      continue;
+    }
     const sz = o.big ? 9 : 6; ctx.globalAlpha = 1;
     ctx.fillStyle = C.ink; ctx.fillRect(x - sz / 2 + 1.5, y - sz / 2 + 1.5, sz, sz);
     ctx.fillStyle = o.color; ctx.fillRect(x - sz / 2, y - sz / 2, sz, sz);
@@ -4205,6 +4478,20 @@ function drawBoard(p, bx, by, cell, small) {
       ctx.fillRect(bx, by + (y - HIDDEN) * cell + cell * k * .45, W, cell * (1 - k * .9)); ctx.globalAlpha = 1;
     }
   }
+  // power-up orbs sitting in the stack
+  for (const [ox2, oy2] of (A && A.orbs) || p.orbs || []) if (oy2 >= HIDDEN) orbDraw(bx + ox2 * cell, by + (oy2 - HIDDEN) * cell, cell, small);
+  // Ink Splat: dark blots over the stack (the falling piece stays visible on top)
+  if (p.eff?.ink > 0 && p.ink) {
+    const left = p.eff.ink, a = p.remote ? 1 : Math.min(1, (PW.ink.ms - left) / 180, left / 600);
+    for (const b of p.ink) {
+      const x = bx + b.x * cell, y = by + b.y * cell, r = b.r * cell;
+      ctx.globalAlpha = a * .97; ctx.fillStyle = '#12061f';
+      ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+      b.d.forEach((q, j) => { const ang = j / 6 * TAU + q, dist = r * (1 + q * .5); ctx.beginPath(); ctx.arc(x + Math.cos(ang) * dist, y + Math.sin(ang) * dist, r * (.18 + q * .22), 0, TAU); ctx.fill(); });
+      ctx.globalAlpha = a * .55; ctx.strokeStyle = PW.ink.col; ctx.lineWidth = small ? 1 : 2; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
   const pc = p.piece;
   if (pc) {
     let gy = pc.y; while (!collideB(p.board, pc.t, pc.r, pc.x, gy + 1)) gy++;
@@ -4231,6 +4518,14 @@ function drawBoard(p, bx, by, cell, small) {
     }
     const lockFade = p.grounded() ? 1 - .3 * Math.min(1, p.lockT / LOCK_DELAY) : 1;
     for (const [cx, cy] of CELLS[pc.t][pc.r]) cellDraw(bx + (p.vis.x + cx) * cell, by + (p.vis.y + cy - HIDDEN) * cell, cell, COLORS[pc.t], lockFade);
+    if (pc.o >= 0) { const [ocx, ocy] = orbCell(pc.t, pc.r, pc.o); orbDraw(bx + (p.vis.x + ocx) * cell, by + (p.vis.y + ocy - HIDDEN) * cell, cell, small); }
+    if (p.bombArm) {
+      // the armed bomb piece: hazard outline and a bomb on its middle block
+      const on = Math.sin(now / 110) > 0, cs = CELLS[pc.t][pc.r];
+      ctx.strokeStyle = on ? BOMB_Y : C.warn; ctx.lineWidth = small ? 1 : 2.5;
+      for (const [cx, cy] of cs) ctx.strokeRect(bx + (p.vis.x + cx) * cell + 1, by + (p.vis.y + cy - HIDDEN) * cell + 1, cell - 2, cell - 2);
+      const [mx2, my2] = cs[1] || cs[0]; bombDraw(bx + (p.vis.x + mx2) * cell, by + (p.vis.y + my2 - HIDDEN) * cell, cell, true);
+    }
   }
   if (p.pulse > 0) { ctx.globalAlpha = p.pulse * .07; ctx.fillStyle = C.fg; ctx.fillRect(bx, by, W, H); ctx.globalAlpha = 1; }
   if (p.boom > 0) { ctx.globalAlpha = p.boom * .3; ctx.fillStyle = BOMB_Y; ctx.fillRect(bx, by + H * (1 - p.boom * .7), W, H * p.boom * .7); ctx.globalAlpha = 1; }
@@ -4242,6 +4537,24 @@ function drawBoard(p, bx, by, cell, small) {
     ctx.strokeStyle = C.gold; ctx.lineWidth = small ? 2 : 4; ctx.globalAlpha = p.pcT; ctx.strokeRect(bx + 2, by + 2, W - 4, H - 4); ctx.globalAlpha = 1;
   }
   ctx.restore();
+  if (p.eff) {
+    // Shield: a bright cyan ring around the board; Power Surge: an orange flicker inside it
+    if (p.eff.shield > 0) {
+      const g = (small ? 3 : 6) + T, pulse = .6 + .4 * Math.sin(now / 140);
+      ctx.strokeStyle = PW.shield.col; ctx.lineWidth = small ? 2 : 3; ctx.globalAlpha = pulse;
+      ctx.strokeRect(bx - g, by - g, W + 2 * g, H + 2 * g); ctx.globalAlpha = 1;
+    }
+    if (p.eff.surge > 0) {
+      ctx.strokeStyle = PW.surge.col; ctx.lineWidth = small ? 2 : 3; ctx.globalAlpha = .5 + .5 * Math.abs(Math.sin(now / 70));
+      ctx.strokeRect(bx + 1.5, by + 1.5, W - 3, H - 3); ctx.globalAlpha = 1;
+    }
+    if (p.hexT > 0) { ctx.globalAlpha = p.hexT * .25; ctx.fillStyle = '#b04dff'; ctx.fillRect(bx, by, W, H); ctx.globalAlpha = 1; }
+    // small badges for every power-up working on this board (the big board lists them beside it)
+    if (small) {
+      const ks = Object.keys(p.eff).filter(k => p.eff[k] > 0 && PW[k]), sz = 12;
+      ks.forEach((k, i) => pwIcon(k, bx + 8 + i * (sz + 3), by + H - 9, sz));
+    }
+  }
   // garbage meter
   const tot = p.pendingTotal();
   ctx.fillStyle = C.well; ctx.fillRect(mx, by, mw, H); ctx.strokeStyle = C.edge; ctx.lineWidth = 1; ctx.strokeRect(mx + .5, by + .5, mw - 1, H - 1);
@@ -4376,7 +4689,12 @@ function drawCallouts(p, bx, by, W, H, cell, small) {
 function drawFull(p, ox, oy) {
   const bx = ox + 114;
   panel(ox, oy, 96, 96, rules().hold ? 'HOLD' : 'HOLD · OFF');
-  if (p.hold) miniPiece(p.hold, ox + 48, oy + 58, 17, p.canHold ? 1 : .3);
+  if (p.hold) miniPiece(p.hold, ox + 48, oy + 58, 17, p.canHold && !(p.eff?.lock > 0) ? 1 : .3, p.holdO ?? -1);
+  if (p.eff?.lock > 0) {
+    ctx.globalAlpha = .78; ctx.fillStyle = C.ink; ctx.fillRect(ox + 2, oy + 22, 92, 72); ctx.globalAlpha = 1;
+    pwIcon('lock', ox + 48, oy + 50, 28);
+    num(`LOCKED ${Math.ceil(p.eff.lock / 1000)}`, ox + 48, oy + 80, { size: 10, align: 'center', base: 'middle', color: PW.lock.col });
+  }
   const stats = game.mode === 'classic'
     ? [['SCORE', p.score.toLocaleString('en-US'), C.accent], ['LEVEL', p.level, C.fg], ['LINES', p.lines, C.fg]]
     : game.mode === 'sprint'
@@ -4408,10 +4726,38 @@ function drawFull(p, ox, oy) {
   ctx.fillStyle = C.well; ctx.fillRect(nx + 8, oy + 30, 80, 64);
   ctx.fillStyle = C.edge; ctx.fillRect(nx + 8, oy + 100, 80, 2);
   ctx.save(); ctx.beginPath(); ctx.rect(nx, oy + 26, 96, 326); ctx.clip();
-  p.queue.slice(0, 5).forEach((t, i) => miniPiece(t, nx + 48, oy + 62 + i * 62 + qOff, i === 0 ? 17 : 14, i === 0 ? 1 : .85 - i * .1));
+  p.queue.slice(0, 5).forEach((t, i) => miniPiece(t, nx + 48, oy + 62 + i * 62 + qOff, i === 0 ? 17 : 14, i === 0 ? 1 : .85 - i * .1, p.qo?.[i] ?? -1));
+  if (p.eff?.fog > 0) {
+    // Fog: the Next column clouds over
+    const t = performance.now() / 1000, a = Math.min(1, (PW.fog.ms - p.eff.fog) / 200, p.eff.fog / 500);
+    ctx.globalAlpha = a * .96; ctx.fillStyle = '#26305a'; ctx.fillRect(nx + 2, oy + 26, 92, 328);
+    ctx.fillStyle = '#3a4679';
+    for (let i = 0; i < 9; i++) { ctx.beginPath(); ctx.arc(nx + 48 + Math.sin(t * .8 + i * 1.7) * 30, oy + 50 + i * 36, 22 + (i % 3) * 6, 0, TAU); ctx.fill(); }
+    ctx.globalAlpha = a; text('?', nx + 48, oy + 150, { size: 46, weight: 900, align: 'center', base: 'middle', color: '#93a0cf' });
+    num(`FOG ${Math.ceil(p.eff.fog / 1000)}`, nx + 48, oy + 200, { size: 11, align: 'center', base: 'middle', color: C.fg });
+    ctx.globalAlpha = 1;
+  }
   ctx.restore();
+  if (pwOn() && !p.remote) drawPowerPanel(p, ox, oy + 372);
 }
 
+// power-up slots under the stats: the first slot is the one E uses; active effects count down below
+function drawPowerPanel(p, x, y) {
+  panel(x, y, 96, 108, 'POWER-UPS');
+  const pop = p.pwGot > 0 ? 1 + p.pwGot * .25 : 1;
+  for (let i = 0; i < PW_SLOTS; i++) {
+    const sx = x + 8 + i * 44, sy = y + 24, k = p.pw[i];
+    ctx.fillStyle = C.well; ctx.fillRect(sx, sy, 36, 36);
+    ctx.strokeStyle = i === 0 && k ? (Math.sin(performance.now() / 200) > 0 ? C.accent : C.fg) : C.edge; ctx.lineWidth = 2; ctx.strokeRect(sx + 1, sy + 1, 34, 34);
+    if (k) { ctx.save(); ctx.translate(sx + 18, sy + 18); const sc = i === p.pw.length - 1 ? pop : 1; ctx.scale(sc, sc); pwIcon(k, 0, 0, 26); ctx.restore(); }
+  }
+  const lines = [];
+  if (p.bombArm) lines.push([BOMB_Y, 'BOMB READY']);
+  for (const k of ['shield', 'surge', 'ink', 'fog', 'lock', 'speed']) if (p.eff[k] > 0) lines.push([PW[k].col, `${PW[k].name.split(' ')[0]} ${Math.ceil(p.eff[k] / 1000)}`]);
+  if (!lines.length && p.pw.length) lines.push([C.muted, matchMedia('(pointer:coarse)').matches ? `TAP ⚡ ${PW[p.pw[0]].name.split(' ')[0]}` : `E · ${PW[p.pw[0]].name}`]);
+  if (!lines.length) lines.push([C.muted, 'CLEAR AN ORB']);
+  lines.slice(0, 2).forEach(([c, t], i) => text(t, x + 48, y + 74 + i * 15, { size: 8, weight: 700, color: c, align: 'center', base: 'middle', spacing: true }));
+}
 function drawMini(p, ox, oy) {
   const cell = 11;
   text(game.mode === 'online' ? (p.name.toUpperCase() + (p.gone ? ' · LEFT' : '')) : 'OPPONENT', ox, oy, { size: 9, weight: 700, color: game.mode === 'online' ? p.tint : C.muted, spacing: true });
@@ -4420,7 +4766,8 @@ function drawMini(p, ox, oy) {
   const [sl, sv] = statOf(p); statBlock(ox, sy, sl, sv, C.accent);
   if (gtype() === 'race') statBlock(ox, sy + 50, 'PIECES', p.pieces); else statBlock(ox, sy + 50, 'SENT', p.sent);
   text('NEXT', ox + 62, sy, { size: 9, weight: 700, color: C.muted, spacing: true });
-  if (p.queue[0]) miniPiece(p.queue[0], ox + 84, sy + 34, 10);
+  if (p.eff?.fog > 0) text('?', ox + 84, sy + 34, { size: 18, weight: 900, align: 'center', base: 'middle', color: C.muted });
+  else if (p.queue[0]) miniPiece(p.queue[0], ox + 84, sy + 34, 10);
 }
 
 function drawArena(ox, oy) {
