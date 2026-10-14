@@ -95,7 +95,7 @@ Buy a domain (about $10/year), add it to Cloudflare, then **Workers & Pages → 
 
 ## Coins and the shop
 
-Every match pays coins (local 2P and matches under 20 seconds don't), and coins buy cosmetics in the shop: block styles, ghost styles, line-clear effects and backgrounds.
+Every match pays coins (local 2P and matches under 20 seconds don't), and coins buy cosmetics in the shop: block styles, ghost styles, effects (line clears, bomb blasts and callout text) and backgrounds. Items from 1,500 coins up are Premium: mostly animated, with gold cards in the shop.
 
 | Mode | Coins |
 |---|---|
