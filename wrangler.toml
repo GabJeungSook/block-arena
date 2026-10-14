@@ -1,0 +1,26 @@
+name = "block-arena"
+main = "src/worker.js"
+compatibility_date = "2026-09-01"
+
+# The game files. The Worker runs first only for the server routes below; everything else is static.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/api/*", "/auth/*", "/room/*", "/deletion"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "block-arena"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "Room"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room"]
+
+[vars]
+FB_APP_ID = ""   # your Meta app ID (public). The app secret goes in a secret: npx wrangler secret put FB_APP_SECRET
