@@ -23,4 +23,4 @@ tag = "v1"
 new_sqlite_classes = ["Room"]
 
 [vars]
-FB_APP_ID = ""   # your Meta app ID (public). The app secret goes in a secret: npx wrangler secret put FB_APP_SECRET
+FB_APP_ID = "2129199354388278"   # your Meta app ID (public). The app secret goes in a secret: npx wrangler secret put FB_APP_SECRET
