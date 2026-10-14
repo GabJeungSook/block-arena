@@ -432,6 +432,18 @@ input:not([type]),input[type=text],select{background:var(--navy);border-color:va
 .wordmark.hop .wa{animation:lgHopS .45s ease-out both;animation-delay:calc(.25s + var(--i) * .05s)}
 @keyframes lgHop{0%{transform:none}30%{transform:translateY(-22px) scale(.94,1.08)}62%{transform:translateY(3px) scale(1.06,.93)}100%{transform:none}}
 @keyframes lgHopS{0%,100%{transform:none}40%{transform:translateY(-8px)}}
+/* how to play: fits on one screen; three columns of keys on wide screens, scrolls inside the card on small ones */
+.card.how{width:min(980px,100%);max-height:100%;overflow:auto;gap:14px;padding:22px 26px 0}
+.how h2{margin:0}
+.how .basics{gap:6px;font-size:14px}
+.how .keys{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 26px;margin-top:4px;font-size:13px}
+.how .keys dl{gap:4px 10px}
+.how .row{position:sticky;bottom:0;background:var(--panel);padding:12px 0 18px;margin-top:-4px;border-top:2px solid var(--line)}
+@media (max-width:820px){.how .keys{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.how .keys{grid-template-columns:1fr}.card.how{padding:18px 18px 0}}
+/* empty states inside the leaderboard list (friends tab) */
+.lb li.lbempty{display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:18px;border:2px dashed var(--line);border-bottom-width:2px}
+.lb li.lbempty p{margin:0;max-width:52ch;line-height:1.5}
 /* online screen + ranked note */
 .onlinepage{display:flex;flex-direction:column;gap:12px}
 .onlinepage .menuhead .chip{margin-left:auto}
