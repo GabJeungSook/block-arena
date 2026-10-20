@@ -29,20 +29,22 @@ export class Room {
     const old = by ? this.live().find(ws => (ws.deserializeAttachment() || {}).by === by) : null;
     if (!old && this.live().length >= MAX_PEERS) return new Response('Room is full', { status: 429 });
     const pair = new WebSocketPair(), [client, server] = Object.values(pair);
-    let peer = crypto.randomUUID().replace(/-/g, '').slice(0, 16), lite = {};
+    let peer = crypto.randomUUID().replace(/-/g, '').slice(0, 16), lite = {}, jt = Date.now();
     const back = !old && by ? this.recent.get(by) : null;
-    if (back && Date.now() - back.t < 5 * 60000) { peer = back.peer; lite = back.lite || {}; }
+    if (back && Date.now() - back.t < 5 * 60000) { peer = back.peer; lite = back.lite || {}; jt = back.jt || jt; }
     if (by) this.recent.delete(by);
     if (old) {
       const oa = old.deserializeAttachment() || {};
-      peer = oa.peer; lite = oa.lite || {};
+      peer = oa.peer; lite = oa.lite || {}; jt = oa.jt || jt;
       oa.replaced = true; try { old.serializeAttachment(oa); } catch (e) {}
       try { old.close(CLOSE_REPLACED, 'replaced'); } catch (e) {}
     }
     this.ctx.acceptWebSocket(server);
-    server.serializeAttachment({ peer, by, lite, n: 0, t: 0, seen: Date.now() });
+    // the join time decides who hosts, so the server sets it; a player can't make themselves host
+    lite = { ...lite, jt };
+    server.serializeAttachment({ peer, by, lite, jt, n: 0, t: 0, seen: Date.now() });
     const peers = this.ctx.getWebSockets().filter(ws => ws !== server && ws !== old).map(ws => this.describe(ws));
-    server.send(JSON.stringify({ t: 'hello', peer, by, peers }));
+    server.send(JSON.stringify({ t: 'hello', peer, by, jt, peers }));
     if (!old) this.broadcast({ t: 'join', peer, by, presence: lite }, server);
     await this.arm();
     return new Response(null, { status: 101, webSocket: client });
@@ -58,7 +60,7 @@ export class Room {
   }
   // the host is whoever joined first (join time in presence), ties broken by peer id: the same rule the game uses
   hostPeer() {
-    const ps = this.live().map(ws => { const a = ws.deserializeAttachment() || {}; const pr = this.presence.get(a.peer) || a.lite || {}; return { peer: a.peer, jt: +pr.jt || 9e15 }; });
+    const ps = this.live().map(ws => { const a = ws.deserializeAttachment() || {}; return { peer: a.peer, jt: +a.jt || 9e15 }; });
     ps.sort((x, y) => (x.jt - y.jt) || (x.peer < y.peer ? -1 : 1));
     return ps[0]?.peer || null;
   }
@@ -74,6 +76,7 @@ export class Room {
     if (m && m.t === 'p' && m.d && typeof m.d === 'object') {
       const cur = { ...(this.presence.get(a.peer) || a.lite || {}) };
       for (const k of Object.keys(m.d)) { if (m.d[k] === null) delete cur[k]; else cur[k] = m.d[k]; }
+      cur.jt = a.jt || cur.jt;
       if (JSON.stringify(cur).length > MAX_PRESENCE) { ws.serializeAttachment(a); return; }
       this.presence.set(a.peer, cur);
       // a small copy survives hibernation, so late joiners still see names in the lobby
@@ -94,13 +97,13 @@ export class Room {
       this.drop(target, CLOSE_KICKED, 'kicked');
     } else ws.serializeAttachment(a);
   }
-  async webSocketClose(ws) { this.leave(ws); }
+  async webSocketClose(ws, code) { this.leave(ws, code); }
   async webSocketError(ws) { this.leave(ws); }
-  leave(ws) {
+  leave(ws, code) {
     const a = ws.deserializeAttachment() || {};
     try { ws.close(1000, 'bye'); } catch (e) {}
     if (a.replaced) return;                 // its seat already belongs to the new connection
-    this.remember(a);
+    if (code !== 1000) this.remember(a);     // 1000 = pressed Leave; anything else is a drop worth holding the seat for
     this.presence.delete(a.peer);
     this.broadcast({ t: 'leave', peer: a.peer }, ws);
   }
@@ -114,7 +117,7 @@ export class Room {
   }
   remember(a) {
     if (!a.by) return;
-    this.recent.set(a.by, { peer: a.peer, lite: a.lite || {}, t: Date.now() });
+    this.recent.set(a.by, { peer: a.peer, lite: a.lite || {}, jt: a.jt, t: Date.now() });
     if (this.recent.size > 50) this.recent.delete(this.recent.keys().next().value);
   }
   async arm() { if (!(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + SWEEP_MS); }

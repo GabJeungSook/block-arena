@@ -99,9 +99,12 @@ const ava = p => p.pic ? `<img class="ava" alt="" src="${esc(p.pic)}" referrerpo
 function gate(title, text, signIn) {
   $('app').innerHTML = `<div class="gate"><h1>${title}</h1><p>${text}</p><div class="row">${signIn ? '<a class="btn primary" href="/auth/google?back=/admin">Sign in with Google</a>' : '<a class="btn" href="/auth/logout">Sign out</a>'}<a class="btn" href="/">Back to the game</a></div></div>`;
 }
-async function load() {
+// live numbers every 20 s; the history (kept on the server for 5 minutes) every 5 minutes or on Refresh
+let lastFull = 0;
+async function load(fresh) {
   let r;
-  try { r = await fetch('/api/admin/stats', { credentials: 'same-origin', cache: 'no-store' }); }
+  const liveOnly = !fresh && data && Date.now() - lastFull < 5 * 60000;
+  try { r = await fetch('/api/admin/stats' + (liveOnly ? '?live=1' : fresh ? '?fresh=1' : ''), { credentials: 'same-origin', cache: 'no-store' }); }
   catch (e) { $('liveDot')?.classList.add('off'); return; }
   if (r.status === 401 || r.status === 403) {
     const me = await fetch('/api/me', { credentials: 'same-origin' }).then(x => x.json()).catch(() => ({}));
@@ -111,19 +114,25 @@ async function load() {
     return;
   }
   if (!r.ok) { $('liveDot')?.classList.add('off'); return; }
-  data = await r.json();
+  const j = await r.json();
+  if (liveOnly) { data.live = j.live; data.at = j.at; renderLive(); return; }
+  data = j; lastFull = Date.now();
   render();
 }
-
-function render() {
+function renderLive() {
   const d = data, L = d.live;
-  if (!$('live')) $('app').innerHTML = shell();
   $('liveDot').classList.remove('off');
   $('upd').textContent = 'Updated ' + new Date(d.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' });
   $('onNow').textContent = fmt(L.online);
   $('onSub').textContent = `${fmt(L.signedIn)} signed in · ${fmt(L.guests)} guest${L.guests === 1 ? '' : 's'}`;
   $('liveChips').innerHTML = [['In a match', L.match], ['In a lobby', L.room], ['On the menu', L.menu], ['Open rooms', L.rooms], ['In Quick Match queue', L.quick]]
     .map(([k, v]) => `<div class="chip"><small>${k}</small><b>${fmt(v)}</b></div>`).join('');
+}
+
+function render() {
+  const d = data;
+  if (!$('live')) $('app').innerHTML = shell();
+  renderLive();
   renderRange();
   bars('chPlayers', d.days.map(x => ({ label: x.date, v: x.visitors, extra: `${fmt(x.signedIn)} signed in` })), 'players', '#ffd21a');
   bars('chMatches', d.days.map(x => ({ label: x.date, v: x.matches })), 'matches', '#1e8bff');
@@ -172,7 +181,7 @@ function shell() {
     <section><h2>Newest players</h2><ul class="ppl" id="newest"></ul></section>
   </div>
   <details><summary>Daily numbers as a table (30 days)</summary><table id="dayTable"></table></details>
-  <p class="note">"Playing right now" counts every open game on screen in the last 2½ minutes, guests included. Guests get a random ID that resets every day, so a guest who plays on three different days counts as three guest visits. Days run midnight to midnight, Philippine time. This page refreshes every 20 seconds.</p>`;
+  <p class="note">"Playing right now" counts every open game on screen in the last 2½ minutes, guests included. Guests get a random ID that resets every day, so a guest who plays on three different days counts as three guest visits. Days run midnight to midnight, Philippine time. Live numbers refresh every 20 seconds; the rest every 5 minutes (or press Refresh).</p>`;
 }
 // single-series bar chart: one bar per day, rounded tops anchored to the baseline, hover/tap for the value
 function bars(id, rows, unit, color) {
@@ -205,7 +214,7 @@ const short = d => { const t = new Date(d + 'T00:00:00'); return t.toLocaleDateS
 
 document.addEventListener('click', e => {
   const b = e.target.closest('#range button'); if (b && data) { range = b.dataset.r; try { localStorage.setItem('ba.adminRange', range); } catch (er) {} renderRange(); }
-  if (e.target.closest('#refresh')) load();
+  if (e.target.closest('#refresh')) load(true);
 });
 load(); timer = setInterval(() => { if (document.visibilityState === 'visible') load(); }, 20000);
 })();

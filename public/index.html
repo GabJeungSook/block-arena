@@ -1240,7 +1240,7 @@ if (LIVE) {
     async join(name) {
       const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
       const listeners = { topics: {}, peers: [], conn: [], end: [] };
-      let ws = null, myPeer = null, peerMap = new Map(), snapshot = Object.freeze([]), open = false, mine = {}, closed = false, firstJoin;
+      let myJt = 0, ws = null, myPeer = null, peerMap = new Map(), snapshot = Object.freeze([]), open = false, mine = {}, closed = false, firstJoin;
       const freezePeers = () => {
         snapshot = Object.freeze([...peerMap.values()].map(p => Object.freeze({ ...p, isMe: p.peer === myPeer, sameTab: p.peer === myPeer, kind: 'viewer', guest: false })));
         const ch = { peers: snapshot, joined: [], left: [], updated: snapshot };
@@ -1253,7 +1253,9 @@ if (LIVE) {
         ws.onmessage = ev => {
           let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
           if (m.t === 'hello') {
-            myPeer = m.peer; peerMap = new Map([[myPeer, { peer: myPeer, by: m.by, presence: mine, updatedAt: Date.now() }]]);
+            // the room's own join time decides the host, so everyone (including us) agrees on who it is
+            myPeer = m.peer; if (m.jt) { myJt = m.jt; mine.jt = myJt; }
+            peerMap = new Map([[myPeer, { peer: myPeer, by: m.by, presence: mine, updatedAt: Date.now() }]]);
             for (const p of m.peers) peerMap.set(p.peer, { peer: p.peer, by: p.by, presence: Object.freeze(p.presence || {}), updatedAt: Date.now() });
             setConn(true); freezePeers();
             if (Object.keys(mine).length) ws.send(JSON.stringify({ t: 'p', d: mine }));
@@ -1266,12 +1268,16 @@ if (LIVE) {
         ws.onclose = ev => {
           setConn(false);
           if (!settled) { settled = true; reject({ code: 'upstream_error' }); return; }
+          retries = 0;
           // 4001: this account opened the room somewhere else; 4002: the host removed us. Neither reconnects.
           if (ev.code === 4001 || ev.code === 4002) { closed = true; clearInterval(keep); const why = ev.code === 4002 ? 'kicked' : 'replaced'; listeners.end.forEach(fn => { try { fn(why); } catch (e) {} }); return; }
-          if (!closed) setTimeout(() => connect().catch(() => {}), 1200);
+          if (!closed) retry(1000);
         };
         ws.onerror = () => {};
       });
+      // after a drop, keep trying (1 s, 2 s, 4 s … up to 10 s) until it works or the player leaves
+      let retries = 0;
+      const retry = d => setTimeout(() => { if (closed) return; connect().catch(() => { if (!closed && ++retries < 60) retry(Math.min(d * 2, 10000)); }); }, d);
       await connect();
       // a small heartbeat, so the room can tell a live player from a phone that lost signal
       const keep = setInterval(() => { if (open && ws.readyState === 1) ws.send('ping'); }, 15000);
@@ -1281,6 +1287,7 @@ if (LIVE) {
         on: (topic, fn) => { (listeners.topics[topic] = listeners.topics[topic] || []).push(fn); return () => { listeners.topics[topic] = listeners.topics[topic].filter(f => f !== fn); }; },
         presence: async patch => {
           for (const k in patch) { if (patch[k] === null) delete mine[k]; else mine[k] = patch[k]; }
+          if (myJt) mine.jt = myJt;
           const me = peerMap.get(myPeer); if (me) { me.presence = Object.freeze({ ...mine }); }
           if (open) ws.send(JSON.stringify({ t: 'p', d: patch }));
         },
@@ -1288,7 +1295,7 @@ if (LIVE) {
         onPeers: (fn) => { listeners.peers.push(fn); queueMicrotask(() => fn({ peers: snapshot, joined: snapshot, left: [], updated: [] })); return () => { listeners.peers = listeners.peers.filter(f => f !== fn); }; },
         connected: () => open,
         onConnection: fn => { listeners.conn.push(fn); queueMicrotask(() => fn(open)); return () => { listeners.conn = listeners.conn.filter(f => f !== fn); }; },
-        leave: async () => { closed = true; clearInterval(keep); try { ws.close(); } catch (e) {} },
+        leave: async () => { closed = true; clearInterval(keep); try { ws.close(1000, 'leave'); } catch (e) {} },
         kick: peer => { if (open) ws.send(JSON.stringify({ t: 'kick', peer })); },
         onEnd: fn => { listeners.end.push(fn); return () => { listeners.end = listeners.end.filter(f => f !== fn); }; },
       });
@@ -1482,7 +1489,7 @@ function wire(g, wet, bus, pan, drive) {
 }
 function tone({ f = 440, to = 0, dur = .12, type = 'sine', vol = .2, attack = .003, delay = 0, wet = 0, bus = 'sfx', at = null, cutoff = 0, cutoffTo = 0, q = 1.2, pan = null, detune = 0, drive = false }) {
   const a = audio.ctx; if (!a || settings.muted) return;
-  if (bus === 'sfx' && game.mode === 'demo') return;
+  if (bus === 'sfx' && audio.quiet) return;
   if (!(f > 0) || (to && !(to > 0))) return;
   const t = at ?? a.currentTime + delay, o = a.createOscillator(), g = a.createGain();
   o.type = type; o.frequency.setValueAtTime(f, t); if (to) o.frequency.exponentialRampToValueAtTime(to, t + dur);
@@ -1494,7 +1501,7 @@ function tone({ f = 440, to = 0, dur = .12, type = 'sine', vol = .2, attack = .0
 }
 function hiss({ dur = .2, vol = .2, f = 1200, to = 0, type = 'lowpass', q = .8, delay = 0, wet = 0, bus = 'sfx', at = null, attack = 0, pan = null, drive = false }) {
   const a = audio.ctx; if (!a || settings.muted) return;
-  if (bus === 'sfx' && game.mode === 'demo') return;
+  if (bus === 'sfx' && audio.quiet) return;
   const t = at ?? a.currentTime + delay, s = a.createBufferSource(), fl = a.createBiquadFilter(), g = a.createGain();
   s.buffer = audio.noise; s.playbackRate.value = .9 + Math.random() * .2;
   fl.type = type; fl.Q.value = q; fl.frequency.setValueAtTime(f, t); if (to) fl.frequency.exponentialRampToValueAtTime(to, t + dur);
@@ -1776,7 +1783,8 @@ class Player {
     const p = this.piece; if (!p || !this.canHold || this.stun > 0 || !rules().hold) return;
     if (this.eff.lock > 0) { if (this.human) sfx.comboBreak(); return; }
     const prev = this.hold, prevO = this.holdO; this.hold = p.t; this.holdO = p.o ?? -1; this.canHold = false;
-    this.spawn(prev || undefined, prev ? prevO : -1); this.canHold = false;
+    this.spawn(prev || undefined, prev ? prevO : -1);
+    if (!(this.stun > 0)) this.canHold = false;      // (a K.O. caused by the swap leaves hold available)
     if (this.human) sfx.hold();
   }
   hardDrop() {
@@ -1854,6 +1862,7 @@ class Player {
       let blocked = 0;
       while (atk > 0 && this.pending.length) { const m = Math.min(atk, this.pending[0]); this.pending[0] -= m; atk -= m; blocked += m; if (!this.pending[0]) this.pending.shift(); }
       if (blocked) { labels.push({ t: 'BLOCKED ' + blocked, c: C.accent2 }); if (this.human) sfx.blocked(); }
+      if (atk > 0 && rules().garbage !== 1) atk = Math.max(1, Math.round(atk * rules().garbage));     // room rule: garbage ×0.5 … ×2 (counted the same on every screen)
       if (atk > 0) { this.sent += atk; const to = this.onAttack(atk); this.ev.push({ type: 'attack', n: atk, to }); labels.push({ t: '+' + atk, c: C.accent, big: atk >= 4 }); if (this.human) sfx.send(); }
     }
     labels.forEach((l, i) => this.fx.push({ ...l, age: -i * 80 }));
@@ -2399,20 +2408,26 @@ function renderLobby() {
   if (q) {
     $('btnLobbyStart').hidden = true; $('lobbyWait').hidden = false;
     $('lobbyWait').textContent = q.started && net.mid && !game.running ? 'Match over. Find another match or leave the room.' : q.started ? 'Starting…' : `Quick match · ${n} of ${q.expect} player${q.expect === 1 ? '' : 's'} here · starting…`;
-    if (net.host && !q.started && (n >= q.expect || Date.now() - q.t0 > 7000)) { q.started = true; netHostStart(); }
+    // start once everyone's name has arrived (so nobody shows up as "Player"), or after 7 s with whoever is here
+    const named = sorted.every(p => p.presence?.nick);
+    if (net.host && !q.started && named && (n >= q.expect || Date.now() - q.t0 > 7000)) { q.started = true; netHostStart(); }
     return;
   }
   showRules();
   if (net.host !== net.wasHost) { net.wasHost = net.host; net.rulesShared = false; }     // the host left and you took over
   if (net.host && !net.rulesShared) { net.rulesShared = true; pushRules(); }
-  $('btnLobbyStart').hidden = !net.host; $('lobbyWait').hidden = net.host;
+  $('btnLobbyStart').hidden = !net.host; $('lobbyWait').hidden = net.host && !inProgress;
+  $('btnLobbyStart').disabled = inProgress && !game.running;
   const bots = Math.max(0, Math.max(want, n) - n);
   $('btnLobbyStart').textContent = n > want ? `Start ${n}-player match` : `Start ${want}P match (${bots} bot${bots === 1 ? '' : 's'})`;
   $('lobbyWait').textContent = inProgress && !game.running ? 'A match is in progress. The next one starts when the host is back in the lobby.' : 'Waiting for the host to start…';
 }
 const escapeHtml = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 async function netHostStart() {
-  if (!net.nr || !net.host) return;
+  if (!net.nr || !net.host || net.starting) return;
+  // one start per tap, and never while someone is still finishing the last match
+  if (!net.quick && lobbyPeers().some(p => !p.isMe && p.presence?.st === 'play')) return;
+  net.starting = true; setTimeout(() => net.starting = false, 2000);
   const ps = lobbyPeers().slice().sort(byJoin).slice(0, 6);
   const want = net.quick ? net.quick.size : Math.max(+($('lobbySize').value || 2), 2);
   const size = Math.max(want, ps.length);
@@ -2428,6 +2443,7 @@ function onNetStart(m) {
   if (m.peer !== net.hostPeer) return;             // only the host starts matches
   if (game.running && game.mode === 'online' && net.mid === d.mid) return;
   net.mid = d.mid; net.host = d.host === net.myPeer; net.recv = {}; net.matchHost = d.host;
+  if (net.quick) net.quick.started = true;          // a quick match room never starts a second match by itself
   startOnline(d);
 }
 function startOnline(d) {
@@ -2503,13 +2519,20 @@ function netTick(now) {
     const s = pr.presence || {};
     const rp = game.players.find(p => p.remote && p.id === pr.peer);
     if (rp && (s.st === 'play' || s.st === 'done') && s.mid === net.mid) rp.apply(s);     // 'done' carries a player's final state (eliminated, finished)
-    if (pr.peer === net.hostPeer && s.bots && typeof s.bots === 'object') for (const id in s.bots) { const bp = game.players.find(p => p.remote && p.id === id); if (bp) bp.apply(s.bots[id]); }
+    if (pr.peer === net.matchHost && s.mid === net.mid && s.bots && typeof s.bots === 'object') for (const id in s.bots) { const bp = game.players.find(p => p.remote && p.id === id); if (bp) bp.apply(s.bots[id]); }
   }
   // a player who left is gone; the bots run on the match host's device, so they go when it goes
-  const here = id => peers.some(pr => pr.peer === id);
-  for (const p of game.players) if (p.remote) p.gone = /^b\d$/.test(p.id) ? !here(net.matchHost) : !here(p.id);
+  // a player counts as gone once they've been missing from this match for 8 s: not in the room, or back in
+  // the room but no longer in this match (they reloaded). A short network blip doesn't end anyone's game.
+  const inMatchPeer = id => peers.some(pr => pr.peer === id && pr.presence?.mid === net.mid && ['play', 'done'].includes(pr.presence?.st));
+  const t = performance.now();
+  for (const p of game.players) if (p.remote) {
+    const missing = !inMatchPeer(/^b\d$/.test(p.id) ? net.matchHost : p.id);
+    p.missT = missing ? (p.missT || t) : 0;
+    p.gone = missing && t - p.missT > 8000;
+  }
   netReconcile(); netPowers(); netTally();
-  if (now - net.lastPub >= 100) {
+  if (now - net.lastPub >= 150) {
     net.lastPub = now;
     const snap = { st: game.over ? 'done' : 'play', mid: net.mid, ...snapOf(me) };
     if (net.host) { snap.bots = {}; for (const p of game.players) if (!p.remote && !p.human) snap.bots[p.id] = snapOf(p); }
@@ -2739,7 +2762,7 @@ async function drawCard(kind, data) {
   g.fillStyle = C.accent; g.fillRect(48, 548, W - 108, 56); g.fillStyle = C.navy;
   T('CAN YOU BEAT ME?', 76, 586, { s: 24, c: C.navy });
   T(`Play free · ${location.host}`, W - 84, 585, { w: 700, s: 24, f: BODY, c: C.navy, a: 'right' });
-  return { png: cv2.toDataURL('image/png'), title, desc };
+  return { png: cv2.toDataURL('image/jpeg', .86), title, desc };      // JPEG keeps cards small for the free database
 }
 
 // ---- hooks used by the rest of the game ----
@@ -2914,7 +2937,7 @@ function hubConnect() {
   if (!LIVE || !account.user || hub.ws) return;
   let ws; try { ws = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/hub`); } catch (e) { return; }
   hub.ws = ws;
-  ws.onopen = () => { hub.tries = 0; hub.last = ''; hubState(); };
+  ws.onopen = () => { hub.tries = 0; hub.last = ''; hubState(); if (qm.size && qm.timer) { ws.send(JSON.stringify({ t: 'q', size: qm.size })); qm.went = false; } };   // still searching: rejoin the queue
   ws.onmessage = ev => { if (ev.data === 'pong') return; let m; try { m = JSON.parse(ev.data); } catch (e) { return; } onHub(m); };
   ws.onclose = () => {
     hub.ws = null; clearInterval(hub.ping);
@@ -2936,7 +2959,7 @@ function onHub(m) {
     f.online = !!m.st; f.st = m.st; f.room = m.room; frChanged();
     if (cameOnline && !inMatch()) shareMsg(`${f.name} is online`);
   } else if (m.t === 'inv') {
-    showInvite({ ...m.from, room: m.room });
+    if (m.from && m.from.name) showInvite({ ...m.from, room: m.room });
   } else if (m.t === 'invsent') {
     const f = find(m.to); setFrMsg(`Invite sent to ${f ? f.name : 'your friend'}.`); shareMsg(`Invite sent to ${f ? f.name : 'your friend'}`);
     document.querySelectorAll(`#frList [data-id="${+m.to}"] [data-fr="invite"], #onFriends [data-id="${+m.to}"] [data-fr="invite"]`).forEach(b => { b.textContent = 'Invited'; b.disabled = true; });
@@ -3865,7 +3888,7 @@ function start(mode) {
 }
 function launch(mode, ps, size) {
   if (mode !== 'online') { game.rules = game.pendingRules || STD_RULES; game.pendingRules = null; }
-  game.mode = mode; game.over = false; game.paused = false; game.elapsed = 0; game.timeLeft = matchMs() || 1e9; game.countdown = 3000; game.goT = 0;
+  game.mode = mode; game.over = false; game.paused = false; game.elapsed = 0; game.goAt = 0; game.timeLeft = matchMs() || 1e9; game.countdown = 3000; game.goT = 0;
   fx.parts = []; fx.sweeps = []; fx.trails = []; fx.glows = []; fx.orbs = []; fx.rings = []; fx.blasts = [];
   game.players = ps; game.size = size;
   ps[0].autoTarget = true;
@@ -3877,7 +3900,6 @@ function launch(mode, ps, size) {
     if (p.remote) return;
     p.onAttack = n => {
       const o = p.target && ps.includes(p.target) && alive(p.target) ? p.target : pickTarget(p); if (!o) return null;
-      if (rules().garbage !== 1) n = Math.max(1, Math.round(n * rules().garbage));
       deliver(p, o, n);
       p.target = pickTarget(p);
       return o;
@@ -3920,13 +3942,13 @@ function launch(mode, ps, size) {
   game.lastTick = 99; game.heartT = 0;
   if (mode !== 'demo') { musicStop(); music.fresh = true; } layout();
   game.intro = mode === 'sprint' || mode === 'classic' || mode === 'demo' ? 0 : 1700;
-  if (game.intro) { sfx.whoosh(); setTimeout(() => game.running && sfx.vs(), 380); } else sfx.riser();
+  if (game.intro) { sfx.whoosh(); setTimeout(() => game.running && sfx.vs(), 380); } else if (mode !== 'demo') sfx.riser();
 }
 
 function end() {
   if (game.mode === 'demo') { startDemo(); return; }
   if (game.over) return;
-  game.over = true; game.running = false; musicStop(); showQuickChat(false);
+  game.over = true; game.running = false; musicStop(); showQuickChat(false); $('touch').classList.remove('show');
   game.inputs.forEach(i => i.clear());
   const [a, b] = game.players;
   const pps = p => game.elapsed ? (p.pieces / (game.elapsed / 1000)).toFixed(2) : '0.00';
@@ -3962,10 +3984,11 @@ function end() {
       (resCols = cols.length, '') + ranked.map((p, i) => `<span class="k${p === a ? ' me' : ''}"><i class="medal m${i + 1}">${i + 1}</i><i class="dot" style="background:${p.tint}"></i>${p.name}</span>${cols.map(c => `<span class="v">${c[1](p)}</span>`).join('')}`).join('');
     xp = Math.round((a.sent + a.ko * 8 + a.lines * .5 + [45, 25, 14, 9, 6, 4][place - 1]) * (game.mode === 'online' ? 1.2 : LEVELS[game.level].xp));
   } else {
-    const w = a.ko !== b.ko ? (a.ko > b.ko ? a : b) : a.sent !== b.sent ? (a.sent > b.sent ? a : b) : null;
+    // a rival who left mid-match loses, whatever the score
+    const w = b.gone && !a.out ? a : a.ko !== b.ko ? (a.ko > b.ko ? a : b) : a.sent !== b.sent ? (a.sent > b.sent ? a : b) : null;
     won = w === a;
     $('resTitle').textContent = !w ? 'Draw' : game.mode === 'cpu' ? (won ? 'You win!' : 'CPU wins') : game.mode === 'online' ? (won ? 'You win!' : `${b.name} wins`) : w.name + ' wins!';
-    sub = `${a.ko} – ${b.ko} in K.O.s` + (a.ko === b.ko && w ? (a.sent === b.sent ? ', decided on stack height' : ', decided on lines sent') : '');
+    sub = b.gone ? `${b.name} left the match` : `${a.ko} – ${b.ko} in K.O.s` + (a.ko === b.ko && w ? (a.sent === b.sent ? ', decided on stack height' : ', decided on lines sent') : '');
     html = `<span class="h"></span><span class="h" style="text-align:right">${a.name}</span><span class="h" style="text-align:right">${b.name}</span>` +
       row2('K.O.s', a.ko, b.ko) + row2("Times K.O.'d", a.deaths || 0, b.deaths || 0) + row2('Lines sent', a.sent, b.sent) + row2('Lines cleared', a.lines, b.lines) + row2('Perfect clears', a.pcs || 0, b.pcs || 0) + row2('Best combo', Math.max(0, a.maxCombo), Math.max(0, b.maxCombo)) + row2('Pieces/sec', pps(a), pps(b));
     if (game.mode === 'cpu') xp = Math.round((a.sent + a.ko * 8 + a.lines * .5 + (won ? 30 : 6)) * LEVELS[game.level].xp);
@@ -4042,7 +4065,7 @@ function pause(on) {
   if (!inMatch()) return;
   $('pauseRanked').hidden = !game.ranked;
   if (game.mode === 'online') { game.inputs.forEach(i => i.clear()); show(on ? 'ovPause' : null); $('pauseNote').hidden = !on; return; }   // an online match keeps running for everyone
-  game.paused = on; game.inputs.forEach(i => i.clear()); show(on ? 'ovPause' : null);
+  game.paused = on; game.inputs.forEach(i => i.clear()); show(on ? 'ovPause' : null); $('pauseNote').hidden = true;
   if (on) musicStop(); else if (game.countdown <= 0 && !game.intro) musicStart('game');
 }
 const fmt = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return (s / 60 | 0) + ':' + String(s % 60).padStart(2, '0'); };
@@ -4075,7 +4098,7 @@ addEventListener('keydown', e => {
   r[0].press(r[1]);
 });
 addEventListener('keyup', e => { if (!inMatch()) return; const r = route(e.code); if (r) r[0].release(r[1]); });
-addEventListener('blur', () => { game.inputs.forEach(i => i.clear()); if (inMatch() && !game.paused && game.countdown <= 0) pause(true); });
+addEventListener('blur', () => { game.inputs.forEach(i => i.clear()); if (inMatch() && !game.paused && !game.over) pause(true); });
 document.addEventListener('visibilitychange', () => { if (document.hidden && inMatch() && !game.paused) pause(true); });
 function homeKeys(e) {
   const t = e.target; if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT')) return;
@@ -4110,9 +4133,10 @@ document.querySelectorAll('#diff button').forEach(b => b.addEventListener('click
 }));
 $('btnPause').onclick = () => pause($('ovPause').hidden);
 $('btnResume').onclick = () => { if (game.mode === 'online') { show(null); } else pause(false); };
-const quitTo = where => () => { showQuickChat(false); if (inMatch()) { game.running = false; game.paused = false; musicStop(); game.inputs.forEach(i => i.clear()); } if (net.nr) netLeave(false); show(where); };
+const quitTo = where => () => { showQuickChat(false); $('touch').classList.remove('show'); if (inMatch()) { game.running = false; game.paused = false; musicStop(); game.inputs.forEach(i => i.clear()); } if (net.nr) netLeave(false); show(where); };
 $('btnQuit').onclick = $('btnBack').onclick = quitTo('ovMenu');
-$('btnMenu').onclick = quitTo('ovHome');
+// Home in the top bar never quits a match by accident: mid-match it opens the pause screen, which has Quit
+{ const goHome = quitTo('ovHome'); $('btnMenu').onclick = () => { if (inMatch() && !game.over) { pause(true); return; } goHome(); }; }
 document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => show(b.dataset.go)));
 document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => show(lastScreen)));
 $('hPlay').onclick = () => show('ovMenu');
@@ -4564,7 +4588,7 @@ function drawBoard(p, bx, by, cell, small) {
   if (pc) {
     let gy = pc.y; while (!collideB(p.board, pc.t, pc.r, pc.x, gy + 1)) gy++;
     // smooth visual position that glides toward the real one
-    if (!p.vis || p.vis.id !== p.pid) p.vis = { id: p.id, x: pc.x, y: pc.y };
+    if (!p.vis || p.vis.id !== p.pid) p.vis = { id: p.pid, x: pc.x, y: pc.y };
     const k = reduceMotion ? 1 : Math.min(1, frameDt / 45);
     p.vis.x += (pc.x - p.vis.x) * k; p.vis.y += (pc.y - p.vis.y) * k;
     if (Math.abs(pc.x - p.vis.x) > 3) p.vis.x = pc.x; if (Math.abs(pc.y - p.vis.y) > 3) p.vis.y = pc.y;
@@ -5053,11 +5077,12 @@ function frame(now) {
     if (game.countdown > 0) {
       const before = Math.ceil(game.countdown / 1000);
       game.countdown -= dt;
-      if (game.countdown <= 0) { game.goT = 600; sfx.go(); musicStart('game'); game.inputs.forEach(i => { if (i.dir) i.p.move(i.dir); }); }
+      if (game.countdown <= 0) { game.goT = 600; game.goAt = performance.now(); sfx.go(); musicStart('game'); game.inputs.forEach(i => { if (i.dir) i.p.move(i.dir); }); }
       else if (Math.ceil(game.countdown / 1000) !== before) sfx.count();
     } else {
       game.goT = Math.max(0, game.goT - dt);
-      game.elapsed += dt;
+      // online matches run on the wall clock, so a slow phone or a moment in another app can't put its clock behind everyone else's
+      if (game.mode === 'online' && game.goAt) game.elapsed = performance.now() - game.goAt; else game.elapsed += dt;
       if (game.mode !== 'sprint' && game.mode !== 'classic') game.timeLeft = matchMs() ? Math.max(0, matchMs() - game.elapsed) : 1e9;
       game.inputs.forEach(i => i.update(dt));
       game.cpus.forEach(c => c.update(dt));
@@ -5089,7 +5114,10 @@ function frame(now) {
 let frameErrs = 0;
 function safeFrame(now) {
   // keep the loop alive if anything throws, so one bad frame can't freeze the game
+  // the menu's demo match plays silently; buttons and chimes outside the game loop still make sound
+  audio.quiet = game.mode === 'demo';
   try { frame(now); } catch (e) { if (frameErrs++ < 5) console.error(e); try { ctx.restore(); } catch (e2) {} ctx.globalAlpha = 1; requestAnimationFrame(safeFrame); }
+  audio.quiet = false;
 }
 
 // idle preview behind the menu

@@ -28,6 +28,7 @@ const GRAPH = 'https://graph.facebook.com/v25.0';
 const DIALOG = 'https://www.facebook.com/v25.0/dialog/oauth';
 const SESSION_DAYS = 60;
 const MIN_MATCH_MS = 20000, MAX_MATCH_MS = 15 * 60000;
+const RP_DAILY_CAP = 300;    // most rank points one account can gain in a day
 // Administrators (the stats page). Google tells us the email at sign-in; we compare its SHA-256 here and never store it.
 // More admins: add their hash here, or list emails in an ADMIN_EMAILS variable (comma separated) in the dashboard.
 const ADMIN_EMAIL_HASHES = ['cde02621d81cbb0797099f0a55b3623f960cacf14e40dc21137f98fb1152040c'];
@@ -58,6 +59,8 @@ async function ensureSchema(env) {
     env.DB.prepare('CREATE INDEX IF NOT EXISTS plays_day ON plays (day)'),
     env.DB.prepare('CREATE INDEX IF NOT EXISTS plays_vid ON plays (vid, ts)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS counters (day INTEGER NOT NULL, key TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, key))'),
+    // per-player daily counts (matches played, rank points gained, friend requests sent)
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS ucounters (day INTEGER NOT NULL, uid INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE, key TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, uid, key))'),
   ]);
   schemaReady = true;
 }
@@ -105,7 +108,8 @@ const setCookie = (url, name, val, maxAge) => `${name}=${encodeURIComponent(val)
 // "back to" paths after sign-in: anything that doesn't resolve to this site becomes "/"
 function safeBack(url, v) {
   if (!v || typeof v !== 'string' || v[0] !== '/') return '/';
-  try { const t = new URL(v, url.origin); return t.origin === url.origin ? t.pathname + t.search : '/'; } catch (e) { return '/'; }
+  // always hand back a full same-site address: a bare path like //evil.com would otherwise leave the site
+  try { const t = new URL(v, url.origin); return t.origin === url.origin ? t.origin + t.pathname.replace(/^\/+/, '/') + t.search : '/'; } catch (e) { return '/'; }
 }
 const redirect = (to, headers = {}) => new Response(null, { status: 302, headers: { Location: to, ...headers } });
 
@@ -293,7 +297,7 @@ async function api(req, env, url, p) {
   const u = await currentUser(req, env);
   if (p === '/api/track/ping' && m === 'POST') return trackPing(req, env, u);
   if (p === '/api/track/match' && m === 'POST') return trackMatch(req, env, u);
-  if (p === '/api/admin/stats' && m === 'GET') return (await isAdmin(env, u)) ? adminStats(env) : json({ error: 'forbidden' }, 403);
+  if (p === '/api/admin/stats' && m === 'GET') return (await isAdmin(env, u)) ? adminStats(env, url) : json({ error: 'forbidden' }, 403);
   if (p === '/api/me' && m === 'GET') {
     const login = env.GOOGLE_CLIENT_ID ? 'google' : env.FB_APP_ID ? 'facebook' : null;
     if (!u) return json({ user: null, fbConfigured: !!login, login, appId: env.FB_APP_ID || null, friendsEnabled: env.FB_FRIENDS === '1' });
@@ -318,6 +322,7 @@ async function api(req, env, url, p) {
   if (p === '/api/match/finish' && m === 'POST') return matchFinish(req, env, u);
   if (p === '/api/account' && m === 'DELETE') {
     await env.DB.prepare('DELETE FROM users WHERE id = ?').bind(u.id).run();
+    await hubCall(env, '/kick', { uid: u.id });
     return json({ ok: true }, 200, { 'Set-Cookie': setCookie(url, 'ba_sess', '', 0) });
   }
   return json({ error: 'not_found' }, 404);
@@ -447,10 +452,16 @@ async function matchFinish(req, env, u) {
   }
   const place = Math.max(1, Math.min(mt.size, Math.floor(+b.place || mt.size)));
   const draw = !!b.draw && mt.size === 2;
-  const d = rpDelta({ kind: mt.kind, level: mt.level || 'normal', size: mt.size, place, draw }, u.rp);
+  let d = rpDelta({ kind: mt.kind, level: mt.level || 'normal', size: mt.size, place, draw }, u.rp);
+  // results are reported by the game, so rank gains are capped per day: a cheater can't rocket to the top
+  if (d > 0) {
+    const g = await ucount(env, u.id, 'rp');
+    d = Math.min(d, Math.max(0, RP_DAILY_CAP - (g?.n || 0)));
+  }
   const rp = applyDelta(u.rp, d), real = rp - u.rp, win = place === 1 && !draw ? 1 : 0;
   const claim = await env.DB.prepare('UPDATE matches SET finished_at = ?, place = ?, delta = ? WHERE id = ? AND finished_at IS NULL').bind(now(), place, real, mt.id).run();
   if (!claim.meta.changes) return json({ error: 'unknown_match' }, 404);       // the same result sent twice counts once
+  if (real > 0) await ubump(env, u.id, 'rp', real);
   await env.DB.prepare('UPDATE users SET rp = ?, peak_rp = MAX(peak_rp, ?), ranked_games = ranked_games + 1, ranked_wins = ranked_wins + ?, updated_at = ? WHERE id = ?').bind(rp, rp, win, now(), u.id).run();
   const before = rankOf(u.rp), after = rankOf(rp);
   return json({ delta: real, rp, before: before.name, after: after.name, promoted: rp > u.rp && after.name !== before.name, demoted: rp < u.rp && after.name !== before.name });
@@ -461,14 +472,16 @@ async function matchFinish(req, env, u) {
 async function createShare(req, env, url, u) {
   const b = await body(req, 900000);
   const kind = ['rank', 'match', 'achievement'].includes(b.kind) ? b.kind : null;
-  const m = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/.exec(String(b.png || ''));
+  const m = /^data:image\/(?:png|jpeg);base64,([A-Za-z0-9+/=]+)$/.exec(String(b.png || ''));
   if (!kind || !m) return json({ error: 'bad_request' }, 400);
-  let bytes; try { bytes = Uint8Array.from(atob(m[1]), c => c.charCodeAt(0)); } catch (e) { return json({ error: 'bad_image' }, 400); }
-  if (bytes.length > 650000 || bytes[0] !== 0x89 || bytes[1] !== 0x50) return json({ error: 'bad_image' }, 400);
+  let bytes;
+  try { const bin = atob(m[1]); bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); } catch (e) { return json({ error: 'bad_image' }, 400); }
+  const png = bytes[0] === 0x89 && bytes[1] === 0x50, jpg = bytes[0] === 0xff && bytes[1] === 0xd8;
+  if (bytes.length > 300000 || !(png || jpg)) return json({ error: 'bad_image' }, 400);
+  // the database is small (free tier), so cards are kept small, a few a day, for 30 days (Facebook caches them by then)
   const recent = await env.DB.prepare('SELECT COUNT(*) AS c FROM shares WHERE user_id = ? AND created_at > ?').bind(u.id, now() - 864e5).first();
-  if ((recent?.c || 0) >= 12) return json({ error: 'too_many' }, 429);
-  // cards older than 60 days are removed so the free database never fills up (Facebook has cached them by then)
-  await env.DB.prepare('DELETE FROM shares WHERE created_at < ?').bind(now() - 60 * 864e5).run();
+  if ((recent?.c || 0) >= 5) return json({ error: 'too_many' }, 429);
+  if (Math.random() < .2) await env.DB.prepare('DELETE FROM shares WHERE created_at < ?').bind(now() - 30 * 864e5).run();
   const id = rand(8), clean = (t, n) => String(t || '').replace(/[<>"&]/g, '').slice(0, n);
   await env.DB.prepare('INSERT INTO shares (id, user_id, kind, title, description, png, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
     .bind(id, u.id, kind, clean(b.title, 90) || 'Block Arena', clean(b.description, 200) || 'Play Block Arena with me', bytes, now()).run();
@@ -479,7 +492,7 @@ async function sharePage(req, env, url, p) {
   if (!m) return new Response('Not found', { status: 404 });
   const row = await env.DB.prepare('SELECT id, title, description, png, kind FROM shares WHERE id = ?').bind(m[1]).first();
   if (!row) return redirect('/');
-  if (m[2]) return new Response(new Uint8Array(row.png), { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=31536000, immutable' } });
+  if (m[2]) { const img = new Uint8Array(row.png); return new Response(img, { headers: { 'Content-Type': img[0] === 0xff ? 'image/jpeg' : 'image/png', 'Cache-Control': 'public, max-age=31536000, immutable' } }); }
   const img = `${url.origin}/s/${row.id}.png`, link = `${url.origin}/s/${row.id}`;
   return new Response(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${row.title}</title>
@@ -538,6 +551,9 @@ async function friendRequest(req, env, u) {
   if (await env.DB.prepare('SELECT 1 FROM friend_requests WHERE from_id = ? AND to_id = ?').bind(id, u.id).first()) { await makeFriends(env, u.id, id); await hubCall(env, '/notify', { to: id, msg: { t: 'acc', id: u.id, name: u.name } }); return json({ status: 'friends', id, name: them.name }); }
   const n = await env.DB.prepare('SELECT COUNT(*) AS c FROM friend_requests WHERE from_id = ?').bind(u.id).first();
   if (n.c >= MAX_PENDING) return json({ error: 'too_many' }, 429);
+  // no more than 30 new requests a day, so nobody can pester every player in turn
+  if (((await ucount(env, u.id, 'frq'))?.n || 0) >= 30) return json({ error: 'too_many' }, 429);
+  await ubump(env, u.id, 'frq', 1);
   await env.DB.prepare('INSERT OR IGNORE INTO friend_requests (from_id, to_id, created_at) VALUES (?, ?, ?)').bind(u.id, id, now()).run();
   await hubCall(env, '/notify', { to: id, msg: { t: 'req', from: { id: u.id, name: u.name, pic: u.pic } } });
   return json({ status: 'sent', id, name: them.name });
@@ -593,7 +609,7 @@ async function chatRead(req, env, u) {
   return json({ ok: true });
 }
 async function leaderboard(req, env, url) {
-  const limit = Math.max(1, Math.min(100, +url.searchParams.get('limit') || 50));
+  const limit = Math.max(1, Math.min(100, Math.floor(+url.searchParams.get('limit') || 50)));
   const u = await currentUser(req, env);
   const friends = url.searchParams.get('scope') === 'friends' && u;
   const { results } = friends
@@ -611,74 +627,97 @@ async function leaderboard(req, env, url) {
 // ---------- play stats ----------
 // Every open game (guest or signed in) pings about once a minute while it's on screen, and reports each finished
 // match. Nothing here identifies a guest: their id is random and the game replaces it every day.
+// Everything is kept as daily totals (a handful of rows per day), so the free database never fills up and the
+// stats page stays cheap to read. Guests add no rows at all.
 const VID = /^[a-z0-9]{8,32}$/;
 const TRACK_MODES = ['cpu', 'arena', 'survival', 'powerup', 'sprint', 'classic', 'local', 'online', 'quick'];
-const bump = (env, key, n) => env.DB.prepare('INSERT INTO counters (day, key, n) VALUES (?, ?, ?) ON CONFLICT (day, key) DO UPDATE SET n = n + excluded.n').bind(dayOf(env, now()), key, n).run().catch(() => {});
+const bump = (env, key, n, day) => env.DB.prepare('INSERT INTO counters (day, key, n) VALUES (?, ?, ?) ON CONFLICT (day, key) DO UPDATE SET n = n + excluded.n').bind(day ?? dayOf(env, now()), key, n).run().catch(() => {});
+const ubump = (env, uid, key, n) => env.DB.prepare('INSERT INTO ucounters (day, uid, key, n) VALUES (?, ?, ?, ?) ON CONFLICT (day, uid, key) DO UPDATE SET n = n + excluded.n').bind(dayOf(env, now()), uid, key, n).run().catch(() => {});
+const ucount = (env, uid, key) => env.DB.prepare('SELECT n FROM ucounters WHERE day = ? AND uid = ? AND key = ?').bind(dayOf(env, now()), uid, key).first();
+// a light per-address limit (per server instance) so a script can't burn through the daily database writes
+const hits = new Map();
+function tooMany(req, max) {
+  const ip = req.headers.get('CF-Connecting-IP') || 'local', t = now(), h = hits.get(ip);
+  if (!h || t - h.t > 60000) { hits.set(ip, { t, n: 1 }); if (hits.size > 5000) hits.clear(); return false; }
+  return ++h.n > max;
+}
 async function trackPing(req, env, u) {
   const b = await body(req), vid = String(b.vid || '');
   if (!VID.test(vid)) return json({ error: 'bad_request' }, 400);
+  if (tooMany(req, 30)) return json({ ok: true });
   const st = ['menu', 'room', 'match'].includes(b.st) ? b.st : 'menu';
-  await hubCall(env, '/ping', { key: 'v' + vid, st, uid: u ? u.id : 0 });
-  // first ping of the day adds the visitor; signing in later that day attaches the account to the same row
-  await env.DB.prepare(`INSERT INTO daily (day, vid, uid, first_ts) VALUES (?, ?, ?, ?)
-      ON CONFLICT (day, vid) DO UPDATE SET uid = excluded.uid WHERE daily.uid IS NULL AND excluded.uid IS NOT NULL`).bind(dayOf(env, now()), vid, u ? u.id : null, now()).run();
+  const r = await hubCall(env, '/ping', { key: 'v' + vid, st, uid: u ? u.id : 0, day: dayOf(env, now()) });
+  if (u) {
+    // one row per signed-in player per day
+    await env.DB.prepare('INSERT OR IGNORE INTO daily (day, vid, uid, first_ts) VALUES (?, ?, ?, ?)').bind(dayOf(env, now()), 'u' + u.id, u.id, now()).run();
+  } else if (r.fresh) await bump(env, 'guests', 1);      // a guest the Hub hasn't seen today
   return json({ ok: true });
 }
+const lastMatch = new Map();
 async function trackMatch(req, env, u) {
   const b = await body(req), vid = String(b.vid || '');
   if (!VID.test(vid) || !TRACK_MODES.includes(b.mode)) return json({ error: 'bad_request' }, 400);
-  const t = now(), day = dayOf(env, t);
-  // no more than one match every 8 s and 400 a day from the same game
-  const last = await env.DB.prepare('SELECT ts, (SELECT COUNT(*) FROM plays WHERE vid = ?1 AND day = ?2) AS n FROM plays WHERE vid = ?1 ORDER BY ts DESC LIMIT 1').bind(vid, day).first();
-  if (last && (t - last.ts < 8000 || last.n >= 400)) return json({ ok: true, skipped: true });
-  const size = Math.max(1, Math.min(6, Math.floor(+b.size || 1))), ms = Math.max(0, Math.min(36e5, Math.floor(+b.ms || 0)));
-  await env.DB.prepare('INSERT INTO plays (day, ts, mode, size, won, ms, vid, uid) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').bind(day, t, b.mode, size, b.won ? 1 : 0, ms, vid, u ? u.id : null).run();
-  if (Math.random() < .02) {           // keep about a year of history
-    const old = day - 400;
-    await env.DB.batch(['plays', 'daily', 'counters'].map(tb => env.DB.prepare(`DELETE FROM ${tb} WHERE day < ?`).bind(old)));
+  const t = now(), key = u ? 'u' + u.id : vid;
+  if (tooMany(req, 20) || t - (lastMatch.get(key) || 0) < 8000) return json({ ok: true, skipped: true });
+  lastMatch.set(key, t); if (lastMatch.size > 5000) lastMatch.clear();
+  const ms = Math.max(0, Math.min(36e5, Math.floor(+b.ms || 0)));
+  await env.DB.batch([
+    ...[['matches', 1], ['m:' + b.mode, 1], ['ms', ms]].map(([k, n]) => env.DB.prepare('INSERT INTO counters (day, key, n) VALUES (?, ?, ?) ON CONFLICT (day, key) DO UPDATE SET n = n + excluded.n').bind(dayOf(env, t), k, n)),
+    env.DB.prepare('INSERT INTO counters (day, key, n) VALUES (0, ?, 1) ON CONFLICT (day, key) DO UPDATE SET n = n + 1').bind('matches'),     // lifetime total
+    ...(u ? [env.DB.prepare('INSERT INTO ucounters (day, uid, key, n) VALUES (?, ?, ?, 1) ON CONFLICT (day, uid, key) DO UPDATE SET n = n + 1').bind(dayOf(env, t), u.id, 'm')] : []),
+  ]).catch(() => {});
+  if (Math.random() < .01) {           // keep about a year of history
+    const old = dayOf(env, t) - 400;
+    await env.DB.batch(['daily', 'ucounters'].map(tb => env.DB.prepare(`DELETE FROM ${tb} WHERE day < ?`).bind(old)).concat(env.DB.prepare('DELETE FROM counters WHERE day > 0 AND day < ?').bind(old))).catch(() => {});
   }
   return json({ ok: true });
 }
-async function adminStats(env) {
+// The page asks for live numbers every 20 s (cheap: only the Hub) and for the history every 5 minutes;
+// history is also kept for 5 minutes here, so leaving the page open all day costs almost nothing.
+let statsCache = null;
+async function adminStats(env, url) {
+  const live = { online: 0, signedIn: 0, guests: 0, menu: 0, room: 0, match: 0, rooms: 0, quick: 0, ...(await hubCall(env, '/stats', {})) };
+  if (url.searchParams.get('live') === '1') return json({ at: now(), live });
+  if (!statsCache || now() - statsCache.at > 5 * 60000 || url.searchParams.get('fresh') === '1') statsCache = { at: now(), data: await statsHistory(env) };
+  return json({ at: now(), cachedAt: statsCache.at, live, ...statsCache.data });
+}
+async function statsHistory(env) {
   const t = now(), today = dayOf(env, t), off = tzMs(env), q = (sql, ...a) => env.DB.prepare(sql).bind(...a);
   const win = n => today - n + 1;
-  const [live, rows] = await Promise.all([
-    hubCall(env, '/stats', {}),
-    env.DB.batch([
-      q('SELECT COUNT(*) AS n FROM users'),
-      q('SELECT COUNT(*) AS n FROM plays'),
-      ...[1, 7, 30].flatMap(n => [
-        q('SELECT COUNT(DISTINCT uid) AS signed, SUM(uid IS NULL) AS guests FROM daily WHERE day >= ?', win(n)),
-        q('SELECT COUNT(*) AS n FROM users WHERE created_at >= ?', (win(n) * 864e5) - off),
-        q('SELECT COUNT(*) AS n, COALESCE(SUM(ms), 0) AS ms FROM plays WHERE day >= ?', win(n)),
-      ]),
-      q('SELECT mode, COUNT(*) AS n FROM plays WHERE day >= ? GROUP BY mode ORDER BY n DESC', win(7)),
-      q('SELECT day, COUNT(*) AS n, SUM(uid IS NOT NULL) AS signed FROM daily WHERE day >= ? GROUP BY day', win(30)),
-      q('SELECT day, COUNT(*) AS n FROM plays WHERE day >= ? GROUP BY day', win(30)),
-      q('SELECT CAST((created_at + ?) / 86400000 AS INTEGER) AS day, COUNT(*) AS n FROM users WHERE created_at >= ? GROUP BY day', off, (win(30) * 864e5) - off),
-      q('SELECT key, SUM(n) AS n FROM counters WHERE day >= ? GROUP BY key', win(7)),
-      q('SELECT COUNT(*) AS n FROM messages WHERE created_at >= ?', t - 7 * 864e5),
-      q('SELECT name, pic, rp, ranked_games AS games FROM users WHERE ranked_games > 0 ORDER BY rp DESC LIMIT 10'),
-      q('SELECT name, pic, created_at FROM users ORDER BY created_at DESC LIMIT 8'),
-      q('SELECT u.name, u.pic, COUNT(*) AS n FROM plays p JOIN users u ON u.id = p.uid WHERE p.day >= ? GROUP BY p.uid ORDER BY n DESC LIMIT 8', win(7)),
+  const rows = (await env.DB.batch([
+    q('SELECT COUNT(*) AS n FROM users'),
+    q("SELECT n FROM counters WHERE day = 0 AND key = 'matches'"),
+    ...[1, 7, 30].flatMap(n => [
+      q('SELECT COUNT(DISTINCT uid) AS n FROM daily WHERE day >= ? AND uid IS NOT NULL', win(n)),
+      q('SELECT COUNT(*) AS n FROM users WHERE created_at >= ?', (win(n) * 864e5) - off),
     ]),
-  ]);
-  const r = rows.map(x => x.results), one = i => r[i][0] || {};
+    q('SELECT day, key, n FROM counters WHERE day >= ?', win(30)),
+    q('SELECT day, COUNT(*) AS n FROM daily WHERE day >= ? AND uid IS NOT NULL GROUP BY day', win(30)),
+    q('SELECT CAST((created_at + ?) / 86400000 AS INTEGER) AS day, COUNT(*) AS n FROM users WHERE created_at >= ? GROUP BY day', off, (win(30) * 864e5) - off),
+    q('SELECT COUNT(*) AS n FROM messages WHERE created_at >= ?', t - 7 * 864e5),
+    q('SELECT name, pic, rp, ranked_games AS games FROM users WHERE ranked_games > 0 ORDER BY rp DESC LIMIT 10'),
+    q('SELECT name, pic, created_at FROM users ORDER BY created_at DESC LIMIT 8'),
+    q("SELECT u.name, u.pic, SUM(c.n) AS n FROM ucounters c JOIN users u ON u.id = c.uid WHERE c.day >= ? AND c.key = 'm' GROUP BY c.uid ORDER BY n DESC LIMIT 8", win(7)),
+  ])).map(x => x.results);
+  const one = i => rows[i][0] || {};
+  const C = rows[8], sumC = (key, from) => C.filter(c => c.key === key && c.day >= from).reduce((a, c) => a + c.n, 0);
   const windows = {};
   ['today', 'week', 'month'].forEach((k, i) => {
-    const a = one(2 + i * 3), s2 = one(3 + i * 3), m = one(4 + i * 3);
-    windows[k] = { signedIn: a.signed || 0, guestVisits: a.guests || 0, newPlayers: s2.n || 0, matches: m.n || 0, minutes: Math.round((m.ms || 0) / 6e4) };
+    const from = win([1, 7, 30][i]);
+    windows[k] = { signedIn: one(2 + i * 2).n || 0, guestVisits: sumC('guests', from), newPlayers: one(3 + i * 2).n || 0, matches: sumC('matches', from), minutes: Math.round(sumC('ms', from) / 6e4) };
   });
-  const by = (list, key = 'n') => Object.fromEntries(list.map(x => [x.day, x[key]]));
-  const vis = by(r[12]), vSigned = by(r[12], 'signed'), mat = by(r[13]), sig = by(r[14]);
-  const days = Array.from({ length: 30 }, (_, i) => { const d = win(30) + i; return { date: new Date(d * 864e5).toISOString().slice(0, 10), visitors: vis[d] || 0, signedIn: vSigned[d] || 0, matches: mat[d] || 0, signups: sig[d] || 0 }; });
-  const cnt = Object.fromEntries(r[15].map(x => [x.key, x.n]));
-  return json({
-    at: t, tzMinutes: off / 60000,
-    live: { online: 0, signedIn: 0, guests: 0, menu: 0, room: 0, match: 0, rooms: 0, quick: 0, ...live },
+  const by = list => Object.fromEntries(list.map(x => [x.day, x.n]));
+  const signed = by(rows[9]), sig = by(rows[10]);
+  const days = Array.from({ length: 30 }, (_, i) => {
+    const d = win(30) + i, g = C.find(c => c.day === d && c.key === 'guests')?.n || 0, s2 = signed[d] || 0;
+    return { date: new Date(d * 864e5).toISOString().slice(0, 10), visitors: s2 + g, signedIn: s2, matches: C.find(c => c.day === d && c.key === 'matches')?.n || 0, signups: sig[d] || 0 };
+  });
+  const modes = Object.entries(C.filter(c => c.key.startsWith('m:') && c.day >= win(7)).reduce((a, c) => (a[c.key.slice(2)] = (a[c.key.slice(2)] || 0) + c.n, a), {})).map(([mode, n]) => ({ mode, n })).sort((a, b) => b.n - a.n);
+  return {
+    tzMinutes: off / 60000,
     totals: { players: one(0).n || 0, matches: one(1).n || 0 },
-    windows, modes: r[11], days,
-    economy: { coinsEarned: cnt.coins || 0, itemsBought: cnt.buys || 0, coinsSpent: cnt.spent || 0, chatMessages: one(16).n || 0 },
-    top: r[17].map(x => ({ ...x, rank: rankOf(x.rp).name })), newest: r[18], busiest: r[19],
-  });
+    windows, modes, days,
+    economy: { coinsEarned: sumC('coins', win(7)), itemsBought: sumC('buys', win(7)), coinsSpent: sumC('spent', win(7)), chatMessages: one(11).n || 0 },
+    top: rows[12].map(x => ({ ...x, rank: rankOf(x.rp).name })), newest: rows[13], busiest: rows[14],
+  };
 }

@@ -61,9 +61,14 @@ export class Hub {
       const key = String(b.key || '').slice(0, 40), st = ST.includes(b.st) ? b.st : 'menu';
       if (key) this.pings.set(key, { t: Date.now(), st, uid: +b.uid || 0 });
       if (this.pings.size > 5000 || Math.random() < .05) this.prunePings();
-      return Response.json({ ok: true });
+      // guests seen today (memory only), so a guest is counted once per day without storing anything
+      if (this.seenDay !== b.day) { this.seenDay = b.day; this.seen = new Set(); }
+      let fresh = false;
+      if (!b.uid && key && !this.seen.has(key) && this.seen.size < 50000) { this.seen.add(key); fresh = true; }
+      return Response.json({ ok: true, fresh });
     }
     if (url.pathname === '/stats') return Response.json(this.stats());
+    if (url.pathname === '/kick') { for (const ws of this.socketsOf(+b.uid)) { try { ws.close(4000, 'account deleted'); } catch (e) {} } return Response.json({ ok: true }); }
     if (url.pathname === '/notify') {
       // friend request / acceptance / removal
       const { to, msg } = b;
@@ -99,6 +104,7 @@ export class Hub {
       if (!room || !(a.fr || []).includes(to)) { ws.send(JSON.stringify({ t: 'invfail', to, why: 'not_friends' })); return; }
       if (!this.socketsOf(to).length) { ws.send(JSON.stringify({ t: 'invfail', to, why: 'offline' })); return; }
       const me = await this.env.DB.prepare('SELECT id, name, pic FROM users WHERE id = ?').bind(a.uid).first();
+      if (!me) { ws.close(4000, 'account deleted'); return; }
       this.send(to, { t: 'inv', from: me, room });
       ws.send(JSON.stringify({ t: 'invsent', to }));
     } else if (m.t === 'q' && (m.size === 2 || m.size === 6)) {
