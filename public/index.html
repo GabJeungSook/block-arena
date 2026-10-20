@@ -745,6 +745,8 @@ body{background:var(--bg)}
 .frsec{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--display);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
 .frempty{color:var(--muted);padding:12px;border:2px dashed var(--line);margin:0}
 .lobby .addf{padding:2px 8px;font-size:11px}
+.lobby .kick{margin-left:6px;color:var(--muted)}
+.lobby .kick:hover,.lobby .kick.sure{color:#fff;background:var(--red);border-color:var(--red)}
 .lobby .lright{margin-left:auto;display:flex;align-items:center;gap:8px}
 #inviteToast{position:fixed;right:16px;bottom:16px;z-index:51;display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:center;background:var(--panel);border:3px solid var(--navy);box-shadow:0 0 0 2px var(--accent),5px 6px 0 2px var(--ink);padding:12px 14px;max-width:min(360px,calc(100vw - 32px));box-sizing:border-box}
 #inviteToast .ava{width:40px;height:40px}
@@ -832,7 +834,7 @@ body{background:var(--bg)}
         <ol class="basics">
           <li><b>Clear lines to attack.</b> Two or more lines at once sends garbage to your rival. Quads and T-spins send the most.</li>
           <li><b>Blow up bombs to dig out.</b> Garbage rows carry a bomb. Land any piece on it and that row explodes.</li>
-          <li><b>Top out, give a K.O.</b> If your stack reaches the top, your rival scores a K.O. and you keep playing.</li>
+          <li><b>Top out, give a K.O.</b> If your stack reaches the top, the rival whose garbage hit you scores a K.O. and you keep playing. Every top-out also counts against you in the standings. In matches with no time limit, getting K.O.'d as many times as the K.O. cap knocks you out.</li>
           <li><b>Win the clock.</b> After 2:00 the most K.O.s wins. Ties go to lines sent.</li>
           <li><b>Power-ups</b> (Power-up Battle, and rooms that switch them on). Clear the line holding a glowing orb to collect one, then press <kbd>E</kbd> to use it. Shield, Clean Up, Bomb Piece and Power Surge help you; Ink Splat, Fog, Hold Lock and Speed Up hit your target. Never in ranked play.</li>
           <li><b>Classic is endless.</b> No rivals, no garbage. The speed rises every 10 lines; play until you top out and chase your high score.</li>
@@ -1237,7 +1239,7 @@ if (LIVE) {
   const roomShim = {
     async join(name) {
       const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const listeners = { topics: {}, peers: [], conn: [] };
+      const listeners = { topics: {}, peers: [], conn: [], end: [] };
       let ws = null, myPeer = null, peerMap = new Map(), snapshot = Object.freeze([]), open = false, mine = {}, closed = false, firstJoin;
       const freezePeers = () => {
         snapshot = Object.freeze([...peerMap.values()].map(p => Object.freeze({ ...p, isMe: p.peer === myPeer, sameTab: p.peer === myPeer, kind: 'viewer', guest: false })));
@@ -1261,10 +1263,18 @@ if (LIVE) {
           else if (m.t === 'p') { const prev = peerMap.get(m.peer) || { peer: m.peer, by: null }; peerMap.set(m.peer, { ...prev, presence: Object.freeze(m.d || {}), updatedAt: Date.now() }); freezePeers(); }
           else if (m.t === 'e') { (listeners.topics[m.topic] || []).forEach(fn => { try { fn({ topic: m.topic, data: m.data, peer: m.peer, by: m.by, isMe: m.peer === myPeer, sameTab: m.peer === myPeer, kind: 'viewer', guest: false }); } catch (e) {} }); }
         };
-        ws.onclose = () => { setConn(false); if (!settled) { settled = true; reject({ code: 'upstream_error' }); } else if (!closed) setTimeout(() => connect().catch(() => {}), 1200); };
+        ws.onclose = ev => {
+          setConn(false);
+          if (!settled) { settled = true; reject({ code: 'upstream_error' }); return; }
+          // 4001: this account opened the room somewhere else; 4002: the host removed us. Neither reconnects.
+          if (ev.code === 4001 || ev.code === 4002) { closed = true; clearInterval(keep); const why = ev.code === 4002 ? 'kicked' : 'replaced'; listeners.end.forEach(fn => { try { fn(why); } catch (e) {} }); return; }
+          if (!closed) setTimeout(() => connect().catch(() => {}), 1200);
+        };
         ws.onerror = () => {};
       });
       await connect();
+      // a small heartbeat, so the room can tell a live player from a phone that lost signal
+      const keep = setInterval(() => { if (open && ws.readyState === 1) ws.send('ping'); }, 15000);
       return Object.freeze({
         name,
         emit: async (topic, data) => { if (open) ws.send(JSON.stringify({ t: 'e', topic, data })); },
@@ -1278,7 +1288,9 @@ if (LIVE) {
         onPeers: (fn) => { listeners.peers.push(fn); queueMicrotask(() => fn({ peers: snapshot, joined: snapshot, left: [], updated: [] })); return () => { listeners.peers = listeners.peers.filter(f => f !== fn); }; },
         connected: () => open,
         onConnection: fn => { listeners.conn.push(fn); queueMicrotask(() => fn(open)); return () => { listeners.conn = listeners.conn.filter(f => f !== fn); }; },
-        leave: async () => { closed = true; try { ws.close(); } catch (e) {} },
+        leave: async () => { closed = true; clearInterval(keep); try { ws.close(); } catch (e) {} },
+        kick: peer => { if (open) ws.send(JSON.stringify({ t: 'kick', peer })); },
+        onEnd: fn => { listeners.end.push(fn); return () => { listeners.end = listeners.end.filter(f => f !== fn); }; },
       });
     },
   };
@@ -2213,7 +2225,8 @@ const RIVALS = [
 ];
 const ord = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 - 20) % 10] || ['th', 'st', 'nd', 'rd'][n % 100] || 'th');
 const RANKERS = {
-  battle: (a, b) => b.ko - a.ko || b.sent - a.sent || a.stackHeight() - b.stackHeight(),
+  // K.O.s scored first, then fewest times K.O.'d, then lines sent; anyone knocked out of a no-limit match ranks below the rest
+  battle: (a, b) => (a.out ? 1 : 0) - (b.out ? 1 : 0) || (b.outT || 0) - (a.outT || 0) || b.ko - a.ko || (a.deaths || 0) - (b.deaths || 0) || b.sent - a.sent || a.stackHeight() - b.stackHeight(),
   race: (a, b) => (a.fin || 1e12) - (b.fin || 1e12) || b.lines - a.lines || a.stackHeight() - b.stackHeight(),
   survival: (a, b) => (a.out ? 1 : 0) - (b.out ? 1 : 0) || (b.lives ?? LIVES) - (a.lives ?? LIVES) || (b.outT || 0) - (a.outT || 0) || b.ko - a.ko || b.sent - a.sent,
 };
@@ -2281,7 +2294,7 @@ class RemotePlayer {
     if (s.pcT) this.pcT = Math.max(this.pcT, .8);
     if (typeof s.lv === 'number') this.lives = Math.max(0, Math.min(LIVES, s.lv | 0));
     if (s.out && !this.out) this.fx.push({ t: 'ELIMINATED', c: C.warn, big: true, age: 0 });
-    this.out = !!s.out; this.outT = +s.ot || 0; this.fin = +s.fin || 0;
+    this.out = !!s.out; this.outT = +s.ot || 0; this.fin = +s.fin || 0; this.deaths = Math.max(0, Math.min(999, +s.dth | 0));
   }
   update(dt) {
     this.fx.forEach(f => f.age += dt); this.fx = this.fx.filter(f => f.age < 1300);
@@ -2298,7 +2311,7 @@ const snapOf = p => ({
   b: encBoard(p.board), pc: p.piece ? (p.piece.o >= 0 && pwOn() ? [p.piece.t, p.piece.r, p.piece.x, p.piece.y, p.piece.o] : [p.piece.t, p.piece.r, p.piece.x, p.piece.y]) : null, h: p.hold, q: p.queue[0] || null,
   ln: p.lines, pcs: p.pieces, pend: p.pendingTotal(), sentTo: p.sentTo || {}, kod: p.kod || {}, cb: Math.max(0, p.combo), b2b: !!p.b2b,
   lbl: p.lastLbl || '', lblN: p.lblN || 0, pcT: p.pcT > .5 ? 1 : 0,
-  lv: p.lives ?? LIVES, out: p.out ? 1 : 0, ot: p.outT || 0, fin: p.fin || 0,
+  lv: p.lives ?? LIVES, out: p.out ? 1 : 0, ot: p.outT || 0, fin: p.fin || 0, dth: p.deaths || 0,
 });
 async function netInit(refresh) {
   if (net.ready && !refresh) return;
@@ -2323,7 +2336,8 @@ async function netJoinInner(code) {
   if (!code) { $('onlineMsg').textContent = 'Enter a room code or create a room.'; return; }
   settings.nick = cleanNick($('nick').value); saveSettings();
   $('onlineMsg').textContent = 'Joining…';
-  try { net.nr = await net.room.join('sd-' + code); } catch (e) { $('onlineMsg').textContent = LIVE ? 'Couldn\'t join that room. Check your connection, or sign in again.' : 'Could not join: ' + (e?.code || 'error') + '. Rooms need Contributor access or higher on this page.'; return; }
+  const kicked = store.get('kicked', null), banLeft = kicked && kicked.code === code ? kicked.until - Date.now() : 0;
+  try { net.nr = await net.room.join('sd-' + code); } catch (e) { $('onlineMsg').textContent = LIVE ? (banLeft > 0 ? `The host removed you from this room. You can join again in ${Math.ceil(banLeft / 60000)} min.` : 'Couldn\'t join that room. Check your connection, or sign in again.') : 'Could not join: ' + (e?.code || 'error') + '. Rooms need Contributor access or higher on this page.'; return; }
   net.code = code; net.recv = {}; net.mid = null; net.rulesShared = false; net.wasHost = null;
   $('lobbyCode').textContent = code.toUpperCase();
   net.unsub.forEach(u => { try { u(); } catch (e) {} }); net.unsub = [];
@@ -2332,6 +2346,11 @@ async function netJoinInner(code) {
   net.unsub.push(net.nr.onConnection(c => { $('lobbyConn').textContent = c ? 'Connected' : 'Reconnecting…'; $('lobbyDot').classList.toggle('on', !!c); }));
   net.unsub.push(net.nr.on('chat', m => lobbyChatIn(m), () => {}));
   net.unsub.push(net.nr.on('emote', m => emoteIn(m), () => {}));
+  if (net.nr.onEnd) net.unsub.push(net.nr.onEnd(why => {
+    const was = net.code;
+    if (why === 'kicked') store.set('kicked', { code: was, until: Date.now() + 10 * 60000 });
+    netLeave(true).then(() => { $('onlineMsg').textContent = why === 'kicked' ? 'The host removed you from that room.' : 'You opened this room on another tab or device, so it closed here.'; });
+  }));
   lchat.length = 0; net.seenPeers = null; renderLobbyChat();
   await net.nr.presence({ nick: settings.nick, st: 'lobby', v: 1, jt: Date.now(), pic: LIVE && account.user?.pic ? account.user.pic : null });
   show('ovLobby'); renderLobby(); hubState();
@@ -2348,6 +2367,12 @@ async function netLeave(nav = true) {
 // the host is whoever joined the room first (join time in presence), ties broken by peer id
 const byJoin = (a, b) => ((+a.presence?.jt || 9e15) - (+b.presence?.jt || 9e15)) || (a.peer < b.peer ? -1 : 1);
 function lobbyPeers() { return net.nr ? net.nr.peers().filter(p => p.kind === 'viewer') : []; }
+// the host can remove a player (a ghost left by a dropped connection, or anyone else); asks once to confirm
+const kickBtn = (p, me) => {
+  if (!net.host || me || !net.nr?.kick) return '';
+  const ask = net.kickAsk && net.kickAsk.peer === p.peer && Date.now() - net.kickAsk.t < 4000;
+  return `<button type="button" class="ghostbtn addf kick${ask ? ' sure' : ''}" data-kick="${escapeHtml(p.peer)}">${ask ? 'Remove?' : 'Remove'}</button>`;
+};
 function renderLobby() {
   if (!net.nr) return;
   const ps = lobbyPeers();
@@ -2362,7 +2387,7 @@ function renderLobby() {
     const friendBtn = LIVE && account.user && p.by && !me && +p.by !== account.user.id ? (friends.ids.has(+p.by) ? '<small class="addf">Friend</small>' : `<button type="button" class="ghostbtn addf" data-fr="addpeer" data-uid="${+p.by}">Add friend</button>`) : '';
     return `<li><span class="pava" style="background:${seatTints[i % 6]}">${pic ? `<img alt="" src="${escapeHtml(pic)}" referrerpolicy="no-referrer">` : escapeHtml(nm[0].toUpperCase())}</span>`
       + `<span class="pname">${escapeHtml(nm)}${me ? ' <small class="muted">(you)</small>' : ''}</span>`
-      + `<span class="lright">${pr.st === 'play' ? '<small class="muted">in match</small>' : ''}${p.peer === net.hostPeer ? '<span class="htag">HOST</span>' : ''}${friendBtn}</span></li>`;
+      + `<span class="lright">${pr.st === 'play' ? '<small class="muted">in match</small>' : ''}${p.peer === net.hostPeer ? '<span class="htag">HOST</span>' : ''}${friendBtn}${kickBtn(p, me)}</span></li>`;
   }).join('') + Array.from({ length: Math.max(0, Math.min(6, want0) - sorted.length) }, () => '<li><span class="pava" style="background:var(--edge)">·</span><span class="pempty">Open seat · a bot plays if nobody joins</span></li>').join('') || '<li><small>Connecting…</small></li>';
   $('lobbySeats').textContent = `${sorted.length} / ${Math.max(want0, sorted.length)}`;
   lobbyJoinLeave(sorted);
@@ -2428,7 +2453,7 @@ function startOnline(d) {
 // delivery between local objects; remote targets only get their total bumped (presence carries it)
 function deliver(from, to, n) {
   from.sentTo = from.sentTo || {}; from.sentTo[to.id] = (from.sentTo[to.id] || 0) + n;
-  if (!to.remote) { to.lastHitBy = from; if (shieldGarbage(to, n)) return; to.pending.push(n); if (to.human && to.pendingTotal() >= 4 && to.pendingTotal() - n < 4) sfx.alarm(); }
+  if (!to.remote) { to.lastHitBy = from; to.recvFrom = to.recvFrom || {}; to.recvFrom[from.id] = (to.recvFrom[from.id] || 0) + n; if (shieldGarbage(to, n)) return; to.pending.push(n); if (to.human && to.pendingTotal() >= 4 && to.pendingTotal() - n < 4) sfx.alarm(); }
 }
 function netReconcile() {
   // apply attacks that remote players' totals say we (or our bots) have not taken yet
@@ -2439,7 +2464,7 @@ function netReconcile() {
       const total = +src.sentTo?.[dst.id] || 0, key = src.id + '>' + dst.id, had = net.recv[key] || 0;
       if (total > had) {
         const n = total - had; net.recv[key] = total;
-        dst.lastHitBy = src; if (shieldGarbage(dst, n)) continue;
+        dst.lastHitBy = src; dst.recvFrom = dst.recvFrom || {}; dst.recvFrom[src.id] = (dst.recvFrom[src.id] || 0) + n; if (shieldGarbage(dst, n)) continue;
         dst.pending.push(n);
         if (dst.human) { if (dst.pendingTotal() >= 4 && dst.pendingTotal() - n < 4) sfx.alarm(); src.ev.push({ type: 'attack', n, to: dst }); }
       }
@@ -3844,7 +3869,7 @@ function launch(mode, ps, size) {
   fx.parts = []; fx.sweeps = []; fx.trails = []; fx.glows = []; fx.orbs = []; fx.rings = []; fx.blasts = [];
   game.players = ps; game.size = size;
   ps[0].autoTarget = true;
-  ps.forEach(p => { p.lives = LIVES; p.out = false; p.fin = 0; p.outT = 0; if (gtype() === 'race' && !p.remote) p.versus = false; });
+  ps.forEach(p => { p.lives = LIVES; p.out = false; p.fin = 0; p.outT = 0; p.deaths = 0; p.recvFrom = {}; p.lastHitBy = null; if (gtype() === 'race' && !p.remote) p.versus = false; });
   // players are made before the match rules are set, so roll their queued orbs again now
   ps.forEach(p => { if (p.remote) return; p.qo = p.queue.map(() => rollOrb(p)); if (p.piece) p.piece.o = -1; p.orbs = []; p.pw = []; p.eff = {}; p.bombArm = false; });
   $('tPower').hidden = !pwOn(); $('touch').classList.toggle('pw', pwOn());
@@ -3860,18 +3885,26 @@ function launch(mode, ps, size) {
     p.onTopOut = me => {
       if (mode === 'sprint' || mode === 'classic') { end(); return; }
       if (gtype() === 'race') { me.koReset(); me.lastHitBy = null; if (me.human) sfx.ko(); return; }     // racing: topping out just costs time
-      const killer = me.lastHitBy || (ps.length === 2 ? ps.find(q => q !== me) : null);
+      // Who gets the K.O.: whoever's garbage hit you last; if they're gone, the rival who sent you the most
+      // garbage this match; in a 1-on-1, your only rival. Only if nobody ever attacked you does nobody get it.
+      const rival = q => q && q !== me && !q.gone && ps.includes(q);
+      let killer = rival(me.lastHitBy) ? me.lastHitBy : null;
+      if (!killer) for (const q of ps) if (rival(q) && (me.recvFrom?.[q.id] || 0) > (killer ? me.recvFrom[killer.id] : 0)) killer = q;
+      if (!killer && ps.filter(rival).length === 1) killer = ps.find(rival);
       if (killer) { me.kod[killer.id] = (me.kod[killer.id] || 0) + 1; killer.koFlash = 1; if (!killer.remote) killer.ko++; }
+      me.deaths = (me.deaths || 0) + 1;          // every top-out counts against you
       if (gtype() === 'survival') {
         me.lives = Math.max(0, (me.lives ?? LIVES) - 1);
         if (!me.lives) { me.out = true; me.outT = game.elapsed || 1; me.piece = null; me.pending = []; me.fx.push({ t: 'ELIMINATED', c: C.warn, big: true, age: 0 }); }
         else me.koReset();
+      } else if (gtype() === 'battle' && !matchMs() && me.deaths >= koCap()) {
+        // a no-limit match can't run forever: K.O.'d as many times as the K.O. cap and you're out
+        me.out = true; me.outT = game.elapsed || 1; me.piece = null; me.pending = []; me.fx.push({ t: 'KNOCKED OUT', c: C.warn, big: true, age: 0 });
       } else me.koReset();
-      me.lastHitBy = null;
       if (killer && killer.human) sfx.koWin(); else if (me.human || mode === 'local') sfx.ko(); else sfx.koFar();
       if (gtype() === 'battle' && killer && !killer.remote && killer.ko >= koCap()) end();
-      if (gtype() === 'survival' && game.players.filter(q => !q.out).length <= 1) end();
-      else if (gtype() === 'survival' && me.human && me.out && mode !== 'online') end();     // your place is settled; no need to watch the CPUs finish
+      if (gtype() !== 'race' && me.out && game.players.filter(q => !q.out && !q.gone).length <= 1) end();
+      else if (me.human && me.out && mode !== 'online') end();     // your place is settled; no need to watch the CPUs finish
     };
     p.onFinish = () => end();
   });
@@ -3897,7 +3930,7 @@ function end() {
   game.inputs.forEach(i => i.clear());
   const [a, b] = game.players;
   const pps = p => game.elapsed ? (p.pieces / (game.elapsed / 1000)).toFixed(2) : '0.00';
-  let html = '', sub = '', xp = 0, won = false;
+  let html = '', sub = '', xp = 0, won = false, resCols = 2;
   if (game.mode === 'classic') {
     let best = store.get('classic', 0);
     const isBest = a.score > best;
@@ -3924,9 +3957,9 @@ function end() {
     const kind = t === 'race' ? 'sprint race' : t === 'survival' ? 'last one standing' : game.mode === 'online' ? 'online match' : 'arena';
     sub = game.mode === 'online' ? `${game.players.length}-player ${kind}${isStdRules(rules()) || t !== 'battle' ? '' : ' · custom rules'}` : `${game.players.length}-player ${kind} · ${game.level[0].toUpperCase() + game.level.slice(1)} CPUs`;
     const cols = t === 'race' ? [['Lines', p => Math.min(40, p.lines)], ['Time', p => p.fin ? fmtPrecise(p.fin) : '—']]
-      : t === 'survival' ? [['Lives', p => p.out ? 'Out' : (p.lives ?? LIVES)], ['K.O.', p => p.ko]] : [['K.O.', p => p.ko], ['Sent', p => p.sent]];
+      : t === 'survival' ? [['Lives', p => p.out ? 'Out' : (p.lives ?? LIVES)], ['K.O.', p => p.ko]] : [['K.O.', p => p.ko], ["K.O.'d", p => p.out ? 'Out' : (p.deaths || 0)], ['Sent', p => p.sent]];
     html = `<span class="h">Player</span>${cols.map(c => `<span class="h" style="text-align:right">${c[0]}</span>`).join('')}` +
-      ranked.map((p, i) => `<span class="k${p === a ? ' me' : ''}"><i class="medal m${i + 1}">${i + 1}</i><i class="dot" style="background:${p.tint}"></i>${p.name}</span>${cols.map(c => `<span class="v">${c[1](p)}</span>`).join('')}`).join('');
+      (resCols = cols.length, '') + ranked.map((p, i) => `<span class="k${p === a ? ' me' : ''}"><i class="medal m${i + 1}">${i + 1}</i><i class="dot" style="background:${p.tint}"></i>${p.name}</span>${cols.map(c => `<span class="v">${c[1](p)}</span>`).join('')}`).join('');
     xp = Math.round((a.sent + a.ko * 8 + a.lines * .5 + [45, 25, 14, 9, 6, 4][place - 1]) * (game.mode === 'online' ? 1.2 : LEVELS[game.level].xp));
   } else {
     const w = a.ko !== b.ko ? (a.ko > b.ko ? a : b) : a.sent !== b.sent ? (a.sent > b.sent ? a : b) : null;
@@ -3934,12 +3967,12 @@ function end() {
     $('resTitle').textContent = !w ? 'Draw' : game.mode === 'cpu' ? (won ? 'You win!' : 'CPU wins') : game.mode === 'online' ? (won ? 'You win!' : `${b.name} wins`) : w.name + ' wins!';
     sub = `${a.ko} – ${b.ko} in K.O.s` + (a.ko === b.ko && w ? (a.sent === b.sent ? ', decided on stack height' : ', decided on lines sent') : '');
     html = `<span class="h"></span><span class="h" style="text-align:right">${a.name}</span><span class="h" style="text-align:right">${b.name}</span>` +
-      row2('K.O.s', a.ko, b.ko) + row2('Lines sent', a.sent, b.sent) + row2('Lines cleared', a.lines, b.lines) + row2('Perfect clears', a.pcs || 0, b.pcs || 0) + row2('Best combo', Math.max(0, a.maxCombo), Math.max(0, b.maxCombo)) + row2('Pieces/sec', pps(a), pps(b));
+      row2('K.O.s', a.ko, b.ko) + row2("Times K.O.'d", a.deaths || 0, b.deaths || 0) + row2('Lines sent', a.sent, b.sent) + row2('Lines cleared', a.lines, b.lines) + row2('Perfect clears', a.pcs || 0, b.pcs || 0) + row2('Best combo', Math.max(0, a.maxCombo), Math.max(0, b.maxCombo)) + row2('Pieces/sec', pps(a), pps(b));
     if (game.mode === 'cpu') xp = Math.round((a.sent + a.ko * 8 + a.lines * .5 + (won ? 30 : 6)) * LEVELS[game.level].xp);
     if (game.mode === 'online') xp = Math.round(a.sent + a.ko * 8 + a.lines * .5 + (won ? 30 : 8));
   }
   $('resSub').textContent = sub;
-  $('resStats').innerHTML = html;
+  $('resStats').innerHTML = html; $('resStats').style.gridTemplateColumns = `1fr${' auto'.repeat(resCols)}`;
   {
     let place = won ? 1 : 2, draw = false;
     if (game.mode === 'arena' || (game.mode === 'online' && (game.players.length > 2 || gtype() !== 'battle'))) place = rankPlayers().indexOf(a) + 1;
@@ -4117,6 +4150,13 @@ $('btnCreate').onclick = () => { $('roomCode').value = randomCode(); netJoin($('
 $('btnJoin').onclick = () => netJoin($('roomCode').value);
 $('roomCode').addEventListener('keydown', e => { if (e.key === 'Enter') netJoin($('roomCode').value); });
 $('btnLobbyStart').onclick = () => netHostStart();
+$('lobbyList').addEventListener('click', e => {
+  const b = e.target.closest('[data-kick]'); if (!b || !net.nr?.kick) return;
+  const peer = b.dataset.kick;
+  if (net.kickAsk && net.kickAsk.peer === peer && Date.now() - net.kickAsk.t < 4000) { net.kickAsk = null; net.nr.kick(peer); b.disabled = true; b.textContent = 'Removing…'; return; }
+  net.kickAsk = { peer, t: Date.now() }; renderLobby();
+  setTimeout(() => { if (net.kickAsk?.peer === peer) { net.kickAsk = null; renderLobby(); } }, 4100);
+});
 $('btnLobbyLeave').onclick = () => netLeave();
 $('lobbySize').onchange = () => { pushRules(); renderLobby(); };
 // room rules: the host edits them and shares them in their presence, so everyone sees the same rules before the start
@@ -4266,8 +4306,15 @@ let L = { W: 600, H: 540, s: 1, dpr: 1 };
 const FULLW = 460, TOP = 56;
 function layout() {
   const st = $('stage');
-  const W = game.mode === 'local' || game.mode === 'demo' ? FULLW * 2 + 40 : game.mode === 'sprint' || game.mode === 'classic' ? FULLW : isArena() ? FULLW + 24 + (game.players.length <= 4 ? 3 * 166 : 3 * 132) : 624;
-  const H = TOP + 20 * CELL + 10;
+  let W = game.mode === 'local' || game.mode === 'demo' ? FULLW * 2 + 40 : game.mode === 'sprint' || game.mode === 'classic' ? FULLW : isArena() ? FULLW + 24 + (game.players.length <= 4 ? 3 * 166 : 3 * 132) : 624;
+  let H = TOP + 20 * CELL + 10;
+  // phones held upright: rivals in a row of small boards on top, your own board full size underneath
+  game.tall = ['cpu', 'arena', 'online'].includes(game.mode) && game.players.length > 1 && st.clientHeight > st.clientWidth * 1.1;
+  if (game.tall) {
+    const n = game.players.length - 1; W = FULLW + 4;
+    game.tallColW = W / n; game.tallCell = Math.max(6, Math.min(10, Math.floor((game.tallColW - 26) / 10)));
+    game.tallH = 20 * game.tallCell + 46; H = TOP + game.tallH + 20 * CELL + 10;
+  }
   const s = Math.max(0.3, Math.min(st.clientWidth / W, st.clientHeight / H));
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   cv.style.width = W * s + 'px'; cv.style.height = H * s + 'px';
@@ -4722,7 +4769,7 @@ function drawFull(p, ox, oy) {
     ? [['LINES', Math.min(40, p.lines) + '/40', C.fg], ['PIECES', p.pieces, C.fg], ['PPS', game.elapsed ? (p.pieces / (game.elapsed / 1000)).toFixed(2) : '0.00', C.fg]]
     : gtype() === 'race' ? [['LINES', Math.min(40, p.lines) + '/40', C.accent], ['PIECES', p.pieces, C.fg], ['PPS', game.elapsed ? (p.pieces / (game.elapsed / 1000)).toFixed(2) : '0.00', C.fg]]
     : gtype() === 'survival' ? [['LIVES', p.out ? 'OUT' : (p.lives ?? LIVES), C.warn], ['K.O.', p.ko, C.accent], ['SENT', p.sent, C.fg]]
-    : [['K.O.', p.ko, C.accent], ['SENT', p.sent, C.fg], ['LINES', p.lines, C.fg]];
+    : [['K.O.', p.ko, C.accent], ["K.O.'D", matchMs() ? (p.deaths || 0) : `${p.deaths || 0}/${koCap()}`, (p.deaths || 0) ? C.warn : C.fg], ['SENT', p.sent, C.fg]];
   stats.forEach(([k, v, c], i) => statBlock(ox + 2, oy + 116 + i * 54, k, v, c));
   // combo counter: a bar that fills one notch per combo step
   if (false) {   // combo now shows in the middle of the board
@@ -4801,13 +4848,17 @@ function drawArena(ox, oy) {
   if (six) drawStandings(ox + 2 * colW + 4, oy + rowH + 2, colW - 8, 232);
   else drawStandings(ox + 4, oy + 346, 3 * colW - 12, 132);
 }
+function drawRivalRow(y) {
+  const me = game.players[0], cell = game.tallCell, cw = game.tallColW, bw = 10 * cell + 24;
+  game.players.slice(1).forEach((p, i) => drawSeat(p, i * cw + (cw - bw) / 2, y, cell, me));
+}
 function drawSeat(p, x, y, cell, me) {
   const bw = COLS * cell, bx = x + 12, by = y + 20;
-  const targeted = me.target === p, threat = p.target === me;
+  const targeted = me.target === p && game.players.length > 2, threat = p.target === me && game.players.length > 2;
   text(p.name.toUpperCase(), bx, y + 3, { size: cell > 12 ? 11 : 9, weight: 700, color: p.tint, spacing: true });
   // K.O. count; flashes when this rival scores one
   p.koFlash = Math.max(0, (p.koFlash || 0) - frameDt / 900);
-  const st = statOf(p), stTxt = gtype() === 'battle' ? `${p.ko} KO` : gtype() === 'race' ? st[1] : (p.out ? 'OUT' : '♥'.repeat(p.lives ?? LIVES));
+  const st = statOf(p), stTxt = gtype() === 'battle' ? (p.out ? 'OUT' : `${p.ko} KO${p.deaths ? ` · ✕${p.deaths}` : ''}`) : gtype() === 'race' ? st[1] : (p.out ? 'OUT' : '♥'.repeat(p.lives ?? LIVES));
   num(stTxt, bx + bw, y + 2, { size: cell > 12 ? 12 : 10, align: 'right', color: p.koFlash > 0 ? C.gold : gtype() === 'survival' && !p.out ? C.warn : C.muted });
   drawBoard(p, bx, by, cell, true);
   const H = 20 * cell;
@@ -4897,7 +4948,7 @@ function drawHUD() {
   if (!a || !b) return;
   if (isArena()) {
     text(`YOU · LV ${game.myLevel || 1}`, 0, 14, { size: 11, weight: 700, base: 'middle', color: a.tint, spacing: true });
-    num(gtype() === 'battle' ? `${a.ko} KO` : gtype() === 'race' ? `${statOf(a)[1]} lines` : (a.out ? 'OUT' : `${'♥'.repeat(a.lives ?? LIVES)}  ${a.ko} KO`), 0, 34, { size: 12, base: 'middle', color: gtype() === 'survival' ? C.warn : C.muted });
+    num(gtype() === 'battle' ? `${a.ko} KO · K.O.'D ${a.deaths || 0}` : gtype() === 'race' ? `${statOf(a)[1]} lines` : (a.out ? 'OUT' : `${'♥'.repeat(a.lives ?? LIVES)}  ${a.ko} KO`), 0, 34, { size: 12, base: 'middle', color: gtype() === 'survival' ? C.warn : C.muted });
     const place = rankPlayers().indexOf(a) + 1, rw = 128, rx = L.W - rw;
     ctx.fillStyle = C.ink; ctx.fillRect(rx + 3, 7, rw, 40);
     ctx.fillStyle = place === 1 ? C.gold : C.panel; ctx.fillRect(rx, 4, rw, 40);
@@ -4931,7 +4982,8 @@ function render(now) {
   if (sh) ctx.translate((Math.random() - .5) * sh, (Math.random() - .5) * sh);
   const [a, b] = game.players;
   if (a) {
-    if (game.mode === 'cpu') { drawFull(a, 0, TOP); drawMini(b, 482, TOP); }
+    if (game.tall) { drawRivalRow(TOP); drawFull(a, 0, TOP + game.tallH); }
+    else if (game.mode === 'cpu') { drawFull(a, 0, TOP); drawMini(b, 482, TOP); }
     else if (isArena()) { drawFull(a, 0, TOP); drawArena(FULLW + 24, TOP); }
     else if (game.mode === 'online') { drawFull(a, 0, TOP); drawMini(b, 482, TOP); }
     else if (game.mode === 'sprint' || game.mode === 'classic') drawFull(a, 0, TOP);
