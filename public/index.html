@@ -837,6 +837,7 @@ body{background:var(--bg)}
           <li><b>Top out, give a K.O.</b> If your stack reaches the top, the rival whose garbage hit you scores a K.O. and you keep playing. Every top-out also counts against you in the standings. In matches with no time limit, getting K.O.'d as many times as the K.O. cap knocks you out.</li>
           <li><b>Win the clock.</b> After 2:00 the most K.O.s wins. Ties go to lines sent.</li>
           <li><b>Power-ups</b> (Power-up Battle, and rooms that switch them on). Clear the line holding a glowing orb to collect one, then press <kbd>E</kbd> to use it. Shield, Clean Up, Bomb Piece and Power Surge help you; Ink Splat, Fog, Hold Lock and Speed Up hit your target. Never in ranked play.</li>
+          <li><b>Sudden death.</b> Matches with no time limit (like Last One Standing) speed up after 3:00: pieces fall faster and attacks hit 1.5× harder, then 2× after 4:30.</li>
           <li><b>Classic is endless.</b> No rivals, no garbage. The speed rises every 10 lines; play until you top out and chase your high score.</li>
         </ol>
           <div class="keys">
@@ -1364,6 +1365,10 @@ const matchMs = () => rules().time;
 // game types: K.O. battle (most K.O.s), sprint race (first to 40 lines, no garbage), last one standing (3 lives)
 const gtype = () => rules().type || 'battle';
 const LIVES = 3;
+// Sudden death: matches with no time limit (Last One Standing, no-limit rooms) speed up after 3:00 and again
+// after 4:30: pieces fall faster and every attack hits harder, so a match can't drag on forever.
+const SD_AT = [180000, 270000];
+const suddenDeath = () => matchMs() || gtype() === 'race' || !['arena', 'online', 'cpu'].includes(game.mode) ? 0 : game.elapsed >= SD_AT[1] ? 2 : game.elapsed >= SD_AT[0] ? 1 : 0;
 const SURVIVAL_RULES = { ...STD_RULES, type: 'survival', time: 0 };
 const PW_RULES = { ...STD_RULES, pw: true };     // Power-up Battle: 4P arena, unranked
 // the number a board is judged by in this game type: [label, shown value, value for bars]
@@ -1862,7 +1867,8 @@ class Player {
       let blocked = 0;
       while (atk > 0 && this.pending.length) { const m = Math.min(atk, this.pending[0]); this.pending[0] -= m; atk -= m; blocked += m; if (!this.pending[0]) this.pending.shift(); }
       if (blocked) { labels.push({ t: 'BLOCKED ' + blocked, c: C.accent2 }); if (this.human) sfx.blocked(); }
-      if (atk > 0 && rules().garbage !== 1) atk = Math.max(1, Math.round(atk * rules().garbage));     // room rule: garbage ×0.5 … ×2 (counted the same on every screen)
+      if (atk > 0 && rules().garbage !== 1) atk = Math.max(1, Math.round(atk * rules().garbage));
+      if (atk > 0 && suddenDeath()) atk = Math.ceil(atk * [1, 1.5, 2][suddenDeath()]);       // sudden death: attacks ×1.5, then ×2     // room rule: garbage ×0.5 … ×2 (counted the same on every screen)
       if (atk > 0) { this.sent += atk; const to = this.onAttack(atk); this.ev.push({ type: 'attack', n: atk, to }); labels.push({ t: '+' + atk, c: C.accent, big: atk >= 4 }); if (this.human) sfx.send(); }
     }
     labels.forEach((l, i) => this.fx.push({ ...l, age: -i * 80 }));
@@ -1978,7 +1984,7 @@ class Player {
     if (this.mode === 'classic') { const l = Math.min(this.level, 20) - 1; return Math.max(16, 1000 * Math.pow(.8 - l * .007, l)); }
     const ms = matchMs(), left = ms ? game.timeLeft : Math.max(0, 120000 - game.elapsed);
     const base = left > 60000 ? 900 : left > 30000 ? 600 : 350;
-    return Math.max(30, base * ({ fast: .55, insane: .28 }[rules().speed] || 1) * (this.eff.speed > 0 ? .5 : 1));
+    return Math.max(30, base * ({ fast: .55, insane: .28 }[rules().speed] || 1) * (this.eff.speed > 0 ? .5 : 1) * [1, .6, .4][suddenDeath()]);
   }
   tickEff(dt) {
     for (const k in this.eff) if (this.eff[k] > 0) { this.eff[k] -= dt; if (this.eff[k] <= 0) delete this.eff[k]; }
@@ -3247,7 +3253,7 @@ const EARN_CARDS = [
 ];
 function renderEarn() {
   $('earnGrid').innerHTML = EARN_CARDS.map(c => `<section class="ecard"><h3>${c.t}</h3><p>${c.d}</p>${c.rows.map(([k, chips]) => `<div class="erow"><span class="ek">${k}</span><div class="echips">${chips.join('')}</div></div>`).join('')}</section>`).join('');
-  $('earnFoot').innerHTML = `<p><b>No coins for:</b> Local 2P on one keyboard, or matches that end in under 20 seconds.</p><p><b>Daily limit:</b> up to ${fmtCoins(2500)} coins a day from matches. Achievement coins don't count toward it.</p>${!LIVE || account.user ? '' : '<p><b>Playing as a guest?</b> Your coins are saved in this browser. Sign in and they move to your account.</p>'}`;
+  $('earnFoot').innerHTML = `<p><b>No coins for:</b> Local 2P on one keyboard, or matches that end in under 20 seconds.</p><p><b>Daily limit:</b> up to ${fmtCoins(1500)} coins a day from matches. Achievement coins don't count toward it. Very short matches back to back pay less.</p>${!LIVE || account.user ? '' : '<p><b>Playing as a guest?</b> Your coins are saved in this browser. Sign in and they move to your account.</p>'}`;
 }
 function openEarn() { renderEarn(); const d = $('earnModal'); if (d.showModal) d.showModal(); else d.setAttribute('open', ''); }
 function closeEarn() { const d = $('earnModal'); if (d.close) d.close(); else d.removeAttribute('open'); }
@@ -3261,11 +3267,11 @@ async function payMatch(r) {
   const show = (n, note) => { box.hidden = false; box.innerHTML = `${COIN_SVG}<b>+${fmtCoins(n)}</b><span>coins${note ? ' · ' + note : ''}</span>`; renderCoins(true); };
   if (signedWallet()) {
     show(amt, bonus ? 'first win today +25' : '');
-    try { const w = await api.call('/api/coins/earn', 'POST', { amount: amt, mode: r.mode }); setWallet(w); if (w.added < amt) show(w.added, w.added ? 'daily limit reached' : 'daily coin limit reached'); }
+    try { const w = await api.call('/api/coins/earn', 'POST', { amount: amt, mode: r.mode }); setWallet(w); if (w.added < amt) show(w.added, w.reason === 'daily' ? 'daily limit reached' : 'limit for quick matches'); }
     catch (e) { show(0, 'couldn\'t reach the server'); }
   } else {
     const t = Date.now(), lim = store.get('coinLim', {}), today = lim.day === day ? lim : { day, n: 0 };
-    const add = Math.min(amt, Math.max(0, 2500 - today.n)); store.set('coinLim', { day, n: today.n + add });
+    const add = Math.min(amt, Math.max(0, 1500 - today.n)); store.set('coinLim', { day, n: today.n + add });
     const w = wallet(); w.coins += add; setWallet(w);
     show(add, add < amt ? 'daily limit reached' : bonus ? 'first win today +25' : '');
   }
@@ -3888,7 +3894,7 @@ function start(mode) {
 }
 function launch(mode, ps, size) {
   if (mode !== 'online') { game.rules = game.pendingRules || STD_RULES; game.pendingRules = null; }
-  game.mode = mode; game.over = false; game.paused = false; game.elapsed = 0; game.goAt = 0; game.timeLeft = matchMs() || 1e9; game.countdown = 3000; game.goT = 0;
+  game.mode = mode; game.over = false; game.paused = false; game.elapsed = 0; game.goAt = 0; game.sdShown = 0; game.timeLeft = matchMs() || 1e9; game.countdown = 3000; game.goT = 0;
   fx.parts = []; fx.sweeps = []; fx.trails = []; fx.glows = []; fx.orbs = []; fx.rings = []; fx.blasts = [];
   game.players = ps; game.size = size;
   ps[0].autoTarget = true;
@@ -4966,9 +4972,15 @@ function drawHUD() {
   ctx.fillStyle = urgent && Math.sin(performance.now() / 200) > 0 ? C.warn : C.panel; ctx.fillRect(px, 4, pw, 40);
   ctx.strokeStyle = urgent ? C.warn : C.edge; ctx.lineWidth = 2; ctx.strokeRect(px + 1, 5, pw - 2, 38);
   num(fmt(left), L.W / 2, 21, { size: 22, align: 'center', base: 'middle', color: urgent ? C.fg : C.fg });
-  const frac = matchMs() ? left / matchMs() : 0;
-  ctx.fillStyle = C.ink; ctx.fillRect(px + 10, 36, pw - 20, 4);
-  if (frac > 0) { ctx.fillStyle = urgent ? C.fg : C.accent; ctx.fillRect(px + 10, 36, (pw - 20) * frac, 4); }
+  const frac = matchMs() ? left / matchMs() : 0, sd = suddenDeath(), soon = !matchMs() && !sd && gtype() !== 'race' && ['arena', 'online', 'cpu'].includes(game.mode) && game.elapsed > SD_AT[0] - 30000;
+  if (sd || soon) {
+    // no time limit: the bar becomes a sudden-death warning
+    const on = Math.sin(performance.now() / 180) > 0;
+    text(sd ? (sd > 1 ? 'SUDDEN DEATH ×2' : 'SUDDEN DEATH') : `SUDDEN DEATH ${fmt(SD_AT[0] - game.elapsed)}`, L.W / 2, 38, { size: 7, weight: 700, align: 'center', base: 'middle', color: sd && on ? C.warn : sd ? C.fg : C.muted, spacing: true });
+  } else {
+    ctx.fillStyle = C.ink; ctx.fillRect(px + 10, 36, pw - 20, 4);
+    if (frac > 0) { ctx.fillStyle = urgent ? C.fg : C.accent; ctx.fillRect(px + 10, 36, (pw - 20) * frac, 4); }
+  }
   if (!a || !b) return;
   if (isArena()) {
     text(`YOU · LV ${game.myLevel || 1}`, 0, 14, { size: 11, weight: 700, base: 'middle', color: a.tint, spacing: true });
@@ -5095,6 +5107,7 @@ function frame(now) {
         else if (game.players.length > 1 && active.length <= 1) end();          // everyone else is out or left: the last one wins
       }
       game.players.forEach(p => p.update(dt));
+      { const sd = suddenDeath(); if (sd > (game.sdShown || 0)) { game.sdShown = sd; game.players.forEach(p => { if (!p.out) p.fx.push({ t: sd > 1 ? 'SUDDEN DEATH ×2' : 'SUDDEN DEATH', c: C.warn, big: true, age: 0 }); }); sfx.alarm(); } }
       if (game.mode === 'online') game.players.forEach(p => { if (p.remote && p.gone && !p.goneShown) { p.goneShown = true; p.fx.push({ t: 'LEFT', c: C.muted, age: 0 }); } });
       if (game.mode !== 'sprint' && game.mode !== 'classic') {
         const sec = Math.ceil(game.timeLeft / 1000);

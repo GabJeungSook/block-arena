@@ -20,7 +20,7 @@
 //   /api/admin/stats          → numbers for the private stats page at /admin (administrators only)
 // Everything else is the game itself, served from /public.
 import { rankOf, rpDelta, applyDelta } from './rank.js';
-import { PRICES, SLOTS, DEFAULTS, MAX_PER_MATCH, MIN_GAP_MS, DAILY_CAP, ACH_COINS } from './shop.js';
+import { PRICES, SLOTS, DEFAULTS, MAX_PER_MATCH, MIN_GAP_MS, DAILY_CAP, ACH_COINS, COINS_PER_SEC, GUEST_IMPORT } from './shop.js';
 export { Room } from './room.js';
 export { Hub } from './hub.js';
 
@@ -366,8 +366,11 @@ async function coinsEarn(req, env, u) {
   const b = await body(req), pr = await freshProfile(env, u), t = now(), day = Math.floor(t / 864e5);
   const e = pr.earn && pr.earn.day === day ? pr.earn : { day, n: 0, t: 0 };
   let amt = Math.max(0, Math.min(MAX_PER_MATCH, Math.floor(+b.amount || 0)));
-  if (t - (e.t || 0) < MIN_GAP_MS) amt = 0;
-  amt = Math.min(amt, Math.max(0, DAILY_CAP - e.n));
+  const asked = amt; let reason = '';
+  if (t - (e.t || 0) < MIN_GAP_MS) { amt = 0; reason = 'too_soon'; }
+  // coins come at the pace of real play: no more than ~1.25 a second since the last payout today
+  if (e.t && amt > Math.floor((t - e.t) / 1000 * COINS_PER_SEC)) { amt = Math.floor((t - e.t) / 1000 * COINS_PER_SEC); reason = reason || 'pace'; }
+  if (amt > DAILY_CAP - e.n) { amt = Math.max(0, DAILY_CAP - e.n); reason = 'daily'; }
   const earn = { day, n: e.n + amt, t: amt ? t : e.t };
   if (amt) {
     const r = await env.DB.prepare(`UPDATE users SET profile = json_set(COALESCE(profile, '{}'), '$.coins', COALESCE(json_extract(profile, '$.coins'), 0) + ?, '$.earn', json(?)), updated_at = ?
@@ -376,13 +379,13 @@ async function coinsEarn(req, env, u) {
     if (!r.meta.changes) amt = 0;          // another payout landed first
     else await bump(env, 'coins', amt);
   }
-  return json({ added: amt, capped: amt < Math.floor(+b.amount || 0), ...wallet(await freshProfile(env, u)) });
+  return json({ added: amt, capped: amt < asked, reason: amt < asked ? reason : '', ...wallet(await freshProfile(env, u)) });
 }
 // a guest's coins and items move to their account the first time they sign in (once, capped)
 async function coinsImport(req, env, u) {
   const b = await body(req), pr = await freshProfile(env, u);
   if (pr.imported || now() - (u.created_at || 0) > 30 * 60000) return json({ ...wallet(pr), imported: false });   // only right after the account is made
-  let budget = 3000; const items = [];
+  let budget = GUEST_IMPORT; const items = [];
   const wanted = [...new Set((Array.isArray(b.owned) ? b.owned : []).filter(id => id in PRICES && PRICES[id] > 0 && !(pr.owned || []).includes(id)))].sort((x, y) => PRICES[x] - PRICES[y]);
   for (const id of wanted) if (PRICES[id] <= budget) { items.push(id); budget -= PRICES[id]; }
   const add = Math.max(0, Math.min(budget, Math.floor(+b.coins || 0)));
